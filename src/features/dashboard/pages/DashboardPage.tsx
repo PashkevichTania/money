@@ -10,6 +10,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import LanguageIcon from '@mui/icons-material/Language'
 import { useAuthStore } from '@/stores/authStore'
+import { useGroups } from '@/hooks/useGroups'
 import { formatMoney } from '@/utils/currency'
 
 const HIGHLIGHTS = [
@@ -37,8 +38,10 @@ const HIGHLIGHTS = [
 
 export default function DashboardPage() {
   const profile = useAuthStore((s) => s.profile)
+  const { groups } = useGroups()
   const displayName = profile?.displayName?.split(' ')[0] || 'there'
   const currency = profile?.defaultCurrency || 'USD'
+  const recentGroups = groups.slice(0, 4)
 
   return (
     <Container maxWidth="lg" disableGutters>
@@ -65,7 +68,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             component={RouterLink}
-            to="/groups"
+            to="/groups?new=1"
             variant="contained"
             startIcon={<AddCircleIcon />}
           >
@@ -113,10 +116,10 @@ export default function DashboardPage() {
             Groups
           </Typography>
           <Typography variant="h4" sx={{ mt: 1, fontWeight: 800 }}>
-            0
+            {groups.length}
           </Typography>
           <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
-            create your first group
+            {groups.length === 0 ? 'create your first group' : 'you belong to'}
           </Typography>
         </Paper>
         <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
@@ -131,6 +134,49 @@ export default function DashboardPage() {
           </Typography>
         </Paper>
       </Box>
+
+      {recentGroups.length > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+            Recent groups
+          </Typography>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(4, 1fr)',
+              },
+            }}
+          >
+            {recentGroups.map((group) => (
+              <Paper
+                key={group.id}
+                component={RouterLink}
+                to={`/groups/${group.id}`}
+                sx={{
+                  p: 2.5,
+                  borderRadius: 3,
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  display: 'block',
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  {group.name}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                  {group.baseCurrency} · {group.memberIds.length} member
+                  {group.memberIds.length === 1 ? '' : 's'}
+                </Typography>
+              </Paper>
+            ))}
+          </Box>
+        </Box>
+      )}
 
       <Box
         sx={{

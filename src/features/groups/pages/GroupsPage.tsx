@@ -1,22 +1,42 @@
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardActionArea from '@mui/material/CardActionArea'
 import CardContent from '@mui/material/CardContent'
 import Container from '@mui/material/Container'
+import Skeleton from '@mui/material/Skeleton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import AddIcon from '@mui/icons-material/Add'
 import GroupsIcon from '@mui/icons-material/Groups'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
+import { useEffect, useState } from 'react'
 import { getCurrencySymbol } from '@/config/currencies'
-import type { Group } from '@/types/group'
-
-const EMPTY_GROUPS: Group[] = []
+import { useGroups } from '@/hooks/useGroups'
+import CreateGroupDialog from '@/features/groups/components/CreateGroupDialog'
 
 export default function GroupsPage() {
-  const groups = EMPTY_GROUPS
+  const { groups, loading } = useGroups()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [createOpen, setCreateOpen] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setCreateOpen(true)
+    }
+  }, [searchParams])
+
+  const openCreate = () => setCreateOpen(true)
+
+  const closeCreate = () => {
+    setCreateOpen(false)
+    if (searchParams.get('new') === '1') {
+      const next = new URLSearchParams(searchParams)
+      next.delete('new')
+      setSearchParams(next, { replace: true })
+    }
+  }
 
   return (
     <Container maxWidth="lg" disableGutters>
@@ -37,12 +57,32 @@ export default function GroupsPage() {
             Create a group for trips, homes, weddings, and more.
           </Typography>
         </Box>
-        <Button variant="contained" size="large" startIcon={<AddIcon />}>
+        <Button variant="contained" size="large" startIcon={<AddIcon />} onClick={openCreate}>
           New group
         </Button>
       </Stack>
 
-      {groups.length === 0 ? (
+      {loading && groups.length === 0 ? (
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 3,
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+            },
+          }}
+        >
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} sx={{ borderRadius: 3, p: 3 }}>
+              <Skeleton variant="text" width="60%" height={32} />
+              <Skeleton variant="text" width="40%" />
+              <Skeleton variant="text" width="30%" sx={{ mt: 2 }} />
+            </Card>
+          ))}
+        </Box>
+      ) : groups.length === 0 ? (
         <Card sx={{ p: 6, textAlign: 'center', borderRadius: 4 }}>
           <Box
             sx={{
@@ -65,7 +105,7 @@ export default function GroupsPage() {
           <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
             Create your first group to start splitting expenses with friends.
           </Typography>
-          <Button variant="contained" size="large" startIcon={<AddIcon />}>
+          <Button variant="contained" size="large" startIcon={<AddIcon />} onClick={openCreate}>
             Create first group
           </Button>
         </Card>
@@ -119,6 +159,8 @@ export default function GroupsPage() {
           ))}
         </Box>
       )}
+
+      <CreateGroupDialog open={createOpen} onClose={closeCreate} />
     </Container>
   )
 }

@@ -52,12 +52,18 @@ async function createProfileIfMissing(user: User, displayNameFallback?: string):
   const ref = doc(db, 'users', user.uid)
   const snap = await getDoc(ref)
   if (snap.exists()) {
-    return snap.data() as UserProfile
+    const data = snap.data() as UserProfile
+    const email = (user.email || data.email || '').toLowerCase()
+    const profile: UserProfile = { ...data, id: user.uid, email }
+    if (data.email !== email || data.id !== user.uid) {
+      await setDoc(ref, { email, id: user.uid }, { merge: true })
+    }
+    return profile
   }
   const profile: UserProfile = {
     id: user.uid,
     displayName: user.displayName || displayNameFallback || user.email?.split('@')[0] || 'User',
-    email: user.email || '',
+    email: (user.email || '').toLowerCase(),
     photoURL: user.photoURL || undefined,
     defaultCurrency: DEFAULT_BASE_CURRENCY,
     createdAt: nowIso(),
