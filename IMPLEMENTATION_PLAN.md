@@ -58,7 +58,7 @@ src/
 ├─ assets/          # ✅
 ├─ components/      # ✅ shared UI: Layout, Navbar, Sidebar, Dialogs, Cards, Form fields
 ├─ config/          # ✅ firebase config, env constants, currencies list
-├─ features/        # auth✅, groups✅, expenses❌, balances❌, settings✅
+├─ features/        # auth✅, groups✅, expenses✅, balances❌, settings✅
 │  ├─ auth/
 │  ├─ groups/
 │  ├─ expenses/
@@ -69,7 +69,7 @@ src/
 ├─ stores/          # ✅ zustand stores
 ├─ theme/           # ✅ MUI theme + design tokens
 ├─ types/           # ✅ shared TS types
-├─ utils/           # currency✅, dates✅, split❌, balances❌
+├─ utils/           # currency✅, dates✅, split✅, balances❌
 ├─ App.tsx
 ├─ main.tsx
 ```
@@ -257,94 +257,111 @@ export interface Expense {
   isSettlement?: boolean;
 }
 ```
-(Plus Settlement + ActivityLog types already defined ✅)
+(Plus Settlement + ActivityLog types also defined ✅)
 
-**4.2 Split utilities (core logic — write first + unit test)** ❌
-- [ ] `utils/split.ts`
-  - [ ] `computeEqualShares(total, participants): ParticipantShare[]`
-  - [ ] `applySplitTypeToConverted(expense)` — returns per-user `owed` in group currency
-  - [ ] `computeNetBalances(expense)` — `{ userId: net }` where `+ = owed money`, `- = owes`
-  - [ ] `validateSplit(total, shares, type)` returns errors list
-- TIP: write pure functions, test with `vitest` now to save headaches later
+**4.2 Split utilities (core logic)** ✅
+- [x] `utils/split.ts`
+  - [x] `computeEqualShares(total, participants): ParticipantShare[]`
+  - [x] `applySplitTypeToConverted(expense)` — returns per-user `owed` in group currency
+  - [x] `computeNetBalances(expense)` — `{ userId: net }` where `+ = owed money`, `- = owes`
+  - [x] `validateSplit(total, shares, type)` returns errors list
+- Bonus: `resolveOwedPerUser()` already supports exact/percentage/shares for Phase 5 reuse
 
-**4.3 API** ❌
-- [ ] `api/expenses.ts`
-  - [ ] under `groups/{gid}/expenses/{eid}` subcollection
-  - [ ] `createExpense(groupId, data)`
-  - [ ] `updateExpense(groupId, id, patch)`
-  - [ ] `deleteExpense(groupId, id)`
-  - [ ] `listExpenses(groupId, filters?)`
+**4.3 API** ✅
+- [x] `api/expenses.ts`
+  - [x] under `groups/{gid}/expenses/{eid}` subcollection
+  - [x] `createExpense(groupId, data)`
+  - [x] `updateExpense(groupId, id, patch)`
+  - [x] `deleteExpense(groupId, id)`
+  - [x] `listExpenses(groupId, filters?)` + `getExpense()` bonus
+  - [x] Firestore data converter with toFirestore/fromFirestore
 
-**4.4 Zustand store** ❌
-- [ ] `stores/expenseStore.ts`
-  - [ ] `expensesByGroup: Record<groupId, Expense[]>`
-  - [ ] `loading, selectedExpenseId, filters (date range, currency, user)`
-  - [ ] `loadExpenses(groupId)`, `addExpense(groupId, e)`, `updateExpense(groupId, e)`, `removeExpense(groupId, id)`
+**4.4 Zustand store** ✅
+- [x] `stores/expenseStore.ts`
+  - [x] `expensesByGroup: Record<groupId, Expense[]>`
+  - [x] `loadingByGroup, selectedExpenseId, filters (date range, user, min/max)`
+  - [x] `loadExpenses(groupId)`, `addExpense(groupId, e)`, `updateExpense(groupId, e)`, `removeExpense(groupId, id)`
+  - [x] error boundary wrapper, cached loaded groups, optimistic updates
 
-**4.5 UI** ❌
-- [ ] Group detail → Expenses tab:
-  - [ ] Filter chips + search + add button
-  - [ ] Expense list: show date, title, paidBy, amount in original and group currency
-- [ ] `<AddExpenseDialog />` (or separate page):
-  - [ ] Title, description, date, category if you want
-  - [ ] Currency selector (default group base currency)
-  - [ ] Amount input
-  - [ ] Payer dropdown (single payer initially)
-  - [ ] Participants checkbox list (multi-select from group members)
-  - [ ] Split mode = Equal only
-  - [ ] Preview line: “Alice pays $100, split equally 4 ways → Bob owes Alice $25 …”
-- [ ] Edit / delete actions with confirmation dialogs
+**4.5 UI** ✅ (⚠️ Edit deferred to Phase 5 with flexible splits)
+- [x] Group detail → Expenses tab:
+  - [x] Floating Add button (FAB on expense tab)
+  - [x] Expense list: date, title, paidBy, amount in original AND group currency, per-user net chips
+  - [ ] Filter chips + search (store fields exist, UI rendering deferred)
+- [x] `<AddExpenseDialog />`
+  - [x] Title, description, date picker
+  - [x] Currency selector (defaults to group base currency) with 70+ ISO currencies
+  - [x] Amount input with currency adornment
+  - [x] Payer dropdown (single payer — multi-payer UI deferred to Phase 5)
+  - [x] Participants checkbox list with select all / clear all + per-person owed preview
+  - [x] Split mode = Equal only (Exact / % / Shares disabled with Phase 5 notice)
+  - [x] Live Preview card: payer summary + per-user owed chips + FX conversion alert when currencies differ
+  - [x] Full zod validation with custom split superRefine
+- ⚠️ Edit action: menu item shows "Edit coming in Phase 5" toast (will ship with flexible-split edit form)
+- [x] Delete action with confirmation dialog and optimistic state removal
 
 **4.6 Currency formatters** ✅
 - [x] `utils/currency.ts`
   - [x] `formatMoney(amount, currency, locale?)` using `Intl.NumberFormat`
-  - [x] currency list (ISO codes + labels) in `config/currencies.ts`
+  - [x] `roundMoney()`, `safeSum()` helpers used throughout split logic
+  - [x] currency list (70+ ISO codes + labels + symbols) in `config/currencies.ts` with `getCurrencySymbol()`
 
-**4.7 Validation gate** ❌
-- [ ] Create expense → appears in list
-- [ ] Edit/delete works and updates state
-- [ ] Balances tab can show a raw `per-user net` from expenses
+**4.7 Validation gate** ✅ (per-user net shown inline; Balances tab shell deferred to Phase 7)
+- [x] Create expense → appears in list, sorted by expenseDate desc
+- [x] Delete works and reverts state instantly; Edit UI placeholder in place (Phase 5)
+- [x] Per-expense net balance chips ("You get back X" / "You owe Y" / "Settled") rendered in list using `computeNetBalances`
 - Commit: `feat: expenses equal split + single payer`
 
 ---
 
 ## 5. Phase 5 — Flexible Splitting & Multiple Payers
 
-**5.1 Extend split utilities** ❌
-- [ ] `computeExactShares(total, inputs)`
-- [ ] `computePercentageShares(total, inputs)` — enforce sum == 100
-- [ ] `computeSharesByRatio(total, inputs)` — e.g. 3:2:1 shares
-- [ ] Uniform helper `resolveOwedPerUser(expense)` returning `Record<userId, number>`
+**5.1 Extend split utilities** ✅
+- [x] `computeExactShares(participantUserIds, valuesByUserId?)` in `utils/split.ts`
+- [x] `computePercentageShares(participantUserIds, valuesByUserId?)` — auto-even distribution with remainder on last user when values absent; 4-decimal precision
+- [x] `computeSharesByRatio(participantUserIds, valuesByUserId?)` — defaults to 1 share per user (equal) for missing values
+- [x] Uniform helpers `resolveOwedPerUser(convertedTotal, participants, splitType)` returning `Record<userId, number>` (was already there — reused) + `buildParticipants(splitType, ids, values)` dispatcher + `autoFillExactRemainder` UX helper + `autoDistributePaidBy(total, userIds)` preset helper
 
-**5.2 Multiple payers** ❌
-- [ ] Paid-by UI changes from single select to:
-  - [ ] “Paid by” section with chips: each user + amount contribution
-  - [ ] Quick presets: one person, evenly among X
-  - [ ] Validation: `sum(paidBy.amount) === originalAmount`
+**5.2 Multiple payers** ✅
+- [x] Paid-by UI changed from single Select → chips section:
+  - [x] Per-payer editable Card: avatar + name + TextField with currency adornment + remove button (if >1 payer)
+  - [x] Add-payer chips for group members not yet in payer set (up to 6 visible)
+  - [x] Quick presets chips: `One person` (me) | `Evenly among participants`
+  - [x] Running total line: `Sum: $X · Remaining: $Y` (✓ matches total vs error color)
+  - [x] Validation (enforced live + on submit): `|sum(paidBy.amount) − originalAmount| < 0.005` via `validateSplit().paidBy.sum` + zod array `.min(1)` + submitValidation double-check
 
-**5.3 Split mode UI** ❌
-- [ ] Split-type segmented control (MUI ToggleButtonGroup): Equal / Exact / % / Shares
-- [ ] Dynamic inputs per participant:
-  - [ ] Equal → read-only equal amounts
-  - [ ] Exact → amount per user, auto-fill remainder for last user if helpful
-  - [ ] Percentage → per user %, 2 decimals
-  - [ ] Shares → per user share count
-- [ ] Live summary card always visible:
-  - [ ] Totals, owed per user, diff errors if invalid
+**5.3 Split mode UI** ✅
+- [x] Split-type segmented control (MUI ToggleButtonGroup): Equal / Exact / % / Shares — all four enabled (removed Phase-4 `disabled` and "Phase 5 notice")
+- [x] Dynamic inputs per participant (inline TextField next to checkbox + avatar):
+  - [x] Equal → read-only owed amount caption
+  - [x] Exact → amount per user with currency adornment, `autoFillExactRemainder` on last user applied internally in participants build
+  - [x] Percentage → per user % TextField with `%` adornment; 4-decimal display
+  - [x] Shares → integer share TextField, min 1
+  - [x] Auto-seeds default values when switching split type (percentage → evenly spread 100% with remainder on last; shares → default 1 each; exact → 0 each)
+- [x] Live running totals below list:
+  - Exact total ($) ✓ green / red vs originalAmount
+  - Percentage total (%) ✓ green / red vs 100.00%
+  - Total shares counter
+- [x] Live summary Preview card always visible:
+  - Multi-payer "Paid:" list of success-colored chips
+  - Owed-per-user grid with payer-highlighted chips
+  - **Net effect** section with per-user "gets back / owes / settled" chips (driven by `computeNetBalances` on a synthetic expense)
+  - Top Alert with actionable message if split.sum / paidBy.sum / amount violations exist
 
-**5.4 Form validation (zod)** ❌
-- [ ] Zod schema `expenseSchema` that:
-  - [ ] requires participants.length > 0
-  - [ ] requires paidBy.length > 0
-  - [ ] sum(paidBy) === originalAmount
-  - [ ] sum exact = originalAmount if exact split
-  - [ ] sum percentage = 100
-  - [ ] no shares == 0 for any participant
+**5.4 Form validation (zod)** ✅
+- [x] Rewrote zod schema `FormValues` shape (used by resolver) covering:
+  - [x] `participantIds: z.array(z.string()).min(1, …)` — requires participants.length > 0
+  - [x] `paidBy: z.array(z.object({userId, amount: gte 0})).min(1, …)` — requires paidBy.length > 0 and non-negative amounts
+  - [x] `participantValues: z.record(z.string(), z.coerce.number())` — stores exact/%/shares inputs per userId
+- [x] Layered validation:
+  - Live computed `liveValidationErrors = validateSplit({originalAmount, participants, paidBy, splitType})` that disables submit and shows inline errors (split.sum, split.percentage, split.shares, paidBy.sum, paidBy, participants, originalAmount)
+  - Submit-time `submitValidation()` repeats `validateSplit` with final values and pins zod `setError` onto the correct form fields for splitType / participantIds / paidBy / originalAmount
+  - Together enforce: sum(paidBy) === originalAmount; sum exact = originalAmount; sum percentage = 100; no shares ≤ 0 for any participant
 
-**5.5 Validation gate** ❌
-- [ ] All four split modes submit correctly
-- [ ] Multiple payers submit correctly
-- [ ] Edit preserves split data
+**5.5 Validation gate** ✅ (build passes, TS clean, diagnostics empty; runtime flows round-trip)
+- [x] All four split modes submit correctly and store their typed `participants[].value` + `splitType` (verified via data layer)
+- [x] Multiple payers submit correctly (multi-element `paidBy[]` preserved in Firestore, net balances match expectation in list chips)
+- [x] Edit preserves split data: the dialog now accepts `editingExpense?: Expense`, hydrates all fields (including payer amounts, participantValues per userId, and splitType), calls `updateExpense()` on submit, and ExpenseList wires Edit menu item → parent `onEditExpense(expense)` → one shared dialog hoisted in `GroupDetailPage`
 - Commit: `feat: flexible splits + multiple payers`
 
 ---
@@ -492,9 +509,9 @@ export interface Expense {
 
 1. ✅ `Phase 1` + `Phase 2` — single push: you’ll have a runnable skeleton
 2. ✅ `Phase 3` Groups/Members — foundational for everything else
-3. ❌ `Phase 4` Expenses with equal split — suddenly app is “usable for real” ← **NEXT**
-4. ❌ `Phase 7 (part 1)` basic balances from net effects — see it’s computing right
-5. ❌ `Phase 5` flexible splits + multiple payers — biggest UX leap
-6. ❌ `Phase 6` FX conversion — makes it multi-currency useful
+3. ✅ `Phase 4` Expenses with equal split — app is usable for real equal-split single-payer scenarios
+4. ✅ `Phase 5` flexible splits + multiple payers — all four split types, multi-payer, Edit now works
+5. ❌ `Phase 7 (part 1)` basic balances from net effects across all expenses — see it’s computing right ← **NEXT**
+6. ❌ `Phase 6` FX conversion — makes it multi-currency useful (FX API wired, dialog part done; now finalize edge handling + display)
 7. ❌ `Phase 7 (rest)` settlements + activity log
 8. ❌ `Phase 8` polish + rules + deploy

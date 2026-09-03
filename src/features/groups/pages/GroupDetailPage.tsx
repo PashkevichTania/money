@@ -18,13 +18,28 @@ import MembersTab from '@/features/groups/components/MembersTab'
 import GroupSettingsTab from '@/features/groups/components/GroupSettingsTab'
 import ExpenseList from '@/features/expenses/components/ExpenseList'
 import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
+import type { Expense } from '@/types/expense'
 
 const TAB_LABELS = ['Expenses', 'Balances', 'Members', 'Activity', 'Settings'] as const
 
 export default function GroupDetailPage() {
   const { group, members, loadingMembers, loading, notFound, error } = useSelectedGroup()
   const [tab, setTab] = useState(0)
-  const [addExpenseOpen, setAddExpenseOpen] = useState(false)
+  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+
+  const openAddExpense = () => {
+    setEditingExpense(null)
+    setExpenseDialogOpen(true)
+  }
+  const openEditExpense = (expense: Expense) => {
+    setEditingExpense(expense)
+    setExpenseDialogOpen(true)
+  }
+  const closeExpenseDialog = () => {
+    setExpenseDialogOpen(false)
+    setEditingExpense(null)
+  }
 
   const handleChangeTab = (_: SyntheticEvent, newValue: number) => setTab(newValue)
 
@@ -89,7 +104,7 @@ export default function GroupDetailPage() {
           </Card>
           <Box sx={{ p: { xs: 2.5, sm: 4 } }}>
             {tab === 0 ? (
-              <ExpenseList group={group} members={members} />
+              <ExpenseList group={group} members={members} onEditExpense={openEditExpense} />
             ) : tab === 2 ? (
               <Card sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 4 }}>
                 <MembersTab group={group} members={members} loadingMembers={loadingMembers} />
@@ -125,7 +140,7 @@ export default function GroupDetailPage() {
                 fontWeight: 700,
                 zIndex: (t) => t.zIndex.modal - 1,
               }}
-              onClick={() => setAddExpenseOpen(true)}
+              onClick={openAddExpense}
             >
               <AddIcon sx={{ mr: 1 }} />
               Add expense
@@ -133,10 +148,11 @@ export default function GroupDetailPage() {
           )}
 
           <AddExpenseDialog
-            open={addExpenseOpen}
-            onClose={() => setAddExpenseOpen(false)}
+            open={expenseDialogOpen}
+            onClose={closeExpenseDialog}
             group={group}
             members={members}
+            editingExpense={editingExpense}
           />
         </>
       )}

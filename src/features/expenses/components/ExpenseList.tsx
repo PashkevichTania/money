@@ -45,9 +45,11 @@ function initials(name: string) {
 export default function ExpenseList({
   group,
   members,
+  onEditExpense,
 }: {
   group: Group
   members: UserProfile[]
+  onEditExpense: (expense: Expense) => void
 }) {
   const me = useCurrentUser()
   const { enqueueSnackbar } = useSnackbar()
@@ -232,7 +234,8 @@ export default function ExpenseList({
                       >
                         <MenuItem
                           onClick={() => {
-                            enqueueSnackbar('Edit coming in Phase 5', { variant: 'info' })
+                            const target = expenses.find((e) => e.id === menuAnchor?.expenseId)
+                            if (target) onEditExpense(target)
                             setMenuAnchor(null)
                           }}
                         >

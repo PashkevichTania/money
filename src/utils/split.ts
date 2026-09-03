@@ -211,3 +211,96 @@ export function applySplitTypeToConverted(
     expense.splitType,
   )
 }
+
+export function computeExactShares(
+  participantUserIds: string[],
+  valuesByUserId: Record<string, number> = {},
+): ParticipantShare[] {
+  return participantUserIds.map((userId) => ({
+    userId,
+    value: roundMoney(Number(valuesByUserId[userId]) || 0),
+  }))
+}
+
+export function computePercentageShares(
+  participantUserIds: string[],
+  valuesByUserId: Record<string, number> = {},
+): ParticipantShare[] {
+  const n = participantUserIds.length
+  if (!n) return []
+  const hasAny = Object.values(valuesByUserId).some((v) => v != null && Number.isFinite(v))
+  if (!hasAny) {
+    const base = roundMoney(100 / n, 4)
+    const shares = participantUserIds.map((userId) => ({ userId, value: base }))
+    const total = safeSum(shares.map((s) => s.value))
+    const diff = roundMoney(100 - total, 4)
+    if (Math.abs(diff) > 0) {
+      shares[shares.length - 1].value = roundMoney(shares[shares.length - 1].value + diff, 4)
+    }
+    return shares
+  }
+  return participantUserIds.map((userId) => ({
+    userId,
+    value: roundMoney(Number(valuesByUserId[userId]) || 0, 4),
+  }))
+}
+
+export function computeSharesByRatio(
+  participantUserIds: string[],
+  valuesByUserId: Record<string, number> = {},
+): ParticipantShare[] {
+  return participantUserIds.map((userId) => {
+    const raw = Number(valuesByUserId[userId])
+    const value = raw && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : 1
+    return { userId, value }
+  })
+}
+
+export function autoFillExactRemainder(
+  total: number,
+  shares: ParticipantShare[],
+  userIdOrder: string[],
+): ParticipantShare[] {
+  if (!userIdOrder.length) return shares
+  const byId = new Map(shares.map((s) => [s.userId, s.value]))
+  const othersSum = safeSum(
+    userIdOrder
+      .slice(0, -1)
+      .map((uid) => roundMoney(Number(byId.get(uid)) || 0)),
+  )
+  const remainder = roundMoney(total - othersSum)
+  const lastId = userIdOrder[userIdOrder.length - 1]
+  return shares.map((s) =>
+    s.userId === lastId ? { ...s, value: remainder } : s,
+  )
+}
+
+export function buildParticipants(
+  splitType: SplitType,
+  participantIds: string[],
+  valuesByUserId: Record<string, number>,
+): ParticipantShare[] {
+  if (splitType === 'equal') return computeEqualShares(0, participantIds)
+  if (splitType === 'exact') return computeExactShares(participantIds, valuesByUserId)
+  if (splitType === 'percentage') return computePercentageShares(participantIds, valuesByUserId)
+  return computeSharesByRatio(participantIds, valuesByUserId)
+}
+
+export function autoDistributePaidBy(
+  total: number,
+  userIds: string[],
+): PayerContribution[] {
+  if (!userIds.length) return []
+  if (userIds.length === 1) {
+    return [{ userId: userIds[0], amount: roundMoney(total) }]
+  }
+  const per = roundMoney(total / userIds.length)
+  let sum = 0
+  return userIds.map((userId, i) => {
+    if (i === userIds.length - 1) {
+      return { userId, amount: roundMoney(total - sum) }
+    }
+    sum = roundMoney(sum + per)
+    return { userId, amount: per }
+  })
+}
