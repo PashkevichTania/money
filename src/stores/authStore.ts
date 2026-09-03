@@ -64,7 +64,7 @@ async function createProfileIfMissing(user: User, displayNameFallback?: string):
     id: user.uid,
     displayName: user.displayName || displayNameFallback || user.email?.split('@')[0] || 'User',
     email: (user.email || '').toLowerCase(),
-    photoURL: user.photoURL || undefined,
+    photoURL: user.photoURL || null,
     defaultCurrency: DEFAULT_BASE_CURRENCY,
     createdAt: nowIso(),
   }

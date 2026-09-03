@@ -40,7 +40,7 @@ const userConverter: FirestoreDataConverter<UserProfile> = {
       id: snap.id,
       displayName: data.displayName,
       email: data.email,
-      photoURL: data.photoURL ?? undefined,
+      photoURL: data.photoURL ?? null,
       defaultCurrency: data.defaultCurrency,
       createdAt: data.createdAt,
     }
