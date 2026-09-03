@@ -1,17 +1,17 @@
+import { useState } from 'react'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
+import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Alert from '@mui/material/Alert'
 import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
-import { useEffect, useState } from 'react'
-import { useGroupStore } from '@/stores/groupStore'
-import { useNavigate } from 'react-router-dom'
-import { useSnackbar } from 'notistack'
 import type { Group } from '@/types/group'
+import { useGroupStore } from '@/stores/groupStore'
+import { useSnackbar } from 'notistack'
+import { useNavigate } from 'react-router-dom'
 
 export default function DeleteGroupDialog({
   open,
@@ -20,34 +20,30 @@ export default function DeleteGroupDialog({
 }: {
   open: boolean
   onClose: () => void
-  group: Group | null
+  group: Group
 }) {
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
   const removeGroup = useGroupStore((s) => s.removeGroup)
-  const errors = useGroupStore((s) => s.errors)
+  const [confirmText, setConfirmText] = useState('')
   const [busy, setBusy] = useState(false)
-  const [confirmName, setConfirmName] = useState('')
-  const scope = group ? `group:${group.id}` : ''
+  const [localError, setLocalError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (open) setConfirmName('')
-  }, [open, group?.id])
-
-  if (!group) return null
-
-  const nameMatches = confirmName.trim() === group.name
+  const canDelete = confirmText.trim() === group.name
 
   const onConfirm = async () => {
-    if (!nameMatches) return
+    if (!canDelete) return
     setBusy(true)
+    setLocalError(null)
     try {
       await removeGroup(group.id)
       enqueueSnackbar(`Group "${group.name}" deleted`, { variant: 'success' })
       onClose()
+      setConfirmText('')
       navigate('/groups', { replace: true })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to delete group'
+      setLocalError(msg)
       enqueueSnackbar(msg, { variant: 'error' })
     } finally {
       setBusy(false)
@@ -59,28 +55,34 @@ export default function DeleteGroupDialog({
       open={open}
       onClose={busy ? undefined : onClose}
       fullWidth
-      maxWidth="xs"
+      maxWidth="sm"
       slotProps={{ paper: { sx: { borderRadius: 4 } } }}
     >
-      <DialogTitle>
-        <Typography variant="h6" sx={{ fontWeight: 800 }}>
-          Delete &ldquo;{group.name}&rdquo;?
+      <DialogTitle sx={{ pb: 1 }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
+          Delete group?
         </Typography>
       </DialogTitle>
       <DialogContent dividers>
-        <Stack spacing={2}>
-          <Alert severity="warning">
-            This will permanently delete the group, all expenses, settlements, and activity. This
-            action cannot be undone.
+        <Stack spacing={3}>
+          <Alert severity="error">
+            This permanently deletes the group <strong>&ldquo;{group.name}&rdquo;</strong> and all
+            of its expenses, balances, and activity history. This cannot be undone.
           </Alert>
+          {localError && (
+            <Alert severity="error">{localError}</Alert>
+          )}
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Type <strong>{group.name}</strong> below to confirm:
+          </Typography>
           <TextField
-            label="Type the group name to confirm"
-            value={confirmName}
-            onChange={(e) => setConfirmName(e.target.value)}
-            autoComplete="off"
+            label={`Type "${group.name}" to confirm`}
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
             fullWidth
+            autoFocus
+            disabled={busy}
           />
-          {errors[scope] && <Alert severity="error">{errors[scope]}</Alert>}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
@@ -88,12 +90,12 @@ export default function DeleteGroupDialog({
           Cancel
         </Button>
         <Button
-          onClick={onConfirm}
           color="error"
           variant="contained"
-          disabled={busy || !nameMatches}
+          onClick={() => void onConfirm()}
+          disabled={!canDelete || busy}
         >
-          {busy ? 'Deleting…' : 'Yes, delete group'}
+          {busy ? 'Deleting…' : 'Delete group permanently'}
         </Button>
       </DialogActions>
     </Dialog>

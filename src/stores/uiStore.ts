@@ -1,6 +1,4 @@
 import { create } from 'zustand'
-import type { Group } from '@/types/group'
-import type { UserProfile } from '@/types/user'
 
 export interface UIState {
   sidebarOpen: boolean
@@ -15,21 +13,6 @@ export interface UIState {
     variant?: 'success' | 'error' | 'info' | 'warning',
   ) => void
   clearToast: () => void
-}
-
-export interface GroupState {
-  groups: Group[]
-  selectedGroupId: string | null
-  membersMap: Record<string, UserProfile>
-  loading: boolean
-  setGroups: (groups: Group[]) => void
-  addGroup: (group: Group) => void
-  updateGroup: (group: Group) => void
-  removeGroup: (id: string) => void
-  setSelectedGroupId: (id: string | null) => void
-  setMembersMap: (members: Record<string, UserProfile>) => void
-  setLoading: (loading: boolean) => void
-  addMember: (user: UserProfile) => void
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -63,27 +46,4 @@ export const useUIStore = create<UIState>((set, get) => ({
   },
 
   clearToast: () => set({ toast: null }),
-}))
-
-export const useGroupStore = create<GroupState>((set) => ({
-  groups: [],
-  selectedGroupId: null,
-  membersMap: {},
-  loading: false,
-
-  setGroups: (groups) => set({ groups }),
-  addGroup: (group) =>
-    set((s) => ({ groups: [group, ...s.groups.filter((g) => g.id !== group.id)] })),
-  updateGroup: (group) =>
-    set((s) => ({
-      groups: s.groups.map((g) => (g.id === group.id ? group : g)),
-    })),
-  removeGroup: (id) => set((s) => ({ groups: s.groups.filter((g) => g.id !== id) })),
-  setSelectedGroupId: (id) => set({ selectedGroupId: id }),
-  setMembersMap: (membersMap) => set({ membersMap }),
-  setLoading: (loading) => set({ loading }),
-  addMember: (user) =>
-    set((s) => ({
-      membersMap: { ...s.membersMap, [user.id]: user },
-    })),
 }))

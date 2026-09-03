@@ -1,17 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
-import { ThemeProvider, type Theme } from '@mui/material/styles'
+import { useMemo, type ReactNode } from 'react'
+import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { SnackbarProvider } from 'notistack'
 import { getTheme } from '@/theme'
 import { useUIStore } from '@/stores/uiStore'
-
-interface AppContextValue {
-  theme: Theme
-  themeMode: 'light' | 'dark'
-  toggleTheme: () => void
-}
-
-const AppContext = createContext<AppContextValue | undefined>(undefined)
+import {AppContext, type AppContextValue} from "@/hooks/useApp.ts";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const themeMode = useUIStore((s) => s.themeMode)
@@ -40,15 +33,5 @@ export function AppProviders({ children }: { children: ReactNode }) {
   )
 }
 
-export function useApp() {
-  const ctx = useContext(AppContext)
-  if (!ctx) throw new Error('useApp must be used within AppProviders')
-  return ctx
-}
 
-export function useThemeModeListener() {
-  const themeMode = useUIStore((s) => s.themeMode)
-  useEffect(() => {
-    document.documentElement.dataset.theme = themeMode
-  }, [themeMode])
-}
+

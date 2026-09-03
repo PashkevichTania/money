@@ -20,7 +20,7 @@ import Person from '@mui/icons-material/Person'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import { useAuthStore } from '@/stores/authStore'
-import { useApp } from '@/providers/AppProviders'
+import { useApp } from '@/hooks/useApp'
 import { useSnackbar } from 'notistack'
 
 interface TopbarProps {

@@ -1,8 +1,10 @@
 import { Link as RouterLink } from 'react-router-dom'
+import AddIcon from '@mui/icons-material/Add'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Container from '@mui/material/Container'
+import Fab from '@mui/material/Fab'
 import Skeleton from '@mui/material/Skeleton'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
@@ -14,12 +16,15 @@ import { useSelectedGroup } from '@/hooks/useSelectedGroup'
 import { getCurrencySymbol } from '@/config/currencies'
 import MembersTab from '@/features/groups/components/MembersTab'
 import GroupSettingsTab from '@/features/groups/components/GroupSettingsTab'
+import ExpenseList from '@/features/expenses/components/ExpenseList'
+import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
 
 const TAB_LABELS = ['Expenses', 'Balances', 'Members', 'Activity', 'Settings'] as const
 
 export default function GroupDetailPage() {
   const { group, members, loadingMembers, loading, notFound, error } = useSelectedGroup()
   const [tab, setTab] = useState(0)
+  const [addExpenseOpen, setAddExpenseOpen] = useState(false)
 
   const handleChangeTab = (_: SyntheticEvent, newValue: number) => setTab(newValue)
 
@@ -82,24 +87,57 @@ export default function GroupDetailPage() {
               ))}
             </Tabs>
           </Card>
-          <Card sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 4 }}>
-            {tab === 2 ? (
-              <MembersTab group={group} members={members} loadingMembers={loadingMembers} />
+          <Box sx={{ p: { xs: 2.5, sm: 4 } }}>
+            {tab === 0 ? (
+              <ExpenseList group={group} members={members} />
+            ) : tab === 2 ? (
+              <Card sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 4 }}>
+                <MembersTab group={group} members={members} loadingMembers={loadingMembers} />
+              </Card>
             ) : tab === 4 ? (
-              <GroupSettingsTab group={group} />
+              <Card sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 4 }}>
+                <GroupSettingsTab group={group} />
+              </Card>
             ) : (
-              <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Card sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 4, textAlign: 'center', py: 2 }}>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   {TAB_LABELS[tab]}
                 </Typography>
                 <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                  {tab === 0 && 'Expenses arrive in Phase 4 — equal split and a single payer.'}
                   {tab === 1 && 'Balances and settle-up suggestions arrive in Phase 7.'}
                   {tab === 3 && 'Activity log arrives in Phase 7.'}
                 </Typography>
-              </Box>
+              </Card>
             )}
-          </Card>
+          </Box>
+
+          {tab === 0 && (
+            <Fab
+              color="primary"
+              variant="extended"
+              sx={{
+                position: 'fixed',
+                right: { xs: 16, sm: 32 },
+                bottom: { xs: 16, sm: 32 },
+                boxShadow: (t) => t.shadows[8],
+                borderRadius: 3,
+                px: 2.5,
+                fontWeight: 700,
+                zIndex: (t) => t.zIndex.modal - 1,
+              }}
+              onClick={() => setAddExpenseOpen(true)}
+            >
+              <AddIcon sx={{ mr: 1 }} />
+              Add expense
+            </Fab>
+          )}
+
+          <AddExpenseDialog
+            open={addExpenseOpen}
+            onClose={() => setAddExpenseOpen(false)}
+            group={group}
+            members={members}
+          />
         </>
       )}
     </Container>

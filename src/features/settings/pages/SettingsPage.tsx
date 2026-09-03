@@ -12,7 +12,7 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
 import { CURRENCIES, DEFAULT_BASE_CURRENCY } from '@/config/currencies'
 import { useAuthStore } from '@/stores/authStore'
-import { useApp } from '@/providers/AppProviders'
+import { useApp } from '@/hooks/useApp'
 
 export default function SettingsPage() {
   const profile = useAuthStore((s) => s.profile)
@@ -75,36 +75,6 @@ export default function SettingsPage() {
               label="Dark mode"
             />
           </Stack>
-        </Card>
-
-        <Card sx={{ p: 4, borderRadius: 4 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-            Firebase setup
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-            Copy the snippet below into <code>.env.local</code> and fill the values from your Firebase
-            console.
-          </Typography>
-          <Box
-            component="pre"
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              bgcolor: (t) => (t.palette.mode === 'dark' ? t.palette.background.default : '#0b1020'),
-              color: (t) => (t.palette.mode === 'dark' ? '#a7f3d0' : '#d1fae5'),
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              fontSize: 13,
-              overflowX: 'auto',
-            }}
-          >
-            {`VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
-VITE_APP_BASE_CURRENCY=USD`}
-          </Box>
         </Card>
       </Stack>
     </Container>

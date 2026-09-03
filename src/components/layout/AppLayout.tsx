@@ -4,7 +4,7 @@ import Box from '@mui/material/Box'
 import Topbar from './Topbar'
 import Sidebar from './Sidebar'
 import { useUIStore } from '@/stores/uiStore'
-import { useThemeModeListener } from '@/providers/AppProviders'
+import { useThemeModeListener } from '@/hooks/useThemeModeListener'
 
 export default function AppLayout() {
   useThemeModeListener()
