@@ -16,7 +16,7 @@ export interface UIState {
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
-  sidebarOpen: true,
+  sidebarOpen: false,
   themeMode: (localStorage.getItem('theme-mode') as 'light' | 'dark') || 'light',
   openDialogs: {},
   toast: null,

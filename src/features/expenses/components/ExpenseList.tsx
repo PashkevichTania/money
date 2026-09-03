@@ -53,6 +53,7 @@ export default function ExpenseList({
 }) {
   const me = useCurrentUser()
   const { enqueueSnackbar } = useSnackbar()
+  // TODO: fix Maximum update depth exceeded.
   const expenses = useExpenseStore((s) => s.expensesByGroup[group.id] ?? [])
   const loading = useExpenseStore((s) => s.loadingByGroup[group.id] ?? false)
   const error = useExpenseStore((s) => s.errorsByGroup[group.id])
