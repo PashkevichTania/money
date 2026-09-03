@@ -74,7 +74,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           edge="start"
           size="large"
           onClick={onToggleSidebar}
-          sx={{ mr: 2, display: { md: 'none' } }}
+          sx={{ mr: 2 }}
           aria-label="Toggle sidebar"
         >
           <MenuIcon />
