@@ -180,7 +180,8 @@ src/
 - [x] Group Members tab:
   - [x] Show current members list
   - [x] “Add member by email” UI (search existing users by email)
-  - [ ] Remove member (with guardrails if they have balances)
+  - [x] Remove member UI and API
+  - [ ] Guard removal when the member has an outstanding balance or appears in historical expenses
 - [x] Settings tab: rename, change base currency (warn existing expenses already converted)
 
 **3.6 Firestore data & structure** ✅
@@ -368,7 +369,7 @@ export interface Expense {
 
 ## 6. Phase 6 — Multi-Currency Conversion & FX Snapshots
 
-**6.1 FX service** ⚠️ (API exists, not wired to UI)
+**6.1 FX service** ✅ (API is wired to the expense dialog; runtime verification remains)
 - [x] `api/rates.ts`
   - [x] `getRate(fromCurrency, toCurrency, date?)` — use Frankfurter API
     - endpoint: `https://api.frankfurter.app/YYYY-MM-DD?from=USD&to=EUR`
@@ -376,20 +377,16 @@ export interface Expense {
   - [x] error handling: if rate fetch fails, disallow save OR allow with manual rate override
 - Frankfurter supports ECB currencies; for others, optionally let user input a manual rate.
 
-**6.2 Expense creation flow** ❌
+**6.2 Expense creation flow** ⚠️ (implemented in code; verify with Firebase and fix exact-split conversion)
 - [ ] When user chooses different `originalCurrency` than group currency:
-  - [ ] load rate for `expenseDate` (or latest if blank)
-  - [ ] show rate + converted amount next to amount field
-  - [ ] on submit, populate:
-    - [ ] `convertedAmount = originalAmount * rate`
-    - [ ] `groupCurrency = group.baseCurrency`
-    - [ ] `rateSnapshot = { date, rate, source: 'frankfurter' }`
+  - [x] load rate for `expenseDate` (or latest if blank)
+  - [x] show rate + converted amount next to amount field
+  - [x] on submit, populate `convertedAmount`, `groupCurrency`, and `rateSnapshot`
+  - [ ] verify create/edit flows against live Firestore, including a failed rate request
 - All internal balances use `convertedAmount` and `groupCurrency`
 
-**6.3 Display strategy** ❌
-- [ ] Expense list shows:
-  - [ ] primary: `formatMoney(convertedAmount, groupCurrency)`
-  - [ ] secondary faded: `originalAmount originalCurrency` if different
+**6.3 Display strategy** ⚠️
+  - [x] Expense list shows converted amount first and original amount second when currencies differ
 - [ ] Expense detail / edit:
   - [ ] allow changing date and recomputing rate
   - [ ] allow locking a manual rate if API fails
@@ -470,14 +467,17 @@ export interface Expense {
 
 **8.3 Firestore security rules (finalize)** ⚠️ (basic only)
 - [x] Lock `users` profile to owner only
-- [x] Lock groups + subcollections to members only (groups root only so far)
+- [x] Lock group documents to members
+- [ ] Add explicit rules for `groups/{gid}/expenses/{eid}`; Firestore subcollections do not inherit parent rules
+- [ ] Verify expense create/read/update/delete as a member and denial as a non-member in the emulator
 - [ ] Ensure `expense.groupId` matches path
 - [ ] Validate `createdBy === request.auth.uid` on create
 - [ ] Allow update/delete by any group member (or restrict to creator if you prefer)
 - [ ] Validate currency and sum invariants where possible in rules (at least the critical ones)
 
 **8.4 Hosting / deploy** ❌
-- [x] Build: `npm run build` (works)
+- [ ] Restore a passing TypeScript build (`MembersTab.tsx` Avatar `src` currently accepts `null`)
+- [ ] Restore a passing lint run (audit found 9 errors and 11 warnings)
 - [ ] `npm i -g firebase-tools`
 - [ ] `firebase login`
 - [ ] `firebase init hosting` → point to `dist`
@@ -507,11 +507,43 @@ export interface Expense {
 
 ## Suggested Implementation Order of Work (by priority)
 
-1. ✅ `Phase 1` + `Phase 2` — single push: you’ll have a runnable skeleton
-2. ✅ `Phase 3` Groups/Members — foundational for everything else
-3. ✅ `Phase 4` Expenses with equal split — app is usable for real equal-split single-payer scenarios
-4. ✅ `Phase 5` flexible splits + multiple payers — all four split types, multi-payer, Edit now works
-5. ❌ `Phase 7 (part 1)` basic balances from net effects across all expenses — see it’s computing right
-6. ❌ `Phase 6` FX conversion — makes it multi-currency useful (FX API wired, dialog part done; now finalize edge handling + display)
-7. ❌ `Phase 7 (rest)` settlements + activity log
-8. ❌ `Phase 8` polish + rules + deploy
+1. Fix the Firestore expense rules, TypeScript/lint failures, and multi-currency exact-split math (audit below).
+2. Connect the existing Tailwind/shadcn setup and migrate the app shell and auth pages.
+3. Migrate groups and expenses screen by screen, keeping existing behavior working.
+4. Implement aggregate balances and replace Dashboard placeholders.
+5. Verify FX create/edit flows, then implement settlements and activity.
+6. Finish member-removal guards, group deletion, filters, deployment, and smoke tests.
+
+---
+
+## Code Audit and shadcn/ui + Tailwind Migration (2026-09-19)
+
+This section records what was verified in the repository. Earlier checkmarks describe implementation history, not a current passing release gate. No Firebase runtime test was performed during this audit.
+
+### A. Functional fixes before relying on balances
+
+- [ ] Add member-scoped Firestore rules for the expenses subcollection. Current `firestore.rules` only matches `users/{uid}` and `groups/{gid}`; parent rules do not grant subcollection access. Validate `groupId` against the path and `createdBy`/`updatedBy` against the authenticated user as appropriate.
+- [ ] Fix `exact` split conversion in `src/utils/split.ts`: exact values are entered and validated in the original currency, but `resolveOwedPerUser` currently uses them directly as group-currency amounts. Convert exact shares with the saved rate and distribute any rounding remainder so per-user owed totals equal `convertedAmount`.
+- [ ] Add focused tests for equal, exact, percentage, and shares splits with and without FX, including multiple payers and rounding. Verify that every expense nets to zero in the group currency.
+- [ ] Decide the base-currency change policy for groups with existing expenses. A warning alone leaves historical expense balances in different currencies; either block the change or define a safe migration/conversion policy before aggregation.
+- [ ] Make group deletion handle expenses in its subcollection. `deleteGroup` currently deletes only the parent document; verify cleanup and failure behavior.
+- [ ] Prevent removing a member with unsettled debt, or explicitly retain and display their historical balance. Current API only checks that one member remains.
+- [ ] Verify the existing FX form against Firestore: same currency, historical rate, unsupported currency, network failure, edit with currency/date changes, and saved rate snapshot.
+- [ ] Replace hard-coded zeros on Dashboard with actual data. The `You owe`, `You are owed`, and `Expenses` cards currently show zero; do not sum different group currencies without conversion.
+- [ ] Build Balances and Activity tabs, settlement recording, and filtering. Both tabs are currently placeholders; expense filters exist in store but are not exposed in UI.
+
+### B. Current quality gate
+
+- [ ] Fix the TypeScript error in `src/features/groups/components/MembersTab.tsx` (`Avatar` `src` may be `null`). `npx tsc -p tsconfig.app.json --noEmit` currently fails.
+- [ ] Fix `npm run lint` errors (9) and review warnings (11), especially ref access during render in `AddExpenseDialog`, effect-driven state updates, and unused values.
+- [ ] Investigate the `Maximum update depth exceeded` TODO in `ExpenseList`. Its Zustand selector creates a new empty array on every call when a group has no cached expenses.
+- [ ] Re-run TypeScript, lint, and a production build after these fixes; perform the Firebase smoke test in section 8.6.
+
+### C. UI migration
+
+- [ ] Correct `components.json` CSS path: it points to `src/styles/globals.css`, while the file is `src/globals.css`.
+- [ ] Consolidate `src/index.css` and `src/globals.css` into one imported Tailwind entry point, including shadcn tokens and dark mode. Confirm the theme toggle changes the root `.dark` class.
+- [ ] Add only the shadcn components needed for the next screen; put them under `src/components/ui` and keep feature-specific composition in feature folders.
+- [ ] Migrate the app shell (Topbar, Sidebar, AppLayout), then login/signup, groups, expense list, expense form, and settings. Check mobile layout, dialogs, keyboard interaction, validation, loading, and errors after each screen.
+- [ ] Replace MUI theme/CssBaseline and notistack with the chosen shadcn/Tailwind equivalents once all consumers have moved. Remove MUI, Emotion, Roboto, and unused dependencies after the final screen.
+- [ ] Update README and this plan to describe the actual stack and tested behavior; README is still the Vite starter text and the original stack section still names MUI.
