@@ -406,17 +406,17 @@ export interface Expense {
 
 ## 7. Phase 7 — Balances, Settlements, Activity Log
 
-**7.1 Balance computation** ❌
-- [ ] `utils/balances.ts`
-  - [ ] `aggregateNetBalances(expenses[], settlements[])` → `Map<userId, net>`
-  - [ ] `simplifyDebts(netMap)` → list of `{ from, to, amount }`
-  - [ ] algorithm: greedy min/max settlement reduction
+**7.1 Balance computation** ✅
+- [x] `utils/balances.ts`
+  - [x] `aggregateNetBalances(expenses[], settlements[], currency, memberIds)` → `Map<userId, net>`
+  - [x] `simplifyDebts(netMap)` → list of `{ from, to, amount }`
+  - [x] Deterministic greedy debtor/creditor matching in integer cents; does not guarantee the minimum number of transfers.
 
-**7.2 Balances tab UI** ❌
-- [ ] Header cards:
-  - [ ] “You are owed X” / “You owe Y” in group currency
-- [ ] “Settle up” suggestions list: who pays whom
-- [ ] Per-member summary table: name, paid total, owed total, net
+**7.2 Balances tab UI** ✅ (all-time view; date filtering deferred)
+- [x] Header cards:
+  - [x] “You are owed X” / “You owe Y” in group currency
+- [x] Suggested transfers list: who pays whom (read-only)
+- [x] Per-member summary table: name, paid total, owed total, settlement adjustment, net
 - [ ] Filter by date range
 
 **7.3 Settlements** ❌ (types only defined)
@@ -429,7 +429,7 @@ export interface Expense {
   - [ ] Pre-fill from/to/amount
   - [ ] Confirmation writes settlement doc
   - [ ] Balances instantly update
-- [ ] Expense store/balance calculator includes settlements
+- [x] Balance calculator includes settlements; live subscriptions read expenses and settlements and unsubscribe when leaving the tab.
 
 **7.4 Activity log** ❌ (types only defined)
 - [ ] Subcollection `groups/{gid}/activity/{aid}`

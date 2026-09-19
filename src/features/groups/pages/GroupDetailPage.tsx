@@ -7,6 +7,7 @@ import { Link as RouterLink } from 'react-router-dom'
 import { useState } from 'react'
 import { useSelectedGroup } from '@/hooks/useSelectedGroup'
 import MembersTab from '@/features/groups/components/MembersTab'
+import BalancesTab from '@/features/groups/components/BalancesTab'
 import GroupSettingsTab from '@/features/groups/components/GroupSettingsTab'
 import ExpenseList from '@/features/expenses/components/ExpenseList'
 import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
@@ -99,12 +100,7 @@ export default function GroupDetailPage() {
               />
             </TabsContent>
             <TabsContent value={1}>
-              <Section title="Balances">
-                <p className="text-sm text-muted-foreground">
-                  The group balance summary is not available yet. You can see
-                  your share on each expense.
-                </p>
-              </Section>
+              <BalancesTab key={group.id} group={group} members={members} />
             </TabsContent>
             <TabsContent value={2}>
               <MembersTab

@@ -1,4 +1,6 @@
 import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
+import { BalanceSummary } from '@/features/groups/components/BalancesTab'
+import type { Expense } from '@/types/expense'
 import type { Group } from '@/types/group'
 import type { UserProfile } from '@/types/user'
 import { useState } from 'react'
@@ -47,6 +49,7 @@ const previewMembers: UserProfile[] = previewGroup.memberIds.map((id) => ({
 }))
 
 export default function UiPreviewPage() {
+  const [balancesOpen, setBalancesOpen] = useState(false)
   const [expenseOpen, setExpenseOpen] = useState(false)
   const [saved, setSaved] = useState(false)
   return (
@@ -72,10 +75,46 @@ export default function UiPreviewPage() {
         <Button onClick={() => setExpenseOpen(true)}>
           Preview expense form
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => setBalancesOpen((value) => !value)}
+        >
+          Preview balances
+        </Button>
         <p className="self-center text-sm text-muted-foreground">
           Try all split methods without saving data.
         </p>
       </div>
+      {balancesOpen && (
+        <BalanceSummary
+          group={previewGroup}
+          members={previewMembers}
+          currentUserId="jamie"
+          settlements={[]}
+          expenses={[
+            {
+              id: 'sample-dinner',
+              groupId: previewGroup.id,
+              title: 'Dinner',
+              originalAmount: 84,
+              originalCurrency: 'EUR',
+              convertedAmount: 84,
+              groupCurrency: 'EUR',
+              splitType: 'equal',
+              paidBy: [{ userId: 'jamie', amount: 84 }],
+              participants: previewGroup.memberIds.map((userId) => ({
+                userId,
+                value: 1,
+              })),
+              expenseDate: '2026-09-20',
+              createdBy: 'jamie',
+              updatedBy: 'jamie',
+              createdAt: '2026-09-20',
+              updatedAt: '2026-09-20',
+            } satisfies Expense,
+          ]}
+        />
+      )}
       {expenseOpen && (
         <AddExpenseDialog
           open

@@ -5,6 +5,7 @@ import {
   getDoc,
   getDocs,
   orderBy,
+  onSnapshot,
   query,
   runTransaction,
   limit,
@@ -87,6 +88,10 @@ function expensesColl(groupId: string) {
   return collection(db, 'groups', groupId, 'expenses').withConverter(expenseConverter)
 }
 
+export function subscribeExpenses(groupId: string, next: (expenses: Expense[]) => void, error: (error: Error) => void) {
+  return onSnapshot(expensesColl(groupId), snapshot => next(snapshot.docs.map(doc => doc.data())), error)
+}
+
 export interface CreateExpenseInput {
   groupId: string
   title: string
@@ -108,6 +113,9 @@ export type UpdateExpenseInput = Partial<
 > & { updatedBy: string }
 
 function validateExpense(expense: Expense) {
+  if (!expense.title.trim() || !['equal', 'exact', 'percentage', 'shares'].includes(expense.splitType)) {
+    throw new Error('An expense title and a supported split method are required.')
+  }
   const errors = validateSplit(expense)
   if (errors.length) throw new Error(errors[0].message)
   const rate = expense.originalCurrency === expense.groupCurrency ? 1 : expense.rateSnapshot?.rate

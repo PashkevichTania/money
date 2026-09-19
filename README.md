@@ -27,7 +27,7 @@ Migrated: navigation, login/signup, Dashboard, groups and members, expenses, Set
 
 All screens use Tailwind/shadcn and Sonner notifications. MUI, Emotion, Roboto and notistack have been removed. Controls and surfaces use `rounded-md` (6px), with a subtle dotted workspace background. Add future shadcn components with `npx shadcn add <component>`.
 
-Settings saves the default currency for new groups. Dashboard shows actual groups and currencies; aggregate balances and activity remain future features. The development gallery includes a safe expense-form preview that validates without writing records.
+Settings saves the default currency for new groups. Dashboard shows actual groups and currencies. The group Balances tab shows all-time expense totals, per-member balances and suggested transfers, including saved settlements. It updates through Firestore subscriptions and uses saved converted amounts, without fetching new exchange rates. Recording settlements, date filtering and activity remain future features. The development gallery includes safe expense-form and balance previews without database writes.
 
 ## Data integrity
 

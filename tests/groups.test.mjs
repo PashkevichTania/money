@@ -11,7 +11,7 @@ const snapshot = reference => ({ ref: reference, exists: () => docs.has(referenc
   data: () => docs.get(reference.path), get: key => docs.get(reference.path)?.[key] })
 const api = {
   collection: (_, ...parts) => ref(parts.join('/')),
-  doc: (_, ...parts) => ref(parts.join('/')),
+  doc: (parent, ...parts) => ref(parent.path ? `${parent.path}/${parts.join('/') || 'new-group'}` : parts.join('/')),
   getDoc: async reference => snapshot(reference),
   query: (reference, ...constraints) => ({ ...reference, constraints }),
   limit: count => ({ count }), where: () => ({}),
@@ -46,7 +46,7 @@ for (const [name, value] of [['firebase/firestore', firestore], ['@/config/fireb
   source = source.replace(`'${name}'`, JSON.stringify(value))
 }
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-const { updateGroup, deleteGroup, removeMemberFromGroup } = await import(url(compiled))
+const { createGroup, getGroup, updateGroup, deleteGroup, addMemberToGroup, removeMemberFromGroup } = await import(url(compiled))
 function reset(history = false) {
   docs = new Map([['groups/g', { id: 'g', name: 'Trip', baseCurrency: 'EUR', memberIds: ['a', 'b'], hasExpenseHistory: history }]])
   events = []; failBatch = false
@@ -56,6 +56,20 @@ test('currency cannot change even for an empty group', async () => {
   await assert.rejects(updateGroup('g', { baseCurrency: 'USD' }), /cannot be changed/)
   assert.equal(docs.get('groups/g').baseCurrency, 'EUR')
   assert.equal(events.length, 0)
+})
+
+test('create, read, rename and add member preserve currency and deduplicate members', async () => {
+  reset()
+  const group = await createGroup({ name: ' Trip ', baseCurrency: 'EUR', memberIds: ['a', 'a'], createdBy: 'a' })
+  assert.equal((await getGroup(group.id)).name, 'Trip')
+  assert.deepEqual(group.memberIds, ['a'])
+  await updateGroup(group.id, { name: ' Holiday ' })
+  await addMemberToGroup(group.id, 'b')
+  await addMemberToGroup(group.id, 'b')
+  const updated = await getGroup(group.id)
+  assert.equal(updated.name, 'Holiday')
+  assert.equal(updated.baseCurrency, 'EUR')
+  assert.deepEqual(updated.memberIds, ['a', 'b'])
 })
 test('empty groups allow member removal; expense history prevents it', async () => {
   reset()
