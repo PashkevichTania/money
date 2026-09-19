@@ -6,8 +6,7 @@ import {
   getDocs,
   orderBy,
   query,
-  setDoc,
-  updateDoc,
+  runTransaction,
   limit,
   type DocumentReference,
   type FirestoreDataConverter,
@@ -21,6 +20,8 @@ import type {
   PayerContribution,
   RateSnapshot,
 } from '@/types/expense'
+import { validateSplit } from '@/utils/split'
+import { roundMoney } from '@/utils/currency'
 import { nowIso } from '@/utils/dates'
 
 function assertFirebase() {
@@ -106,6 +107,39 @@ export type UpdateExpenseInput = Partial<
   Omit<CreateExpenseInput, 'groupId' | 'createdBy'>
 > & { updatedBy: string }
 
+function validateExpense(expense: Expense) {
+  const errors = validateSplit(expense)
+  if (errors.length) throw new Error(errors[0].message)
+  const rate = expense.originalCurrency === expense.groupCurrency ? 1 : expense.rateSnapshot?.rate
+  if (!rate || !Number.isFinite(rate) || rate <= 0 ||
+      !Number.isFinite(expense.convertedAmount) || expense.convertedAmount <= 0 ||
+      roundMoney(expense.originalAmount * rate) !== expense.convertedAmount) {
+    throw new Error('A valid exchange-rate snapshot and matching converted amount are required.')
+  }
+}
+
+async function saveExpense(expense: Expense, expected?: Expense) {
+  validateExpense(expense)
+  const parent = doc(db, 'groups', expense.groupId)
+  await runTransaction(db, async transaction => {
+    const group = await transaction.get(parent)
+    if (expected) {
+      const current = await transaction.get(expenseRef(expense.groupId, expense.id))
+      if (!current.exists() || current.data().updatedAt !== expected.updatedAt) {
+        throw new Error('This expense changed or was deleted. Reload before editing.')
+      }
+    }
+    if (!group.exists() || group.get('deleting')) throw new Error('Group is unavailable or being deleted.')
+    if (group.get('baseCurrency') !== expense.groupCurrency) throw new Error('Expense currency must match the group currency.')
+    const members = group.get('memberIds') as string[]
+    if ([...expense.paidBy, ...expense.participants].some(p => !members.includes(p.userId))) {
+      throw new Error('Every payer and participant must belong to the group.')
+    }
+    transaction.update(parent, { hasExpenseHistory: true })
+    transaction.set(expenseRef(expense.groupId, expense.id), expense)
+  })
+}
+
 export async function createExpense(input: CreateExpenseInput): Promise<Expense> {
   assertFirebase()
   const id = doc(expensesColl(input.groupId)).id
@@ -130,7 +164,7 @@ export async function createExpense(input: CreateExpenseInput): Promise<Expense>
     updatedAt: now,
     isSettlement: input.paidBy.length === 1 && input.participants.length === 1 ? undefined : false,
   }
-  await setDoc(expenseRef(input.groupId, id), expense)
+  await saveExpense(expense)
   return expense
 }
 
@@ -185,7 +219,7 @@ export async function updateExpense(
     ...(patch.groupCurrency !== undefined
       ? { groupCurrency: patch.groupCurrency.toUpperCase() }
       : {}),
-    ...(patch.rateSnapshot !== undefined ? { rateSnapshot: patch.rateSnapshot } : {}),
+    ...('rateSnapshot' in patch ? { rateSnapshot: patch.rateSnapshot } : {}),
     ...(patch.paidBy !== undefined ? { paidBy: patch.paidBy } : {}),
     ...(patch.participants !== undefined ? { participants: patch.participants } : {}),
     ...(patch.splitType !== undefined ? { splitType: patch.splitType } : {}),
@@ -193,21 +227,7 @@ export async function updateExpense(
     updatedBy: patch.updatedBy,
     updatedAt: nowIso(),
   }
-  await updateDoc(expenseRef(groupId, expenseId), {
-    ...(patch.title !== undefined ? { title: next.title } : {}),
-    ...(patch.description !== undefined ? { description: next.description ?? null } : {}),
-    ...(patch.originalAmount !== undefined ? { originalAmount: next.originalAmount } : {}),
-    ...(patch.originalCurrency !== undefined ? { originalCurrency: next.originalCurrency } : {}),
-    ...(patch.convertedAmount !== undefined ? { convertedAmount: next.convertedAmount } : {}),
-    ...(patch.groupCurrency !== undefined ? { groupCurrency: next.groupCurrency } : {}),
-    ...(patch.rateSnapshot !== undefined ? { rateSnapshot: next.rateSnapshot ?? null } : {}),
-    ...(patch.paidBy !== undefined ? { paidBy: next.paidBy } : {}),
-    ...(patch.participants !== undefined ? { participants: next.participants } : {}),
-    ...(patch.splitType !== undefined ? { splitType: next.splitType } : {}),
-    ...(patch.expenseDate !== undefined ? { expenseDate: next.expenseDate } : {}),
-    updatedBy: next.updatedBy,
-    updatedAt: next.updatedAt,
-  })
+  await saveExpense(next, existing)
   return next
 }
 

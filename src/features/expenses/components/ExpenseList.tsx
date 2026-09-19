@@ -1,47 +1,26 @@
 import { useEffect, useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import Divider from '@mui/material/Divider'
-import IconButton from '@mui/material/IconButton'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
-import MoreVertIcon from '@mui/icons-material/MoreVert'
-import DeleteIcon from '@mui/icons-material/Delete'
-import EditIcon from '@mui/icons-material/Edit'
-import ReceiptIcon from '@mui/icons-material/Receipt'
-import Skeleton from '@mui/material/Skeleton'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
-import Alert from '@mui/material/Alert'
-import type { MouseEvent } from 'react'
-import type { Expense } from '@/types/expense'
+import { MoreHorizontal, Pencil, Trash2, Receipt, Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Message } from '@/components/ui/field'
+import { Modal } from '@/components/ui/modal'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 import type { Group } from '@/types/group'
+import type { Expense } from '@/types/expense'
 import type { UserProfile } from '@/types/user'
 import { useExpenseStore } from '@/stores/expenseStore'
-import { useGroupStore } from '@/stores/groupStore'
 import { useCurrentUser } from '@/hooks/useGroups'
-import { useSnackbar } from 'notistack'
+import { useNotify } from '@/hooks/useNotify'
 import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/dates'
 import { computeNetBalances } from '@/utils/split'
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('')
-}
-
+const EMPTY: Expense[] = []
 export default function ExpenseList({
   group,
   members,
@@ -51,288 +30,190 @@ export default function ExpenseList({
   members: UserProfile[]
   onEditExpense: (expense: Expense) => void
 }) {
-  const me = useCurrentUser()
-  const { enqueueSnackbar } = useSnackbar()
-  // TODO: fix Maximum update depth exceeded.
-  const expenses = useExpenseStore((s) => s.expensesByGroup[group.id] ?? [])
-  const loading = useExpenseStore((s) => s.loadingByGroup[group.id] ?? false)
+  const expenses = useExpenseStore((s) => s.expensesByGroup[group.id] ?? EMPTY)
+  const loading = useExpenseStore((s) => s.loadingByGroup[group.id])
   const error = useExpenseStore((s) => s.errorsByGroup[group.id])
-  const loadExpenses = useExpenseStore((s) => s.loadExpenses)
-  const removeExpense = useExpenseStore((s) => s.removeExpense)
-  const membersMap = useGroupStore((s) => s.membersMap)
-
-  const [menuAnchor, setMenuAnchor] = useState<{
-    event: MouseEvent<HTMLElement>
-    expenseId: string
-  } | null>(null)
+  const load = useExpenseStore((s) => s.loadExpenses)
+  const remove = useExpenseStore((s) => s.removeExpense)
+  const me = useCurrentUser()
+  const { enqueueSnackbar } = useNotify()
+  const [query, setQuery] = useState('')
   const [toDelete, setToDelete] = useState<Expense | null>(null)
-  const [deletingBusy, setDeletingBusy] = useState(false)
-
+  const [busy, setBusy] = useState(false)
   useEffect(() => {
-    void loadExpenses(group.id)
-  }, [group.id, loadExpenses])
-
-  const getName = (userId: string) =>
-    membersMap[userId]?.displayName ||
-    members.find((m) => m.id === userId)?.displayName ||
-    userId.slice(0, 6)
-
-  const getInitials = (userId: string) => {
-    const name = getName(userId)
-    return initials(name || userId)
-  }
-
-  const onDeleteClick = (expense: Expense) => {
-    setMenuAnchor(null)
-    setToDelete(expense)
-  }
-
+    void load(group.id).catch(() => undefined)
+  }, [group.id, load])
+  const getName = (id: string) =>
+    members.find((m) => m.id === id)?.displayName || id.slice(0, 6)
   const confirmDelete = async () => {
     if (!toDelete) return
-    setDeletingBusy(true)
+    setBusy(true)
     try {
-      await removeExpense(group.id, toDelete.id)
-      enqueueSnackbar('Expense deleted', { variant: 'success' })
+      await remove(group.id, toDelete.id)
       setToDelete(null)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete expense'
-      enqueueSnackbar(msg, { variant: 'error' })
+      enqueueSnackbar('Expense deleted', { variant: 'success' })
+    } catch (error) {
+      enqueueSnackbar(
+        error instanceof Error ? error.message : 'Could not delete expense',
+        { variant: 'error' },
+      )
     } finally {
-      setDeletingBusy(false)
+      setBusy(false)
     }
   }
-
-  const renderNetSummary = (expense: Expense) => {
-    if (!me) return null
-    const net = computeNetBalances(expense)
-    const mine = net[me.id] ?? 0
-    if (Math.abs(mine) < 0.005) {
-      return (
-        <Chip
-          label="Settled"
-          size="small"
-          variant="outlined"
-          sx={{ bgcolor: 'action.hover', borderColor: 'divider' }}
-        />
-      )
-    }
-    if (mine > 0) {
-      return (
-        <Chip
-          label={`You get back ${formatMoney(mine, expense.groupCurrency)}`}
-          size="small"
-          color="success"
-          variant="filled"
-        />
-      )
-    }
-    return (
-      <Chip
-        label={`You owe ${formatMoney(Math.abs(mine), expense.groupCurrency)}`}
-        size="small"
-        color="error"
-        variant="filled"
-      />
-    )
-  }
-
-  const renderPayerSummary = (expense: Expense) => {
-    const parts = expense.paidBy
-      .slice(0, 2)
-      .map((p) => `${getInitials(p.userId)} paid ${formatMoney(p.amount, expense.originalCurrency)}`)
-    if (expense.paidBy.length > 2) parts.push(`+${expense.paidBy.length - 2}`)
-    return parts.join(' · ')
-  }
-
-  const renderSplitSummary = (expense: Expense) => {
-    const participants = expense.participants.length
-    if (expense.splitType === 'equal') {
-      return `${participants} way${participants > 1 ? 's' : ''} · Equal`
-    }
-    return `${participants} participant${participants > 1 ? 's' : ''} · ${expense.splitType}`
-  }
-
-  const emptyState = (
-    <Card sx={{ p: 6, textAlign: 'center', borderRadius: 4 }}>
-      <Box
-        sx={{
-          width: 72,
-          height: 72,
-          borderRadius: 5,
-          bgcolor: (t) => t.palette.primary.main + '1a',
-          color: (t) => t.palette.primary.main,
-          display: 'grid',
-          placeItems: 'center',
-          mx: 'auto',
-          mb: 3,
-        }}
-      >
-        <ReceiptIcon sx={{ fontSize: 40 }} />
-      </Box>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-        No expenses yet
-      </Typography>
-      <Typography variant="body1" sx={{ mb: 2, color: 'text.secondary' }}>
-        Add your first expense to start splitting with the group.
-      </Typography>
-    </Card>
+  const visible = expenses.filter((e) =>
+    `${e.title} ${e.description || ''}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   )
-
   return (
-    <Box>
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => useExpenseStore.getState().setError(group.id, undefined)}>
-          {error}
-        </Alert>
-      )}
-
-      {loading && expenses.length === 0 ? (
-        <Stack spacing={2}>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} variant="rounded" height={80} sx={{ borderRadius: 3 }} />
-          ))}
-        </Stack>
-      ) : expenses.length === 0 ? (
-        emptyState
+    <div className="space-y-4">
+      {error && <Message error>{error}</Message>}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-3 size-5 text-muted-foreground" />
+        <Input
+          className="bg-card pl-10"
+          aria-label="Search expenses"
+          placeholder="Search expenses..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+      {loading && !expenses.length ? (
+        <Skeleton className="h-64 rounded-md" />
+      ) : !visible.length ? (
+        <div className="rounded-md border border-dashed bg-card p-10 text-center">
+          <Receipt className="mx-auto mb-4 size-8 text-positive" />
+          <h2 className="font-semibold">
+            {query ? 'No matching expenses' : 'No expenses yet'}
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {query
+              ? 'Try another search.'
+              : 'Add your first expense to start keeping track together.'}
+          </p>
+        </div>
       ) : (
-        <Card sx={{ borderRadius: 4, overflow: 'hidden' }}>
-          <List disablePadding>
-            {expenses.map((expense, idx) => (
-              <Box key={expense.id}>
-                {idx > 0 && <Divider component="li" />}
-                <ListItem
-                  sx={{
-                    px: { xs: 2, sm: 3 },
-                    py: 2,
-                    alignItems: 'flex-start',
-                    gap: 2,
-                  }}
-                  secondaryAction={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-                          {formatMoney(expense.convertedAmount, expense.groupCurrency)}
-                        </Typography>
-                        {expense.originalCurrency !== expense.groupCurrency && (
-                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            {formatMoney(expense.originalAmount, expense.originalCurrency)}
-                          </Typography>
+        <div className="divide-y rounded-md border bg-card">
+          {visible.map((expense) => {
+            const mine = me ? computeNetBalances(expense)[me.id] || 0 : 0
+            return (
+              <article
+                key={expense.id}
+                className="flex gap-3 p-4 sm:gap-4 sm:p-5"
+              >
+                <span className="hidden size-10 shrink-0 place-items-center rounded-md bg-secondary text-secondary-foreground sm:grid">
+                  <Receipt className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="break-words font-semibold">
+                        {expense.title}
+                      </h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatDate(expense.expenseDate)} · {expense.splitType}{' '}
+                        · {expense.participants.length} people
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold tabular-nums">
+                        {formatMoney(
+                          expense.convertedAmount,
+                          expense.groupCurrency,
                         )}
-                      </Box>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => setMenuAnchor({ event: e, expenseId: expense.id })}
-                        aria-label="Expense options"
-                      >
-                        <MoreVertIcon fontSize="small" />
-                      </IconButton>
-                      <Menu
-                        anchorEl={menuAnchor?.event.currentTarget}
-                        open={menuAnchor?.expenseId === expense.id}
-                        onClose={() => setMenuAnchor(null)}
-                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                      >
-                        <MenuItem
-                          onClick={() => {
-                            const target = expenses.find((e) => e.id === menuAnchor?.expenseId)
-                            if (target) onEditExpense(target)
-                            setMenuAnchor(null)
-                          }}
-                        >
-                          <EditIcon fontSize="small" sx={{ mr: 1.5 }} />
-                          Edit
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => {
-                            const target = expenses.find((e) => e.id === menuAnchor?.expenseId)
-                            if (target) onDeleteClick(target)
-                          }}
-                          sx={{ color: 'error.main' }}
-                        >
-                          <DeleteIcon fontSize="small" sx={{ mr: 1.5 }} />
-                          Delete
-                        </MenuItem>
-                      </Menu>
-                    </Box>
-                  }
-                >
-                  <Stack direction="row" spacing={2} sx={{ flex: 1, pr: 10 }}>
-                    <Box
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        display: 'grid',
-                        placeItems: 'center',
-                        bgcolor: (t) => t.palette.primary.main + '14',
-                        color: (t) => t.palette.primary.main,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <ReceiptIcon fontSize="small" />
-                    </Box>
-                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.25 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                          {expense.title}
-                        </Typography>
-                        {expense.isSettlement && (
-                          <Chip label="Settlement" size="small" color="info" variant="filled" />
-                        )}
-                      </Stack>
-                      {expense.description && (
-                        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
-                          {expense.description}
-                        </Typography>
+                      </p>
+                      {expense.originalCurrency !== expense.groupCurrency && (
+                        <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+                          {formatMoney(
+                            expense.originalAmount,
+                            expense.originalCurrency,
+                          )}
+                        </p>
                       )}
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 0.5, sm: 2 }}>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {formatDate(expense.expenseDate)}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {renderPayerSummary(expense)}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {renderSplitSummary(expense)}
-                        </Typography>
-                      </Stack>
-                      <Box sx={{ mt: 1 }}>{renderNetSummary(expense)}</Box>
-                    </Box>
-                  </Stack>
-                </ListItem>
-              </Box>
-            ))}
-          </List>
-        </Card>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    {expense.paidBy
+                      .map(
+                        (p) =>
+                          `${getName(p.userId)} paid ${formatMoney(p.amount, expense.originalCurrency)}`,
+                      )
+                      .join(' · ')}
+                  </p>
+                  {expense.description && (
+                    <p className="mt-2 break-words text-sm text-muted-foreground">
+                      {expense.description}
+                    </p>
+                  )}
+                  {me && (
+                    <p
+                      className={`mt-3 text-xs font-medium tabular-nums ${mine > 0 ? 'text-positive' : mine < 0 ? 'text-destructive' : 'text-muted-foreground'}`}
+                    >
+                      {Math.abs(mine) < 0.005
+                        ? 'No balance on this expense'
+                        : `${mine > 0 ? 'You get back' : 'You owe'} ${formatMoney(Math.abs(mine), expense.groupCurrency)}`}
+                    </p>
+                  )}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Actions for ${expense.title}`}
+                      />
+                    }
+                  >
+                    <MoreHorizontal />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEditExpense(expense)}>
+                      <Pencil />
+                      Edit expense
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setToDelete(expense)}
+                    >
+                      <Trash2 />
+                      Delete expense
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </article>
+            )
+          })}
+        </div>
       )}
-
-      <Dialog
-        open={Boolean(toDelete)}
-        onClose={deletingBusy ? undefined : () => setToDelete(null)}
-        slotProps={{ paper: { sx: { borderRadius: 4 } } }}
+      <Modal
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        title="Delete expense?"
+        description={`Permanently delete ${toDelete?.title || 'this expense'}?`}
+        busy={busy}
       >
-        <DialogTitle>Delete expense?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            <strong>{toDelete?.title}</strong> will be permanently removed. Balances will revert.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={() => setToDelete(null)} disabled={deletingBusy}>
+        <p className="text-sm text-muted-foreground">
+          This cannot be undone. Its effect on the balances will be removed.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => setToDelete(null)}
+          >
             Cancel
           </Button>
           <Button
-            color="error"
-            variant="contained"
+            variant="destructive"
+            disabled={busy}
             onClick={() => void confirmDelete()}
-            disabled={deletingBusy}
-            startIcon={<DeleteIcon />}
           >
-            {deletingBusy ? 'Deleting…' : 'Delete expense'}
+            {busy ? 'Deleting...' : 'Delete expense'}
           </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        </div>
+      </Modal>
+    </div>
   )
 }

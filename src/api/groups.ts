@@ -1,5 +1,7 @@
 import {
   collection,
+  writeBatch,
+  limit,
   deleteDoc,
   doc,
   getDoc,
@@ -39,6 +41,7 @@ function assertFirebase() {
 
 const groupConverter: FirestoreDataConverter<Group> = {
   toFirestore: (group: Group) => ({
+    hasExpenseHistory: false,
     name: group.name,
     baseCurrency: group.baseCurrency,
     memberIds: group.memberIds,
@@ -110,6 +113,17 @@ export async function updateGroup(
   assertFirebase()
   const existing = await getGroup(groupId)
   if (!existing) throw new Error('Group not found')
+  if (patch.baseCurrency !== undefined && patch.baseCurrency !== existing.baseCurrency) {
+    throw new Error('The base currency cannot be changed after group creation.')
+  }
+  if (patch.memberIds && existing.memberIds.some(id => !patch.memberIds!.includes(id))) {
+    const raw = await getDoc(groupRef(groupId))
+    if (raw.get('hasExpenseHistory') !== false) {
+      throw new Error('Members cannot be removed after expenses have been recorded. Their history must be retained.')
+    }
+    const history = await getDocs(query(collection(db, 'groups', groupId, 'expenses'), limit(1)))
+    if (!history.empty) throw new Error('Members cannot be removed from a group with expense history.')
+  }
   const next: Group = {
     ...existing,
     ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
@@ -128,7 +142,22 @@ export async function updateGroup(
 
 export async function deleteGroup(groupId: string): Promise<void> {
   assertFirebase()
-  await deleteDoc(groupRef(groupId))
+  // Keep the parent (and membership authorization) until all children are gone.
+  await updateDoc(groupRef(groupId), { deleting: true })
+  try {
+    for (const name of ['expenses', 'settlements', 'activity']) {
+      for (;;) {
+        const page = await getDocs(query(collection(db, 'groups', groupId, name), limit(400)))
+        if (page.empty) break
+        const batch = writeBatch(db)
+        page.docs.forEach(child => batch.delete(child.ref))
+        await batch.commit()
+      }
+    }
+    await deleteDoc(groupRef(groupId))
+  } catch (cause) {
+    throw new Error('Group deletion is incomplete. New expenses are blocked; retry deletion to finish cleanup.', { cause })
+  }
 }
 
 export async function addMemberToGroup(groupId: string, userId: string): Promise<Group> {

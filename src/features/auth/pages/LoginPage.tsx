@@ -1,19 +1,16 @@
+import { GoogleSignInButton } from '../components/GoogleSignInButton'
+import { ArrowRight, LoaderCircle, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AuthLayout } from '../components/AuthLayout'
+import { AuthField } from '../components/AuthField'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Container from '@mui/material/Container'
-import Link from '@mui/material/Link'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
-import Paper from '@mui/material/Paper'
-import Alert from '@mui/material/Alert'
-import Stack from '@mui/material/Stack'
 import { useAuthStore } from '@/stores/authStore'
-import { useSnackbar } from 'notistack'
+import { useNotify } from '@/hooks/useNotify'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -30,9 +27,11 @@ export default function LoginPage() {
   const clearError = useAuthStore((s) => s.clearError)
   const status = useAuthStore((s) => s.status)
   const profile = useAuthStore((s) => s.profile)
-  const { enqueueSnackbar } = useSnackbar()
+  const { enqueueSnackbar } = useNotify()
 
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/dashboard'
+  const from =
+    (location.state as { from?: { pathname?: string } } | null)?.from
+      ?.pathname || '/dashboard'
 
   const {
     register,
@@ -60,101 +59,83 @@ export default function LoginPage() {
     }
   }
 
+  const busy = isSubmitting || status === 'loading'
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        background: (t) =>
-          t.palette.mode === 'dark'
-            ? 'radial-gradient(80% 80% at 20% 0%, #1b274d 0%, transparent 60%), radial-gradient(60% 60% at 100% 100%, #1f4d3a 0%, transparent 60%), #0b1020'
-            : 'radial-gradient(80% 80% at 20% 0%, #dffbf0 0%, transparent 60%), radial-gradient(60% 60% at 100% 100%, #ffe6dd 0%, transparent 60%), #f6f7fb',
-      }}
-    >
-      <Container maxWidth="sm" sx={{ py: 6 }}>
-        <Box sx={{ mb: 4, textAlign: 'center' }}>
-          <Box
-            sx={{
-              width: 56,
-              height: 56,
-              mx: 'auto',
-              mb: 2,
-              borderRadius: 3,
-              bgcolor: (t) => t.palette.primary.main,
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontWeight: 800,
-              fontSize: 28,
-            }}
+    <AuthLayout
+      title="Welcome back."
+      description="Sign in to pick up where you left off."
+      footer={
+        <>
+          New to SplitSmart?{' '}
+          <RouterLink
+            to="/signup"
+            className="font-semibold text-primary underline-offset-4 hover:underline"
           >
-            $
-          </Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.03em' }}>
-            Welcome back to SplitSmart
-          </Typography>
-          <Typography variant="body1" sx={{ mt: 1, color: 'text.secondary' }}>
-            Sign in to split bills, track IOUs, and settle up simply.
-          </Typography>
-        </Box>
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, sm: 5 },
-            borderRadius: 4,
-            border: (t) => `1px solid ${t.palette.divider}`,
-          }}
-        >
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }} onClose={clearError}>
-              {error}
-            </Alert>
-          )}
-          <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <Stack spacing={2.5}>
-              <TextField
-                label="Email"
-                type="email"
-                autoComplete="email"
-                fullWidth
-                {...register('email')}
-                error={!!errors.email}
-                helperText={errors.email?.message}
-              />
-              <TextField
-                label="Password"
-                type="password"
-                autoComplete="current-password"
-                fullWidth
-                {...register('password')}
-                error={!!errors.password}
-                helperText={errors.password?.message}
-              />
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                fullWidth
-                disabled={isSubmitting || status === 'loading'}
-                sx={{ py: 1.4, fontWeight: 700 }}
-              >
-                {isSubmitting || status === 'loading' ? 'Signing in…' : 'Sign in'}
-              </Button>
-            </Stack>
-          </Box>
-
-          <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Don&apos;t have an account?{' '}
-              <Link component={RouterLink} to="/signup" sx={{ fontWeight: 600 }}>
-                Create one
-              </Link>
-            </Typography>
-          </Box>
-        </Paper>
-      </Container>
-    </Box>
+            Create an account
+          </RouterLink>
+        </>
+      }
+    >
+      {error && (
+        <Alert variant="destructive" className="mb-6 pr-12">
+          <AlertDescription>{error}</AlertDescription>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1"
+            onClick={clearError}
+            aria-label="Dismiss error"
+          >
+            <X aria-hidden="true" />
+          </Button>
+        </Alert>
+      )}
+      <GoogleSignInButton disabled={busy} />
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        aria-busy={busy}
+        className="space-y-5"
+      >
+        <fieldset disabled={busy} className="space-y-5">
+          <AuthField
+            id="email"
+            label="Email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            {...register('email')}
+            error={errors.email?.message}
+          />
+          <AuthField
+            id="password"
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Enter your password"
+            {...register('password')}
+            error={errors.password?.message}
+          />
+          <Button
+            type="submit"
+            size="lg"
+            className="mt-2 w-full"
+            disabled={busy}
+          >
+            {isSubmitting ? (
+              <>
+                <LoaderCircle className="animate-spin" aria-hidden="true" />
+                Signing in...
+              </>
+            ) : (
+              <>
+                Sign in
+                <ArrowRight aria-hidden="true" />
+              </>
+            )}
+          </Button>
+        </fieldset>
+      </form>
+    </AuthLayout>
   )
 }

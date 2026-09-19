@@ -31,7 +31,7 @@ export async function getExchangeRate(
       rates: Record<string, number>
     }>(url)
     const rate = data?.rates?.[toCurrency.toUpperCase()]
-    if (!rate || !Number.isFinite(rate)) {
+    if (!rate || !Number.isFinite(rate) || rate <= 0) {
       throw new Error(`Rate not available for ${fromCurrency} -> ${toCurrency}`)
     }
     return {
@@ -39,9 +39,9 @@ export async function getExchangeRate(
       date: data.date,
       source: 'frankfurter',
     }
-  } catch (error) {
+  } catch {
     throw new Error(
-      `Failed to fetch exchange rate (${fromCurrency} -> ${toCurrency}). Try again or enter the rate manually.`,
+      `Failed to fetch exchange rate (${fromCurrency} -> ${toCurrency}). Check the currency and connection, then try again.`,
     )
   }
 }

@@ -27,7 +27,6 @@ export interface GroupStoreState {
   refreshGroup: (groupId: string) => Promise<void>
   createGroupAndSelect: (input: Omit<CreateGroupInput, 'createdBy'> & { createdBy: string }) => Promise<Group>
   renameGroup: (groupId: string, name: string) => Promise<void>
-  changeBaseCurrency: (groupId: string, baseCurrency: string) => Promise<void>
   removeGroup: (groupId: string) => Promise<void>
   setSelectedGroupId: (id: string | null) => void
   loadMembersFor: (memberIds: string[]) => Promise<UserProfile[]>
@@ -135,16 +134,6 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
     if (!isFirebaseConfigured) return
     return makeErrorBoundary(set, `group:${groupId}`, async () => {
       const updated = await updateGroup(groupId, { name })
-      set((s) => ({
-        groups: s.groups.map((g) => (g.id === groupId ? updated : g)),
-      }))
-    })
-  },
-
-  changeBaseCurrency: async (groupId, baseCurrency) => {
-    if (!isFirebaseConfigured) return
-    return makeErrorBoundary(set, `group:${groupId}`, async () => {
-      const updated = await updateGroup(groupId, { baseCurrency })
       set((s) => ({
         groups: s.groups.map((g) => (g.id === groupId ? updated : g)),
       }))

@@ -1,176 +1,161 @@
-import { useMemo, useState, type MouseEvent } from 'react'
-import { Link as RouterLink, useNavigate } from 'react-router-dom'
-import AppBar from '@mui/material/AppBar'
-import Avatar from '@mui/material/Avatar'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Divider from '@mui/material/Divider'
-import IconButton from '@mui/material/IconButton'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import ListItemText from '@mui/material/ListItemText'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
-import Toolbar from '@mui/material/Toolbar'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
-import MenuIcon from '@mui/icons-material/Menu'
-import Logout from '@mui/icons-material/Logout'
-import Settings from '@mui/icons-material/Settings'
-import Person from '@mui/icons-material/Person'
-import DarkModeIcon from '@mui/icons-material/DarkMode'
-import LightModeIcon from '@mui/icons-material/LightMode'
+import { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import {
+  ChevronDown,
+  LogOut,
+  Menu,
+  Plus,
+  Settings,
+  UserRound,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/stores/authStore'
-import { useApp } from '@/hooks/useApp'
-import { useSnackbar } from 'notistack'
+import { useNotify } from '@/hooks/useNotify'
+import { ThemeToggle } from './ThemeToggle'
 
-interface TopbarProps {
+export default function Topbar({
+  onToggleSidebar,
+  sidebarExpanded,
+  mobileExpanded,
+}: {
   onToggleSidebar: () => void
-}
-
-export default function Topbar({ onToggleSidebar }: TopbarProps) {
+  sidebarExpanded: boolean
+  mobileExpanded: boolean
+}) {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const profile = useAuthStore((s) => s.profile)
   const logout = useAuthStore((s) => s.logout)
-  const { themeMode, toggleTheme } = useApp()
-  const { enqueueSnackbar } = useSnackbar()
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-
-  const avatarText = useMemo(() => {
-    if (profile?.displayName) {
-      const parts = profile.displayName.trim().split(/\s+/)
-      return (parts[0]?.[0] || '') + (parts[1]?.[0] || parts[0]?.[1] || '')
-    }
-    return profile?.email?.[0]?.toUpperCase() || 'U'
-  }, [profile])
-
-  const handleOpenUserMenu = (event: MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
-  const handleCloseUserMenu = () => setAnchorEl(null)
-
+  const { enqueueSnackbar } = useNotify()
+  const [signingOut, setSigningOut] = useState(false)
+  const title = pathname.startsWith('/groups')
+    ? 'Your groups'
+    : pathname === '/settings'
+      ? 'Settings'
+      : pathname === '/ui-preview'
+        ? 'UI reference'
+        : 'Overview'
+  const initials =
+    profile?.displayName
+      ?.trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((p) => p[0])
+      .join('')
+      .toUpperCase() || 'U'
   const handleLogout = async () => {
-    handleCloseUserMenu()
+    setSigningOut(true)
     try {
       await logout()
-      enqueueSnackbar('Signed out', { variant: 'success' })
       navigate('/login', { replace: true })
+      enqueueSnackbar('Signed out', { variant: 'success' })
     } catch {
       enqueueSnackbar('Failed to sign out', { variant: 'error' })
+    } finally {
+      setSigningOut(false)
     }
   }
-
   return (
-    <AppBar
-      position="sticky"
-      color="default"
-      elevation={0}
-      sx={{
-        borderBottom: (t) => `1px solid ${t.palette.divider}`,
-        zIndex: (t) => t.zIndex.drawer + 1,
-      }}
-    >
-      <Toolbar>
-        <IconButton
-          edge="start"
-          size="large"
-          onClick={onToggleSidebar}
-          sx={{ mr: 2 }}
-          aria-label="Toggle sidebar"
-        >
-          <MenuIcon />
-        </IconButton>
-        <Box
-          component={RouterLink}
-          to="/dashboard"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            textDecoration: 'none',
-            color: 'inherit',
-          }}
-        >
-          <Box
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: 1.5,
-              background: (t) => t.palette.primary.main,
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontWeight: 800,
-              mr: 1.5,
-            }}
-          >
-            $
-          </Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-            SplitSmart
-          </Typography>
-        </Box>
-        <Box sx={{ flexGrow: 1 }} />
-        <Tooltip title={themeMode === 'light' ? 'Switch to dark' : 'Switch to light'}>
-          <IconButton onClick={toggleTheme} color="default" sx={{ mr: 1 }}>
-            {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
-          </IconButton>
-        </Tooltip>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Tooltip title={profile?.displayName || 'Account'}>
-            <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-              <Avatar sx={{ bgcolor: (t) => t.palette.secondary.main, fontWeight: 700 }}>
-                {avatarText.toUpperCase()}
-              </Avatar>
-            </IconButton>
-          </Tooltip>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleCloseUserMenu}
-            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            slotProps={{ paper: { sx: { minWidth: 220, mt: 1 } } }}
-          >
-            <Box sx={{ px: 2, py: 1.5 }}>
-              <Typography variant="subtitle2" noWrap>
-                {profile?.displayName || 'User'}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
-                {profile?.email || ''}
-              </Typography>
-            </Box>
-            <Divider />
-            <MenuItem component={RouterLink} to="/settings" onClick={handleCloseUserMenu}>
-              <ListItemIcon>
-                <Settings fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Settings</ListItemText>
-            </MenuItem>
-            <MenuItem component={RouterLink} to="/dashboard" onClick={handleCloseUserMenu}>
-              <ListItemIcon>
-                <Person fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Dashboard</ListItemText>
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
-                <Logout fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Sign out</ListItemText>
-            </MenuItem>
-          </Menu>
-        </Box>
+    <header className="sticky top-0 z-20 flex h-20 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-8">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="hidden lg:inline-flex"
+        onClick={onToggleSidebar}
+        aria-label="Toggle navigation"
+        aria-expanded={sidebarExpanded}
+        aria-controls="workspace-navigation"
+      >
+        <Menu aria-hidden="true" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden"
+        onClick={onToggleSidebar}
+        aria-label="Toggle navigation"
+        aria-expanded={mobileExpanded}
+        aria-controls="mobile-workspace-navigation"
+      >
+        <Menu aria-hidden="true" />
+      </Button>
+      <p className="text-sm font-medium text-muted-foreground">{title}</p>
+      <div className="ml-auto flex items-center gap-2 sm:gap-3">
         <Button
-          component={RouterLink}
-          to="/groups"
-          variant="contained"
-          color="primary"
-          size="small"
-          sx={{ ml: 2 }}
+          render={<Link to="/groups?new=1" />}
+          nativeButton={false}
+          className="hidden sm:inline-flex"
         >
-          New Group
+          <Plus aria-hidden="true" />
+          New group
         </Button>
-      </Toolbar>
-    </AppBar>
+        <ThemeToggle />
+        <div className="mx-1 hidden h-6 border-l sm:block" />
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                className="gap-2 px-1.5"
+                aria-label="Account menu"
+              />
+            }
+          >
+            <span className="grid size-8 place-items-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
+              {initials}
+            </span>
+            <span className="hidden max-w-28 truncate text-sm md:block">
+              {profile?.displayName || 'Account'}
+            </span>
+            <ChevronDown
+              className="size-3 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <div className="px-3 py-3">
+              <p className="truncate text-sm font-semibold">
+                {profile?.displayName || 'Your account'}
+              </p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                {profile?.email || 'Manage your workspace'}
+              </p>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              render={<Link to="/dashboard" />}
+              className="min-h-10 px-3"
+            >
+              <UserRound aria-hidden="true" />
+              Overview
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              render={<Link to="/settings" />}
+              className="min-h-10 px-3"
+            >
+              <Settings aria-hidden="true" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => void handleLogout()}
+              disabled={signingOut}
+              className="min-h-10 px-3"
+            >
+              <LogOut aria-hidden="true" />
+              {signingOut ? 'Signing out...' : 'Sign out'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
   )
 }

@@ -1,215 +1,101 @@
-import { Link as RouterLink } from 'react-router-dom'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Container from '@mui/material/Container'
-import Paper from '@mui/material/Paper'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
-import GroupsIcon from '@mui/icons-material/Groups'
-import AddCircleIcon from '@mui/icons-material/AddCircle'
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
-import LanguageIcon from '@mui/icons-material/Language'
+import { Link } from 'react-router-dom'
+import { ArrowUpRight, Plus, Users, Globe } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Section, Message } from '@/components/ui/field'
 import { useAuthStore } from '@/stores/authStore'
+import { useGroupStore } from '@/stores/groupStore'
 import { useGroups } from '@/hooks/useGroups'
-import { formatMoney } from '@/utils/currency'
-
-const HIGHLIGHTS = [
-  {
-    title: 'Create groups',
-    description: 'Trips, roommates, events — create a group for every shared occasion.',
-    Icon: GroupsIcon,
-  },
-  {
-    title: 'Flexible splits',
-    description: 'Equal, exact, percentages, or shares — split expenses exactly how you want.',
-    Icon: AddCircleIcon,
-  },
-  {
-    title: 'Automatic balances',
-    description: 'Instantly see who owes whom with one-tap settle-up suggestions.',
-    Icon: AccountBalanceWalletIcon,
-  },
-  {
-    title: 'Multi-currency',
-    description: 'Expenses in any currency automatically converted to your group base.',
-    Icon: LanguageIcon,
-  },
-]
-
 export default function DashboardPage() {
   const profile = useAuthStore((s) => s.profile)
-  const { groups } = useGroups()
-  const displayName = profile?.displayName?.split(' ')[0] || 'there'
-  const currency = profile?.defaultCurrency || 'USD'
-  const recentGroups = groups.slice(0, 4)
-
+  const { groups, loading } = useGroups()
+  const error = useGroupStore((s) => s.errors.groups)
+  const currencies = [...new Set(groups.map((g) => g.baseCurrency))]
   return (
-    <Container maxWidth="lg" disableGutters>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={3}
-        sx={{
-          justifyContent: { xs: 'flex-start', sm: 'space-between' },
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          mb: 4,
-        }}
+    <div className="space-y-7">
+      <header className="flex flex-wrap justify-between gap-4">
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-positive">
+            Your workspace
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Hello, {profile?.displayName?.split(' ')[0] || 'there'}.
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            A clear place for everything you share.
+          </p>
+        </div>
+        <Button render={<Link to="/groups?new=1" />} nativeButton={false}>
+          <Plus />
+          Create a group
+        </Button>
+      </header>
+      {error && <Message error>{error}</Message>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Section title="Your groups">
+          <div className="flex items-center justify-between">
+            <span className="text-4xl font-semibold tabular-nums">
+              {loading ? '—' : groups.length}
+            </span>
+            <Users className="size-6 text-positive" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Shared plans, all in one place.
+          </p>
+        </Section>
+        <Section title="Group currencies">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-2xl font-semibold">
+              {loading ? '—' : currencies.join(' · ') || 'No currencies yet'}
+            </span>
+            <Globe className="size-6 shrink-0 text-positive" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Each group keeps its own base currency.
+          </p>
+        </Section>
+      </div>
+      <Section
+        title="Recently updated groups"
+        description="Pick up where you left off."
       >
-        <Box>
-          <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.03em' }}>
-            Hi {displayName} 👋
-          </Typography>
-          <Typography variant="body1" sx={{ mt: 1, color: 'text.secondary' }}>
-            Track shared expenses, balances, and settlements — all in one place.
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={2}>
-          <Button component={RouterLink} to="/groups" variant="outlined">
-            View groups
-          </Button>
-          <Button
-            component={RouterLink}
-            to="/groups?new=1"
-            variant="contained"
-            startIcon={<AddCircleIcon />}
-          >
-            Create group
-          </Button>
-        </Stack>
-      </Stack>
-
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 3,
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(4, 1fr)',
-          },
-          mb: 4,
-        }}
-      >
-        <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-          <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-            You owe
-          </Typography>
-          <Typography variant="h4" sx={{ mt: 1, color: 'error.main', fontWeight: 800 }}>
-            {formatMoney(0, currency)}
-          </Typography>
-          <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
-            across all groups
-          </Typography>
-        </Paper>
-        <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-          <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-            You are owed
-          </Typography>
-          <Typography variant="h4" sx={{ mt: 1, color: 'success.main', fontWeight: 800 }}>
-            {formatMoney(0, currency)}
-          </Typography>
-          <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
-            across all groups
-          </Typography>
-        </Paper>
-        <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-          <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-            Groups
-          </Typography>
-          <Typography variant="h4" sx={{ mt: 1, fontWeight: 800 }}>
-            {groups.length}
-          </Typography>
-          <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
-            {groups.length === 0 ? 'create your first group' : 'you belong to'}
-          </Typography>
-        </Paper>
-        <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-          <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-            Expenses
-          </Typography>
-          <Typography variant="h4" sx={{ mt: 1, fontWeight: 800 }}>
-            0
-          </Typography>
-          <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
-            add expenses inside a group
-          </Typography>
-        </Paper>
-      </Box>
-
-      {recentGroups.length > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-            Recent groups
-          </Typography>
-          <Box
-            sx={{
-              display: 'grid',
-              gap: 2,
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, 1fr)',
-                md: 'repeat(4, 1fr)',
-              },
-            }}
-          >
-            {recentGroups.map((group) => (
-              <Paper
-                key={group.id}
-                component={RouterLink}
-                to={`/groups/${group.id}`}
-                sx={{
-                  p: 2.5,
-                  borderRadius: 3,
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  display: 'block',
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
+        {loading && !groups.length ? (
+          <Skeleton className="h-32" />
+        ) : groups.length ? (
+          <div className="divide-y">
+            {groups.slice(0, 5).map((g) => (
+              <Link
+                key={g.id}
+                to={`/groups/${g.id}`}
+                className="flex items-center gap-4 rounded-md py-4 hover:bg-muted/50"
               >
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  {group.name}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-                  {group.baseCurrency} · {group.memberIds.length} member
-                  {group.memberIds.length === 1 ? '' : 's'}
-                </Typography>
-              </Paper>
+                <span className="grid size-10 place-items-center rounded-md bg-secondary text-secondary-foreground">
+                  <Users className="size-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{g.name}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {g.memberIds.length} members · {g.baseCurrency}
+                  </p>
+                </div>
+                <ArrowUpRight className="ml-auto size-4" />
+              </Link>
             ))}
-          </Box>
-        </Box>
-      )}
-
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 3,
-          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
-        }}
-      >
-        {HIGHLIGHTS.map(({ title, description, Icon }) => (
-          <Paper key={title} sx={{ p: 4, borderRadius: 3, height: '100%' }}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 3,
-                bgcolor: (t) => t.palette.primary.main + '18',
-                color: (t) => t.palette.primary.main,
-                display: 'grid',
-                placeItems: 'center',
-                mb: 2,
-              }}
-            >
-              <Icon />
-            </Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              {title}
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
-              {description}
-            </Typography>
-          </Paper>
-        ))}
-      </Box>
-    </Container>
+          </div>
+        ) : (
+          <p className="py-5 text-sm text-muted-foreground">
+            No groups yet. Create your first group to get started.
+          </p>
+        )}
+        <Button
+          variant="outline"
+          render={<Link to="/groups" />}
+          nativeButton={false}
+        >
+          View all groups
+          <ArrowUpRight />
+        </Button>
+      </Section>
+    </div>
   )
 }

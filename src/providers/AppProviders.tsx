@@ -1,37 +1,22 @@
-import { useMemo, type ReactNode } from 'react'
-import { ThemeProvider } from '@mui/material/styles'
-import CssBaseline from '@mui/material/CssBaseline'
-import { SnackbarProvider } from 'notistack'
-import { getTheme } from '@/theme'
+import type { ReactNode } from 'react'
+import { AppContext } from '@/hooks/useApp'
 import { useUIStore } from '@/stores/uiStore'
-import {AppContext, type AppContextValue} from "@/hooks/useApp.ts";
-
+import { useThemeModeListener } from '@/hooks/useThemeModeListener'
+import { Toaster } from '@/components/ui/sonner'
 export function AppProviders({ children }: { children: ReactNode }) {
+  useThemeModeListener()
   const themeMode = useUIStore((s) => s.themeMode)
   const setThemeMode = useUIStore((s) => s.setThemeMode)
-  const theme = useMemo(() => getTheme(themeMode), [themeMode])
-
-  const toggleTheme = () => {
-    setThemeMode(themeMode === 'light' ? 'dark' : 'light')
-  }
-
-  const value: AppContextValue = { theme, themeMode, toggleTheme }
-
   return (
-    <AppContext.Provider value={value}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <SnackbarProvider
-          maxSnack={4}
-          autoHideDuration={3500}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        >
-          {children}
-        </SnackbarProvider>
-      </ThemeProvider>
+    <AppContext.Provider
+      value={{
+        themeMode,
+        toggleTheme: () =>
+          setThemeMode(themeMode === 'dark' ? 'light' : 'dark'),
+      }}
+    >
+      {children}
+      <Toaster theme={themeMode} position="top-right" closeButton />
     </AppContext.Provider>
   )
 }
-
-
-

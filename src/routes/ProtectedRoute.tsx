@@ -1,9 +1,7 @@
+import { LoaderCircle } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuthStore } from '@/stores/authStore'
-import Box from '@mui/material/Box'
-import CircularProgress from '@mui/material/CircularProgress'
-import Typography from '@mui/material/Typography'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const initialized = useAuthStore((s) => s.initialized)
@@ -11,24 +9,9 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation()
 
   if (!initialized || status === 'loading') {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-        }}
-      >
-        <CircularProgress />
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Loading SplitSmart…
-        </Typography>
-      </Box>
-    )
+    return <div role="status" className="grid min-h-dvh place-content-center justify-items-center gap-4 text-sm text-muted-foreground">
+      <LoaderCircle className="size-6 animate-spin text-primary" aria-hidden="true" />Loading SplitSmart...
+    </div>
   }
 
   if (status !== 'authenticated') {

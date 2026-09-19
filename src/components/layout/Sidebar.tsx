@@ -1,146 +1,62 @@
-import { NavLink as RouterLink, useLocation } from 'react-router-dom'
-import Box from '@mui/material/Box'
-import Drawer from '@mui/material/Drawer'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemButton from '@mui/material/ListItemButton'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import ListItemText from '@mui/material/ListItemText'
-import Toolbar from '@mui/material/Toolbar'
-import Typography from '@mui/material/Typography'
-import DashboardIcon from '@mui/icons-material/Dashboard'
-import GroupsIcon from '@mui/icons-material/Groups'
-import SettingsIcon from '@mui/icons-material/Settings'
-import { useUIStore } from '@/stores/uiStore'
-
-const SIDEBAR_WIDTH = 260
+import { NavLink } from 'react-router-dom'
+import { LayoutDashboard, Users, Settings, ArrowUpRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Brand } from './Brand'
 
 const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Dashboard', Icon: DashboardIcon },
-  { to: '/groups', label: 'Groups', Icon: GroupsIcon },
-  { to: '/settings', label: 'Settings', Icon: SettingsIcon },
+  { to: '/dashboard', label: 'Overview', Icon: LayoutDashboard },
+  { to: '/groups', label: 'Your groups', Icon: Users },
+  { to: '/settings', label: 'Settings', Icon: Settings },
 ]
 
-interface SidebarProps {
-  mobileOpen: boolean
-  onCloseMobile: () => void
-}
-
-export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
-  const sidebarOpen = useUIStore((s) => s.sidebarOpen)
-  const location = useLocation()
-
-  const drawerContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Toolbar sx={{ px: 2.5 }}>
-        <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.14em' }}>
-          Main Menu
-        </Typography>
-      </Toolbar>
-      <List sx={{ px: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        {NAV_ITEMS.map(({ to, label, Icon }) => {
-          const active = to === '/dashboard'
-            ? location.pathname === '/dashboard'
-            : location.pathname === to || location.pathname.startsWith(to + '/')
-          return (
-            <ListItem key={to} disablePadding>
-              <ListItemButton
-                component={RouterLink}
-                to={to}
-                selected={active}
-                onClick={onCloseMobile}
-                sx={{
-                  borderRadius: 2,
-                  px: 2,
-                  '&.Mui-selected': {
-                    bgcolor: (t) => t.palette.primary.main + '1a',
-                    color: (t) => t.palette.primary.main,
-                    '& .MuiListItemIcon-root': {
-                      color: (t) => t.palette.primary.main,
-                    },
-                  },
-                  '&:hover': {
-                    bgcolor: (t) => t.palette.action.hover,
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <Icon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary={
-                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                      {label}
-                    </Typography>
-                  }
-                />
-              </ListItemButton>
-            </ListItem>
-          )
-        })}
-      </List>
-      <Box sx={{ mt: 'auto', p: 2.5 }}>
-        <Box
-          sx={{
-            borderRadius: 3,
-            p: 2.5,
-            bgcolor: (t) =>
-              t.palette.mode === 'dark' ? t.palette.primary.dark + '4d' : t.palette.primary.main + '14',
-            border: (t) => `1px solid ${t.palette.primary.main}33`,
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-            Multi-currency splits
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 0.5, mb: 1.5, color: 'text.secondary' }}>
-            Add expenses in any currency. Everything converts to your group base.
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
-  )
-
+export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <>
-      <Box
-        sx={{
-          width: { md: sidebarOpen ? SIDEBAR_WIDTH : 0 },
-          flexShrink: 0,
-          display: { xs: 'none', md: 'block' },
-          transition: (t) => t.transitions.create('width'),
-        }}
-      />
-      <Drawer
-        variant="permanent"
-        open
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          width: SIDEBAR_WIDTH,
-          flexShrink: 0,
-          [`& .MuiDrawer-paper`]: {
-            width: SIDEBAR_WIDTH,
-            boxSizing: 'border-box',
-            borderRight: (t) => `1px solid ${t.palette.divider}`,
-            transform: sidebarOpen ? 'translateX(0)' : `translateX(-${SIDEBAR_WIDTH}px)`,
-            transition: (t) => t.transitions.create('transform'),
-            visibility: sidebarOpen ? 'visible' : 'hidden',
-          },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={onCloseMobile}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          [`& .MuiDrawer-paper`]: { width: SIDEBAR_WIDTH, boxSizing: 'border-box' },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
-    </>
+    <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
+      <div className="flex h-20 shrink-0 items-center px-6">
+        <Brand onClick={onNavigate} />
+      </div>
+      <nav aria-label="Main navigation" className="px-3 pt-6">
+        <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Workspace
+        </p>
+        <div className="space-y-1">
+          {NAV_ITEMS.map(({ to, label, Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                cn(
+                  'flex min-h-11 items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted',
+                  isActive
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-muted-foreground',
+                )
+              }
+            >
+              <Icon className="size-[18px]" aria-hidden="true" />
+              {label}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+      <div className="mt-auto px-6 py-6">
+        <div className="border-t pt-5">
+          <p className="text-sm font-medium">Good company. Clear expenses.</p>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            A little less keeping track.
+            <br />A little more living.
+          </p>
+          <NavLink
+            to="/groups?new=1"
+            onClick={onNavigate}
+            className="mt-4 inline-flex items-center gap-1.5 rounded text-xs font-semibold text-positive"
+          >
+            Start a group{' '}
+            <ArrowUpRight className="size-3.5" aria-hidden="true" />
+          </NavLink>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -6,9 +6,11 @@ import SignupPage from '@/features/auth/pages/SignupPage'
 import DashboardPage from '@/features/dashboard/pages/DashboardPage'
 import GroupsPage from '@/features/groups/pages/GroupsPage'
 import GroupDetailPage from '@/features/groups/pages/GroupDetailPage'
+import UiPreviewPage from '@/features/design/UiPreviewPage'
 import SettingsPage from '@/features/settings/pages/SettingsPage'
 
 const router = createBrowserRouter([
+  ...(import.meta.env.DEV ? [{ path: '/ui-preview', element: <AppLayout />, children: [{ index: true, element: <UiPreviewPage /> }] }] : []),
   {
     path: '/login',
     element: <LoginPage />,

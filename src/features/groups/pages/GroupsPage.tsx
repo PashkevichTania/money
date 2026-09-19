@@ -1,166 +1,111 @@
-import { Link as RouterLink, useSearchParams } from 'react-router-dom'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import CardActionArea from '@mui/material/CardActionArea'
-import CardContent from '@mui/material/CardContent'
-import Container from '@mui/material/Container'
-import Skeleton from '@mui/material/Skeleton'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
-import AddIcon from '@mui/icons-material/Add'
-import GroupsIcon from '@mui/icons-material/Groups'
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import { useEffect, useState } from 'react'
-import { getCurrencySymbol } from '@/config/currencies'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Plus, Users, ArrowUpRight, Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Message } from '@/components/ui/field'
 import { useGroups } from '@/hooks/useGroups'
-import CreateGroupDialog from '@/features/groups/components/CreateGroupDialog'
-
+import { useGroupStore } from '@/stores/groupStore'
+import CreateGroupDialog from '../components/CreateGroupDialog'
 export default function GroupsPage() {
   const { groups, loading } = useGroups()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [createOpen, setCreateOpen] = useState(false)
-
-  useEffect(() => {
-    if (searchParams.get('new') === '1') {
-      setCreateOpen(true)
-    }
-  }, [searchParams])
-
-  const openCreate = () => setCreateOpen(true)
-
-  const closeCreate = () => {
-    setCreateOpen(false)
-    if (searchParams.get('new') === '1') {
-      const next = new URLSearchParams(searchParams)
-      next.delete('new')
-      setSearchParams(next, { replace: true })
-    }
+  const error = useGroupStore((s) => s.errors.groups)
+  const [params, setParams] = useSearchParams()
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const close = () => {
+    setOpen(false)
+    const next = new URLSearchParams(params)
+    next.delete('new')
+    setParams(next, { replace: true })
   }
-
+  const filtered = groups.filter((g) =>
+    g.name.toLowerCase().includes(query.toLowerCase()),
+  )
   return (
-    <Container maxWidth="lg" disableGutters>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={3}
-        sx={{
-          justifyContent: { xs: 'flex-start', sm: 'space-between' },
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          mb: 4,
-        }}
-      >
-        <Box>
-          <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.03em' }}>
-            Your groups
-          </Typography>
-          <Typography variant="body1" sx={{ mt: 1, color: 'text.secondary' }}>
-            Create a group for trips, homes, weddings, and more.
-          </Typography>
-        </Box>
-        <Button variant="contained" size="large" startIcon={<AddIcon />} onClick={openCreate}>
+    <div className="space-y-7">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-positive">
+            Shared spaces
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight">Your groups</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Trips, everyday things and everything you share.
+          </p>
+        </div>
+        <Button onClick={() => setOpen(true)}>
+          <Plus />
           New group
         </Button>
-      </Stack>
-
-      {loading && groups.length === 0 ? (
-        <Box
-          sx={{
-            display: 'grid',
-            gap: 3,
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-            },
-          }}
-        >
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} sx={{ borderRadius: 3, p: 3 }}>
-              <Skeleton variant="text" width="60%" height={32} />
-              <Skeleton variant="text" width="40%" />
-              <Skeleton variant="text" width="30%" sx={{ mt: 2 }} />
-            </Card>
+      </header>
+      {error && <Message error>{error}</Message>}
+      <div className="relative max-w-md">
+        <Search
+          className="absolute left-3 top-3 size-5 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <Input
+          className="bg-card pl-10"
+          aria-label="Search groups"
+          placeholder="Find a group..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+      {loading && !groups.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-48 rounded-md" />
           ))}
-        </Box>
-      ) : groups.length === 0 ? (
-        <Card sx={{ p: 6, textAlign: 'center', borderRadius: 4 }}>
-          <Box
-            sx={{
-              width: 72,
-              height: 72,
-              borderRadius: 5,
-              bgcolor: (t) => t.palette.primary.main + '1a',
-              color: (t) => t.palette.primary.main,
-              display: 'grid',
-              placeItems: 'center',
-              mx: 'auto',
-              mb: 3,
-            }}
-          >
-            <GroupsIcon sx={{ fontSize: 40 }} />
-          </Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-            No groups yet
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
-            Create your first group to start splitting expenses with friends.
-          </Typography>
-          <Button variant="contained" size="large" startIcon={<AddIcon />} onClick={openCreate}>
-            Create first group
-          </Button>
-        </Card>
+        </div>
+      ) : filtered.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((g) => (
+            <Link
+              to={`/groups/${g.id}`}
+              key={g.id}
+              className="group rounded-md border bg-card p-6 transition-colors hover:border-primary/40"
+            >
+              <div className="flex justify-between">
+                <span className="grid size-11 place-items-center rounded-md bg-secondary text-secondary-foreground">
+                  <Users className="size-5" />
+                </span>
+                <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5" />
+              </div>
+              <h2 className="mt-6 truncate text-lg font-semibold">{g.name}</h2>
+              <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
+                <span>{g.memberIds.length} members</span>
+                <span className="rounded-md border px-2 py-1 text-xs">
+                  {g.baseCurrency}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
       ) : (
-        <Box
-          sx={{
-            display: 'grid',
-            gap: 3,
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-            },
-          }}
-        >
-          {groups.map((group) => (
-            <Card key={group.id} sx={{ borderRadius: 3, height: '100%' }}>
-              <CardActionArea
-                component={RouterLink}
-                to={`/groups/${group.id}`}
-                sx={{ height: '100%' }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  <Stack
-                    direction="row"
-                    spacing={2}
-                    sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}
-                  >
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                        {group.name}
-                      </Typography>
-                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 0.5 }}>
-                        <AttachMoneyIcon fontSize="small" sx={{ color: 'action.active' }} />
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                          {group.baseCurrency} {getCurrencySymbol(group.baseCurrency)}
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 2.5 }}>
-                    <GroupsIcon fontSize="small" sx={{ color: 'action.active' }} />
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      {group.memberIds.length} member
-                      {group.memberIds.length === 1 ? '' : 's'}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-          ))}
-        </Box>
+        <div className="rounded-md border border-dashed bg-card p-10 text-center">
+          <Users className="mx-auto mb-4 size-8 text-positive" />
+          <h2 className="font-semibold">
+            {query ? 'No matching groups' : 'Your next shared plan starts here'}
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {query
+              ? 'Try another name.'
+              : 'Create a group, add your people and start recording expenses.'}
+          </p>
+          {!query && (
+            <Button className="mt-5" onClick={() => setOpen(true)}>
+              Create your first group
+            </Button>
+          )}
+        </div>
       )}
-
-      <CreateGroupDialog open={createOpen} onClose={closeCreate} />
-    </Container>
+      <CreateGroupDialog
+        open={open || params.get('new') === '1'}
+        onClose={close}
+      />
+    </div>
   )
 }

@@ -1,30 +1,14 @@
+import { UserPlus, UserMinus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Field, Section, Message } from '@/components/ui/field'
 import { useEffect, useMemo, useState } from 'react'
-import Alert from '@mui/material/Alert'
-import Autocomplete from '@mui/material/Autocomplete'
-import Avatar from '@mui/material/Avatar'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import IconButton from '@mui/material/IconButton'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemAvatar from '@mui/material/ListItemAvatar'
-import ListItemText from '@mui/material/ListItemText'
-import Skeleton from '@mui/material/Skeleton'
-import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
-import PersonAddIcon from '@mui/icons-material/PersonAdd'
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove'
-import { useSnackbar } from 'notistack'
+import { useNotify } from '@/hooks/useNotify'
 import type { Group } from '@/types/group'
 import type { UserProfile } from '@/types/user'
 import { useCurrentUser } from '@/hooks/useGroups'
 import { useGroupStore } from '@/stores/groupStore'
-import type { SearchUserResult } from '@/api/users'
 
 function initials(name: string) {
   return name
@@ -45,7 +29,7 @@ export default function MembersTab({
   loadingMembers: boolean
 }) {
   const me = useCurrentUser()
-  const { enqueueSnackbar } = useSnackbar()
+  const { enqueueSnackbar } = useNotify()
   const searchUsers = useGroupStore((s) => s.searchUsers)
   const clearSearch = useGroupStore((s) => s.clearSearch)
   const searchResults = useGroupStore((s) => s.searchResults)
@@ -109,142 +93,134 @@ export default function MembersTab({
   }
 
   return (
-    <Box>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-        Members
-      </Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-        Add people who already have an account. They must sign up first.
-      </Typography>
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 3 }}>
-        <Autocomplete
-          fullWidth
-          freeSolo
-          loading={searchingUsers}
-          options={options}
-          filterOptions={(x) => x}
-          getOptionLabel={(opt) =>
-            typeof opt === 'string' ? opt : `${opt.user.displayName} (${opt.user.email})`
-          }
-          inputValue={query}
-          onInputChange={(_, value) => setQuery(value)}
-          onChange={(_, value) => {
-            if (value && typeof value !== 'string') {
-              void onAddEmail(value.user.email)
-            }
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Add member by email"
-              placeholder="friend@example.com"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  void onAddEmail(query)
-                }
-              }}
-            />
-          )}
-          renderOption={(props, option: SearchUserResult) => {
-            const { key: _optionKey, ...rest } = props as typeof props & { key: string }
-            return (
-              <li key={option.user.id} {...rest}>
-                {option.user.displayName} · {option.user.email}
-              </li>
-            )
-          }}
-        />
-        <Button
-          variant="contained"
-          startIcon={<PersonAddIcon />}
-          onClick={() => void onAddEmail(query)}
-          disabled={busy || !query.trim()}
-          sx={{ flexShrink: 0, minHeight: 56 }}
-        >
-          Add
-        </Button>
-      </Stack>
-
-      {addError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {addError}
-        </Alert>
-      )}
-
-      {loadingMembers && members.length === 0 ? (
-        <Stack spacing={1}>
-          <Skeleton variant="rounded" height={64} />
-          <Skeleton variant="rounded" height={64} />
-        </Stack>
-      ) : (
-        <List disablePadding>
-          {group.memberIds.map((uid) => {
-            const member = members.find((m) => m.id === uid)
-            const name = member?.displayName || 'Unknown member'
-            const isMe = me?.id === uid
-            return (
-              <ListItem
-                key={uid}
-                sx={{ px: 0, py: 1.25 }}
-                secondaryAction={
-                  <IconButton
-                    edge="end"
-                    aria-label={`Remove ${name}`}
-                    disabled={!canRemove || busy}
-                    onClick={() => member && setToRemove(member)}
-                  >
-                    <PersonRemoveIcon />
-                  </IconButton>
-                }
-              >
-                <ListItemAvatar>
-                  <Avatar src={member?.photoURL}>
-                    {initials(name)}
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <Typography sx={{ fontWeight: 600 }}>
-                      {name}
-                      {isMe ? ' (you)' : ''}
-                    </Typography>
-                  }
-                  secondary={member?.email || uid}
-                />
-              </ListItem>
-            )
-          })}
-        </List>
-      )}
-
-      {!canRemove && (
-        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1 }}>
-          A group must have at least one member. Delete the group instead of removing the last person.
-        </Typography>
-      )}
-
-      <Dialog
-        open={Boolean(toRemove)}
-        onClose={busy ? undefined : () => setToRemove(null)}
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+    <Section
+      title="Members"
+      description="Add people who already have a SplitSmart account."
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void onAddEmail(query)
+        }}
+        className="flex flex-col gap-3 sm:flex-row sm:items-end"
       >
-        <DialogTitle>Remove {toRemove?.displayName}?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            They will lose access to this group. Expense balance checks will land in a later phase.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setToRemove(null)} disabled={busy}>
+        <div className="flex-1">
+          <Field
+            label="Add by email"
+            type="email"
+            placeholder="friend@example.com"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            disabled={busy}
+          />
+        </div>
+        <Button type="submit" disabled={busy || !query.trim()}>
+          <UserPlus />
+          {busy ? 'Working...' : 'Add member'}
+        </Button>
+      </form>
+      {addError && <Message error>{addError}</Message>}
+      {searchingUsers && (
+        <p role="status" className="text-xs text-muted-foreground">
+          Searching...
+        </p>
+      )}
+      {query.trim() && options.length > 0 && (
+        <ul
+          aria-label="Matching accounts"
+          className="divide-y rounded-md border"
+        >
+          {options.map(({ user }) => (
+            <li key={user.id}>
+              <button
+                type="button"
+                disabled={busy}
+                className="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-muted"
+                onClick={() => void onAddEmail(user.email)}
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">
+                    {user.displayName}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {user.email}
+                  </span>
+                </span>
+                <UserPlus className="size-4 shrink-0" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="divide-y">
+        {loadingMembers ? (
+          <Skeleton className="h-32" />
+        ) : (
+          group.memberIds.map((id) => {
+            const member = members.find((m) => m.id === id)
+            return (
+              <div key={id} className="flex items-center gap-3 py-4">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
+                  {initials(member?.displayName || id)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {member?.displayName || 'Loading member'}
+                    {id === me?.id && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (you)
+                      </span>
+                    )}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {member?.email || id}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={!canRemove || busy || !member}
+                  aria-label={`Remove ${member?.displayName || 'member'}`}
+                  onClick={() => member && setToRemove(member)}
+                >
+                  <UserMinus className="text-destructive" />
+                </Button>
+              </div>
+            )
+          })
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Members are retained once the group has expense history.
+      </p>
+      <Modal
+        open={!!toRemove}
+        onClose={() => setToRemove(null)}
+        title="Remove member?"
+        description={`Remove ${toRemove?.displayName || 'this member'} from ${group.name}?`}
+        busy={busy}
+      >
+        <p className="text-sm text-muted-foreground">
+          They will lose access to the group. Removal is blocked if the group
+          has expense history.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => setToRemove(null)}
+          >
             Cancel
           </Button>
-          <Button color="error" variant="contained" onClick={() => void onConfirmRemove()} disabled={busy}>
-            Remove
+          <Button
+            variant="destructive"
+            disabled={busy}
+            onClick={() => void onConfirmRemove()}
+          >
+            {busy ? 'Removing...' : 'Remove member'}
           </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        </div>
+      </Modal>
+    </Section>
   )
 }

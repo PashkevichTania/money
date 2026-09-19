@@ -13,7 +13,7 @@ export function useSelectedGroup() {
   const loadingMembers = useGroupStore((s) => s.loadingMembers)
   const membersMap = useGroupStore((s) => s.membersMap)
   const errors = useGroupStore((s) => s.errors)
-  const [refreshing, setRefreshing] = useState(false)
+  const [refreshedId, setRefreshedId] = useState<string | null>(null)
 
   const groupId = id ?? selectedGroupId ?? null
 
@@ -30,8 +30,11 @@ export function useSelectedGroup() {
 
   useEffect(() => {
     if (!groupId) return
-    setRefreshing(true)
-    void refreshGroup(groupId).finally(() => setRefreshing(false))
+    let cancelled = false
+    void refreshGroup(groupId).catch(() => undefined).finally(() => {
+      if (!cancelled) setRefreshedId(groupId)
+    })
+    return () => { cancelled = true }
   }, [groupId, refreshGroup])
 
   useEffect(() => {
@@ -50,7 +53,7 @@ export function useSelectedGroup() {
   }, [group, membersMap])
 
   const error = groupId ? errors[`group:${groupId}`] : undefined
-  const loading = Boolean(groupId) && (refreshing || groupsLoading) && !group
+  const loading = Boolean(groupId) && (refreshedId !== groupId || groupsLoading) && !group
 
   return {
     groupId,

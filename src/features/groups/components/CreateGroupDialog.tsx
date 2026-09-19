@@ -1,26 +1,14 @@
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
+import { Field, CurrencySelect, Message } from '@/components/ui/field'
 import { z } from 'zod'
-import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCallback, useEffect, useState } from 'react'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import FormControl from '@mui/material/FormControl'
-import InputLabel from '@mui/material/InputLabel'
-import MenuItem from '@mui/material/MenuItem'
-import Select from '@mui/material/Select'
-import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import FormHelperText from '@mui/material/FormHelperText'
-import { CURRENCIES, DEFAULT_BASE_CURRENCY } from '@/config/currencies'
+import { DEFAULT_BASE_CURRENCY } from '@/config/currencies'
 import { useCurrentUser } from '@/hooks/useGroups'
 import { useGroupStore } from '@/stores/groupStore'
-import { useSnackbar } from 'notistack'
+import { useNotify } from '@/hooks/useNotify'
 import { useNavigate } from 'react-router-dom'
 
 const schema = z.object({
@@ -43,8 +31,14 @@ export default function CreateGroupDialog({
   const loading = useGroupStore((s) => s.loading)
   const errors = useGroupStore((s) => s.errors)
   const clearErrors = useGroupStore((s) => s.clearErrors)
-  const { enqueueSnackbar } = useSnackbar()
+  const { enqueueSnackbar } = useNotify()
   const [localError, setLocalError] = useState<string | null>(null)
+
+  const [previousOpen, setPreviousOpen] = useState(open)
+  if (previousOpen !== open) {
+    setPreviousOpen(open)
+    setLocalError(null)
+  }
 
   const defaultCurrency = me?.defaultCurrency || DEFAULT_BASE_CURRENCY
 
@@ -52,7 +46,6 @@ export default function CreateGroupDialog({
     register,
     handleSubmit,
     reset,
-    control,
     formState: { errors: formErrors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -61,7 +54,6 @@ export default function CreateGroupDialog({
 
   useEffect(() => {
     if (open) {
-      setLocalError(null)
       clearErrors()
       reset({ name: '', baseCurrency: defaultCurrency })
     }
@@ -86,7 +78,8 @@ export default function CreateGroupDialog({
         onClose()
         navigate(`/groups/${group.id}`, { replace: true })
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to create group'
+        const msg =
+          err instanceof Error ? err.message : 'Failed to create group'
         setLocalError(msg)
         enqueueSnackbar(msg, { variant: 'error' })
       }
@@ -94,68 +87,41 @@ export default function CreateGroupDialog({
     [me, createGroupAndSelect, clearErrors, enqueueSnackbar, onClose, navigate],
   )
 
+  const busy = isSubmitting || loading
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
-      <DialogTitle sx={{ pb: 1 }}>
-        <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
-          Create a new group
-        </Typography>
-      </DialogTitle>
-      <DialogContent dividers>
-        {(localError || errors.createGroup) && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {localError || errors.createGroup}
-          </Alert>
-        )}
-        <Box component="form" id="create-group-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <Stack spacing={3}>
-            <TextField
-              label="Group name"
-              autoFocus
-              placeholder="e.g. Summer trip to Portugal"
-              {...register('name')}
-              error={!!formErrors.name}
-              helperText={formErrors.name?.message}
-            />
-            <Controller
-              name="baseCurrency"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!formErrors.baseCurrency}>
-                  <InputLabel id="base-currency-label">Base currency</InputLabel>
-                  <Select
-                    labelId="base-currency-label"
-                    label="Base currency"
-                    {...field}
-                  >
-                    {CURRENCIES.map((c) => (
-                      <MenuItem key={c.code} value={c.code}>
-                        {c.label} ({c.symbol})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formErrors.baseCurrency && (
-                    <FormHelperText>{formErrors.baseCurrency.message}</FormHelperText>
-                  )}
-                </FormControl>
-              )}
-            />
-          </Stack>
-        </Box>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} variant="text" disabled={isSubmitting || loading}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          form="create-group-form"
-          variant="contained"
-          disabled={isSubmitting || loading || !me}
-        >
-          {isSubmitting || loading ? 'Creating…' : 'Create group'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Create a group"
+      description="Give your shared plans a place of their own."
+      busy={busy}
+    >
+      {(localError || errors.groups) && (
+        <Message error>{localError || errors.groups}</Message>
+      )}
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+        <fieldset disabled={busy} className="space-y-5">
+          <Field
+            label="Group name"
+            placeholder="e.g. Weekend in Lisbon"
+            {...register('name')}
+            error={formErrors.name?.message}
+          />
+          <CurrencySelect label="Base currency" {...register('baseCurrency')} />
+          <p className="text-xs leading-5 text-muted-foreground">
+            This currency is fixed once the group is created. Expenses in other
+            currencies will be converted to it.
+          </p>
+          <div className="flex justify-end gap-2 border-t pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              {busy ? 'Creating...' : 'Create group'}
+            </Button>
+          </div>
+        </fieldset>
+      </form>
+    </Modal>
   )
 }

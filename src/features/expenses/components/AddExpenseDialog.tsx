@@ -1,44 +1,24 @@
+import { Plus, X, Check, LoaderCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Modal } from '@/components/ui/modal'
+import { Field, CurrencySelect, Section, Message } from '@/components/ui/field'
 import { z } from 'zod'
-import { Controller, useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import Alert from '@mui/material/Alert'
-import AlertTitle from '@mui/material/AlertTitle'
-import Avatar from '@mui/material/Avatar'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import Checkbox from '@mui/material/Checkbox'
-import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import Divider from '@mui/material/Divider'
-import FormControl from '@mui/material/FormControl'
-import FormGroup from '@mui/material/FormGroup'
-import FormHelperText from '@mui/material/FormHelperText'
-import IconButton from '@mui/material/IconButton'
-import InputAdornment from '@mui/material/InputAdornment'
-import InputLabel from '@mui/material/InputLabel'
-import MenuItem from '@mui/material/MenuItem'
-import Select from '@mui/material/Select'
-import Skeleton from '@mui/material/Skeleton'
-import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
-import AddIcon from '@mui/icons-material/Add'
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import CloseIcon from '@mui/icons-material/Close'
-import SaveIcon from '@mui/icons-material/Save'
-import { useSnackbar } from 'notistack'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNotify } from '@/hooks/useNotify'
 import type { Group } from '@/types/group'
 import type { UserProfile } from '@/types/user'
-import type { Expense, ParticipantShare, PayerContribution, SplitType } from '@/types/expense'
-import { CURRENCIES, DEFAULT_BASE_CURRENCY, getCurrencySymbol } from '@/config/currencies'
+import type {
+  Expense,
+  ParticipantShare,
+  PayerContribution,
+  SplitType,
+} from '@/types/expense'
+import { DEFAULT_BASE_CURRENCY } from '@/config/currencies'
 import { useCurrentUser } from '@/hooks/useGroups'
 import { useExpenseStore } from '@/stores/expenseStore'
 import { formatMoney, roundMoney, safeSum } from '@/utils/currency'
@@ -79,31 +59,13 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-function initials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('')
-}
-
 interface RateState {
+  key: string
   loading: boolean
   rate: number | null
   date: string | null
   source: string | null
   error: string | null
-}
-
-function useRateState(initial: RateState): [RateState, (u: RateState | ((p: RateState) => RateState)) => void] {
-  const ref = useRef<RateState>(initial)
-  const [, setTick] = useState(0)
-  const set = (u: RateState | ((p: RateState) => RateState)) => {
-    ref.current = typeof u === 'function' ? u(ref.current) : u
-    setTick((n) => n + 1)
-  }
-  return [ref.current, set]
 }
 
 export default function AddExpenseDialog({
@@ -112,29 +74,34 @@ export default function AddExpenseDialog({
   group,
   members,
   editingExpense,
+  preview = false,
 }: {
   open: boolean
   onClose: () => void
   group: Group
   members: UserProfile[]
   editingExpense?: Expense | null
+  preview?: boolean
 }) {
   const isEdit = Boolean(editingExpense)
   const me = useCurrentUser()
-  const { enqueueSnackbar } = useSnackbar()
+  const { enqueueSnackbar } = useNotify()
   const addExpense = useExpenseStore((s) => s.addExpense)
   const updateExpense = useExpenseStore((s) => s.updateExpense)
 
   const defaultCurrency = group.baseCurrency || DEFAULT_BASE_CURRENCY
   const defaultPayerId = me?.id || members[0]?.id || ''
-  const defaultParticipantIds = useMemo(() => members.map((m) => m.id), [members.length])
+  const defaultParticipantIds = useMemo(
+    () => members.map((m) => m.id),
+    [members],
+  )
   const memberById = useMemo(() => {
     const m = new Map<string, UserProfile>()
     members.forEach((x) => m.set(x.id, x))
     return m
   }, [members])
 
-  const makeDefaults = (): FormValues => {
+  const makeDefaults = useCallback((): FormValues => {
     if (editingExpense) {
       const participantValues: Record<string, number> = {}
       editingExpense.participants.forEach((p) => {
@@ -171,13 +138,12 @@ export default function AddExpenseDialog({
         },
       ],
     }
-  }
+  }, [editingExpense, defaultCurrency, defaultParticipantIds, defaultPayerId])
 
   const {
     register,
     handleSubmit,
     reset,
-    watch,
     control,
     setValue,
     getValues,
@@ -190,17 +156,23 @@ export default function AddExpenseDialog({
     mode: 'onChange',
   })
 
-  const originalAmount = Number(watch('originalAmount') || 0)
-  const originalCurrency = watch('originalCurrency') || defaultCurrency
-  const splitType = watch('splitType') || 'equal'
-  const paidBy = watch('paidBy') || []
-  const participantIds = watch('participantIds') || []
-  const participantValues = watch('participantValues') || {}
-  const expenseDate = watch('expenseDate')
+  const originalAmount = Number(
+    useWatch({ control, name: 'originalAmount' }) || 0,
+  )
+  const originalCurrency =
+    useWatch({ control, name: 'originalCurrency' }) || defaultCurrency
+  const splitType = useWatch({ control, name: 'splitType' }) || 'equal'
+  const paidBy = useWatch({ control, name: 'paidBy' })
+  const participantIds = useWatch({ control, name: 'participantIds' })
+  const participantValues = useWatch({ control, name: 'participantValues' })
+  const expenseDate = useWatch({ control, name: 'expenseDate' })
 
-  const currencyMismatch = originalCurrency.toUpperCase() !== group.baseCurrency.toUpperCase()
+  const currencyMismatch =
+    originalCurrency.toUpperCase() !== group.baseCurrency.toUpperCase()
 
-  const [rateState, setRateState] = useRateState({
+  const rateRequestKey = `${originalCurrency.toUpperCase()}:${group.baseCurrency.toUpperCase()}:${expenseDate}`
+  const [storedRateState, setRateState] = useState<RateState>({
+    key: '',
     loading: false,
     rate: null,
     date: null,
@@ -208,26 +180,45 @@ export default function AddExpenseDialog({
     error: null,
   })
 
+  const savedSnapshot =
+    editingExpense &&
+    editingExpense.originalCurrency === originalCurrency.toUpperCase() &&
+    editingExpense.groupCurrency === group.baseCurrency.toUpperCase() &&
+    editingExpense.expenseDate.slice(0, 10) === expenseDate.slice(0, 10)
+      ? editingExpense.rateSnapshot
+      : undefined
+  const rateState: RateState = !currencyMismatch
+    ? {
+        key: rateRequestKey,
+        loading: false,
+        rate: 1,
+        date: expenseDate,
+        source: 'identity',
+        error: null,
+      }
+    : savedSnapshot
+      ? { key: rateRequestKey, loading: false, error: null, ...savedSnapshot }
+      : storedRateState.key === rateRequestKey
+        ? storedRateState
+        : {
+            key: rateRequestKey,
+            loading: true,
+            rate: null,
+            date: null,
+            source: null,
+            error: null,
+          }
+
   useEffect(() => {
     if (!open) return
     reset(makeDefaults())
     clearErrors()
-  }, [open, editingExpense])
+  }, [open, makeDefaults, clearErrors, reset])
 
   useEffect(() => {
     if (!open) return
-    if (!currencyMismatch) {
-      setRateState({
-        loading: false,
-        rate: 1,
-        date: expenseDate || nowIso().slice(0, 10),
-        source: 'identity',
-        error: null,
-      })
-      return
-    }
+    if (!currencyMismatch || savedSnapshot) return
     let cancelled = false
-    setRateState((s) => ({ ...s, loading: true, error: null }))
     void (async () => {
       try {
         const result = await getExchangeRate(
@@ -237,6 +228,7 @@ export default function AddExpenseDialog({
         )
         if (cancelled) return
         setRateState({
+          key: rateRequestKey,
           loading: false,
           rate: result.rate,
           date: result.date,
@@ -245,8 +237,10 @@ export default function AddExpenseDialog({
         })
       } catch (err) {
         if (cancelled) return
-        const msg = err instanceof Error ? err.message : 'Failed to fetch FX rate'
+        const msg =
+          err instanceof Error ? err.message : 'Failed to fetch FX rate'
         setRateState({
+          key: rateRequestKey,
           loading: false,
           rate: null,
           date: null,
@@ -258,7 +252,15 @@ export default function AddExpenseDialog({
     return () => {
       cancelled = true
     }
-  }, [open, currencyMismatch, originalCurrency, group.baseCurrency, expenseDate])
+  }, [
+    open,
+    currencyMismatch,
+    originalCurrency,
+    group.baseCurrency,
+    expenseDate,
+    savedSnapshot,
+    rateRequestKey,
+  ])
 
   useEffect(() => {
     if (!open) return
@@ -268,7 +270,12 @@ export default function AddExpenseDialog({
     if (pruned.length !== currentPaidBy.length || pruned.length === 0) {
       const next = pruned.length
         ? pruned
-        : [{ userId: defaultPayerId, amount: getValues('originalAmount') as unknown as number }]
+        : [
+            {
+              userId: defaultPayerId,
+              amount: getValues('originalAmount') as unknown as number,
+            },
+          ]
       setValue('paidBy', next, { shouldValidate: true })
     }
     const currentIds = getValues('participantIds')
@@ -278,7 +285,14 @@ export default function AddExpenseDialog({
         shouldValidate: true,
       })
     }
-  }, [members])
+  }, [
+    members,
+    open,
+    getValues,
+    setValue,
+    defaultPayerId,
+    defaultParticipantIds,
+  ])
 
   useEffect(() => {
     if (!open) return
@@ -293,17 +307,16 @@ export default function AddExpenseDialog({
         { shouldValidate: true },
       )
     }
-  }, [originalAmount, paidBy.length])
+  }, [originalAmount, paidBy, open, setValue])
 
-  const convertedAmount = rateState.rate ? roundMoney(originalAmount * rateState.rate) : 0
+  const convertedAmount = rateState.rate
+    ? roundMoney(originalAmount * rateState.rate)
+    : 0
 
-  const participants: ParticipantShare[] = useMemo(() => {
-    const base = buildParticipants(splitType, participantIds, participantValues)
-    if (splitType === 'exact') {
-      return autoFillExactRemainder(originalAmount, base, participantIds)
-    }
-    return base
-  }, [splitType, participantIds, participantValues, originalAmount])
+  const participants: ParticipantShare[] = useMemo(
+    () => buildParticipants(splitType, participantIds, participantValues),
+    [splitType, participantIds, participantValues],
+  )
 
   const owedPreview = useMemo<Record<string, number>>(() => {
     if (!rateState.rate || !participants.length) return {}
@@ -315,10 +328,6 @@ export default function AddExpenseDialog({
     const originalCur = originalCurrency.toUpperCase()
     const groupCur = group.baseCurrency.toUpperCase()
     const needRate = originalCur !== groupCur
-    const convertedPaidBy: PayerContribution[] = paidBy.map((p) => ({
-      userId: p.userId,
-      amount: needRate && rateState.rate ? roundMoney(p.amount * rateState.rate) : p.amount,
-    }))
     const syntheticExpense: Expense = {
       id: '__preview__',
       groupId: group.id,
@@ -327,10 +336,15 @@ export default function AddExpenseDialog({
       originalCurrency: originalCur,
       convertedAmount,
       groupCurrency: groupCur,
-      rateSnapshot: needRate && rateState.rate
-        ? { date: rateState.date || expenseDate, rate: rateState.rate, source: rateState.source || 'frankfurter' }
-        : undefined,
-      paidBy: convertedPaidBy,
+      rateSnapshot:
+        needRate && rateState.rate
+          ? {
+              date: rateState.date || expenseDate,
+              rate: rateState.rate,
+              source: rateState.source || 'frankfurter',
+            }
+          : undefined,
+      paidBy,
       participants,
       splitType,
       expenseDate: toIsoDate(expenseDate),
@@ -365,39 +379,24 @@ export default function AddExpenseDialog({
     })
   }, [originalAmount, participants, paidBy, splitType])
 
-  const splitTypeError = liveValidationErrors.find(
-    (e) => e.field === 'split.sum' || e.field === 'split.percentage' || e.field === 'split.shares',
-  )
-  const paidBySumError = liveValidationErrors.find((e) => e.field === 'paidBy.sum')
-  const participantsError = liveValidationErrors.find((e) => e.field === 'participants')
-  const paidByError = liveValidationErrors.find((e) => e.field === 'paidBy')
-  const amountError = liveValidationErrors.find((e) => e.field === 'originalAmount')
-
   const paidSum = safeSum(paidBy.map((p) => p.amount))
   const paidRemaining = roundMoney(originalAmount - paidSum)
-
-  const exactSum = safeSum(participantIds.map((uid) => roundMoney(Number(participantValues[uid]) || 0)))
-  const pctSum = roundMoney(
-    safeSum(participantIds.map((uid) => roundMoney(Number(participantValues[uid]) || 0, 4))),
-    4,
-  )
-  const totalShares = safeSum(
-    participantIds.map((uid) => {
-      const raw = Number(participantValues[uid])
-      return raw && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : 1
-    }),
-  )
 
   const canSubmit =
     !isSubmitting &&
     (rateState.rate != null || !currencyMismatch) &&
+    !rateState.loading &&
     !rateState.error &&
     liveValidationErrors.length === 0
 
   const submitValidation = (values: FormValues) => {
     const errs = validateSplit({
       originalAmount: Number(values.originalAmount),
-      participants: buildParticipants(values.splitType, values.participantIds, values.participantValues),
+      participants: buildParticipants(
+        values.splitType,
+        values.participantIds,
+        values.participantValues,
+      ),
       paidBy: values.paidBy.map((p) => ({ ...p, amount: Number(p.amount) })),
       splitType: values.splitType,
     })
@@ -421,12 +420,21 @@ export default function AddExpenseDialog({
   }
 
   const onSubmit = async (values: FormValues) => {
+    if (import.meta.env.DEV && preview) {
+      if (submitValidation(values))
+        enqueueSnackbar('Preview validated. No expense was saved.', {
+          variant: 'success',
+        })
+      return
+    }
     if (!me) {
       enqueueSnackbar('You must be signed in', { variant: 'error' })
       return
     }
-    if (rateState.error || rateState.rate == null) {
-      enqueueSnackbar('A valid FX rate is required for currency conversion', { variant: 'error' })
+    if (rateState.loading || rateState.error || rateState.rate == null) {
+      enqueueSnackbar('A valid FX rate is required for currency conversion', {
+        variant: 'error',
+      })
       return
     }
     if (!submitValidation(values)) return
@@ -503,19 +511,20 @@ export default function AddExpenseDialog({
   const toggleParticipant = (userId: string) => {
     const current = participantIds
     const isIn = current.includes(userId)
-    const next = isIn ? current.filter((id) => id !== userId) : [...current, userId]
+    const next = isIn
+      ? current.filter((id) => id !== userId)
+      : [...current, userId]
     setValue('participantIds', next, { shouldValidate: true })
     if (!isIn && splitType !== 'equal' && participantValues[userId] == null) {
       if (splitType === 'percentage') {
         const freshN = next.length
         if (freshN) {
-          const freshValues = computeEqualShares(0, next).reduce<Record<string, number>>(
-            (acc, p) => {
-              acc[p.userId] = roundMoney(100 / freshN, 4)
-              return acc
-            },
-            {},
-          )
+          const freshValues = computeEqualShares(0, next).reduce<
+            Record<string, number>
+          >((acc, p) => {
+            acc[p.userId] = roundMoney(100 / freshN, 4)
+            return acc
+          }, {})
           const sum = safeSum(Object.values(freshValues))
           const diff = roundMoney(100 - sum, 4)
           if (Math.abs(diff) > 0 && next.length) {
@@ -524,9 +533,13 @@ export default function AddExpenseDialog({
               4,
             )
           }
-          setValue('participantValues', { ...participantValues, ...freshValues }, {
-            shouldValidate: true,
-          })
+          setValue(
+            'participantValues',
+            { ...participantValues, ...freshValues },
+            {
+              shouldValidate: true,
+            },
+          )
         }
       }
     }
@@ -555,19 +568,21 @@ export default function AddExpenseDialog({
     if (!participantIds.length) return
     setValue(
       'paidBy',
-      autoDistributePaidBy(originalAmount, participantIds).map(
-        (p) => ({ ...p, amount: p.amount as unknown as number }),
-      ),
+      autoDistributePaidBy(originalAmount, participantIds).map((p) => ({
+        ...p,
+        amount: p.amount as unknown as number,
+      })),
       { shouldValidate: true },
     )
   }
 
   const addPayer = (userId: string) => {
     if (paidBy.some((p) => p.userId === userId)) return
-    setValue('paidBy', [
-      ...paidBy,
-      { userId, amount: 0 as unknown as number },
-    ], { shouldValidate: true })
+    setValue(
+      'paidBy',
+      [...paidBy, { userId, amount: 0 as unknown as number }],
+      { shouldValidate: true },
+    )
   }
 
   const removePayer = (userId: string) => {
@@ -581,767 +596,330 @@ export default function AddExpenseDialog({
 
   const updatePayerAmount = (userId: string, raw: string | number) => {
     const next = paidBy.map((p) =>
-      p.userId === userId ? { ...p, amount: (Number(raw) || 0) as unknown as number } : p,
+      p.userId === userId
+        ? { ...p, amount: (Number(raw) || 0) as unknown as number }
+        : p,
     )
     setValue('paidBy', next, { shouldValidate: true })
   }
 
   const payerSet = useMemo(() => new Set(paidBy.map((p) => p.userId)), [paidBy])
 
+  const changeSplit = (type: SplitType) => {
+    setValue('splitType', type, { shouldValidate: true })
+    const defaults = buildParticipants(type, participantIds, {})
+    setValue(
+      'participantValues',
+      Object.fromEntries(defaults.map((p) => [p.userId, p.value])),
+      { shouldValidate: true },
+    )
+  }
+  const fillExactRemainder = () => {
+    const adjusted = autoFillExactRemainder(
+      originalAmount,
+      participants,
+      participantIds,
+    )
+    setValue(
+      'participantValues',
+      Object.fromEntries(adjusted.map((p) => [p.userId, p.value])),
+      { shouldValidate: true },
+    )
+  }
+  const nameOf = (id: string) =>
+    memberById.get(id)?.displayName || id.slice(0, 6)
   return (
-    <Dialog
+    <Modal
       open={open}
-      onClose={isSubmitting ? undefined : onClose}
-      fullWidth
-      maxWidth="lg"
-      slotProps={{ paper: { sx: { borderRadius: 4 } } }}
+      onClose={onClose}
+      busy={isSubmitting}
+      wide
+      title={isEdit ? 'Edit expense' : 'Add expense'}
+      description={`Record a shared expense in ${group.name}.`}
     >
-      <DialogTitle sx={{ pb: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: 2,
-                display: 'grid',
-                placeItems: 'center',
-                bgcolor: (t) => t.palette.primary.main + '14',
-                color: (t) => t.palette.primary.main,
-              }}
-            >
-              {isEdit ? <SaveIcon /> : <AttachMoneyIcon />}
-            </Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
-              {isEdit ? 'Edit expense' : 'Add expense'}
-            </Typography>
-          </Stack>
-          <IconButton size="small" onClick={onClose} disabled={isSubmitting}>
-            <CloseIcon />
-          </IconButton>
-        </Stack>
-      </DialogTitle>
-      <DialogContent dividers>
-        <Box
-          component="form"
-          id="add-expense-form"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-        >
-          <Stack spacing={3}>
-            <TextField
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        aria-busy={isSubmitting}
+        className="space-y-5"
+      >
+        <fieldset disabled={isSubmitting} className="space-y-5">
+          <Section title="1. The details">
+            <Field
               label="Title"
-              placeholder="e.g. Dinner at Luigi's"
-              autoFocus
+              placeholder="e.g. Dinner with friends"
               {...register('title')}
-              error={!!errors.title}
-              helperText={errors.title?.message}
+              error={errors.title?.message}
             />
-            <TextField
-              label="Description (optional)"
-              placeholder="Notes, links, attendees…"
-              multiline
-              rows={2}
-              {...register('description')}
-              error={!!errors.description}
-              helperText={errors.description?.message}
-            />
-
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              spacing={2}
-              useFlexGap
-            >
-              <TextField
-                {...register('expenseDate')}
-                type="date"
-                label="Date"
-                slotProps={{ inputLabel: { shrink: true } }}
-                error={!!errors.expenseDate}
-                helperText={errors.expenseDate?.message}
-                sx={{ flex: 1 }}
-              />
-              <Controller
-                name="originalCurrency"
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.originalCurrency} sx={{ flex: 1 }}>
-                    <InputLabel id="currency-label">Currency</InputLabel>
-                    <Select labelId="currency-label" label="Currency" {...field}>
-                      {CURRENCIES.map((c) => (
-                        <MenuItem key={c.code} value={c.code}>
-                          {c.label} ({c.symbol})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.originalCurrency && (
-                      <FormHelperText>{errors.originalCurrency.message}</FormHelperText>
-                    )}
-                  </FormControl>
-                )}
-              />
-              <TextField
-                {...register('originalAmount')}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
                 label="Amount"
                 type="number"
-                error={!!errors.originalAmount || !!amountError}
-                helperText={errors.originalAmount?.message || amountError?.message}
-                slotProps={{
-                  input: {
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-ignore
-                    step: '0.01',
-                    min: '0',
-                    startAdornment: (
-                      <InputAdornment position="start">{getCurrencySymbol(originalCurrency)}</InputAdornment>
-                    ),
-                  },
-                }}
-                sx={{ flex: 1 }}
+                min="0.01"
+                step="0.01"
+                inputMode="decimal"
+                {...register('originalAmount')}
+                error={errors.originalAmount?.message}
               />
-            </Stack>
-
+              <CurrencySelect {...register('originalCurrency')} />
+            </div>
+            <Field
+              label="Date"
+              type="date"
+              {...register('expenseDate')}
+              error={errors.expenseDate?.message}
+            />
+            <div className="space-y-2">
+              <Label htmlFor="expense-notes">Notes (optional)</Label>
+              <Textarea
+                id="expense-notes"
+                placeholder="Anything useful to remember"
+                {...register('description')}
+                aria-invalid={!!errors.description}
+              />
+              {errors.description && (
+                <p className="text-xs text-destructive">
+                  {errors.description.message}
+                </p>
+              )}
+            </div>
             {currencyMismatch && (
-              <Box>
-                {rateState.loading ? (
-                  <Skeleton variant="rounded" height={56} sx={{ borderRadius: 2 }} />
-                ) : rateState.error ? (
-                  <Alert severity="warning">
-                    <AlertTitle>FX rate unavailable</AlertTitle>
-                    <Typography variant="body2">{rateState.error}</Typography>
-                  </Alert>
-                ) : (
-                  <Alert severity="info" icon={<AttachMoneyIcon />}>
-                    <AlertTitle sx={{ fontWeight: 700 }}>
-                      Converting {originalCurrency} → {group.baseCurrency}
-                    </AlertTitle>
-                    <Typography variant="body2">
-                      {formatMoney(originalAmount, originalCurrency)} ×{' '}
-                      <strong>
-                        1 {originalCurrency} = {rateState.rate} {group.baseCurrency}
-                      </strong>
-                      {rateState.date &&
-                        ` (rate on ${rateState.date}${rateState.source ? ` via ${rateState.source}` : ''})`}
-                      <br />
-                      Group total:{' '}
-                      <strong style={{ color: 'text.primary' }}>
-                        {formatMoney(convertedAmount, group.baseCurrency)}
-                      </strong>
-                    </Typography>
-                  </Alert>
-                )}
-              </Box>
+              <Message error={!!rateState.error}>
+                {rateState.loading
+                  ? 'Looking up the exchange rate...'
+                  : rateState.error ||
+                    `1 ${originalCurrency} = ${rateState.rate} ${group.baseCurrency} · ${rateState.date}. Converted total: ${formatMoney(convertedAmount, group.baseCurrency)}`}
+              </Message>
             )}
-
-            <Divider />
-
-            <Box>
-              <Stack
-                direction="row"
-                spacing={1}
-                useFlexGap
-                sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap' }}
+          </Section>
+          <Section
+            title="2. Who paid?"
+            description={`Enter contributions in ${originalCurrency}.`}
+          >
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => applySinglePayer(defaultPayerId)}
               >
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  Paid by
-                </Typography>
-                <Stack direction="row" spacing={1} useFlexGap>
-                  <Chip
-                    label="One person"
-                    size="small"
-                    variant="outlined"
-                    onClick={() => applySinglePayer(defaultPayerId)}
-                    clickable
-                  />
-                  <Chip
-                    label="Evenly among participants"
-                    size="small"
-                    variant="outlined"
-                    onClick={applyEvenPaidBy}
-                    clickable
-                    disabled={!participantIds.length}
-                  />
-                </Stack>
-              </Stack>
-
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} useFlexGap sx={{ mb: 1.5, flexWrap: 'wrap' }}>
-                {paidBy.map((p) => {
-                  const user = memberById.get(p.userId)
-                  const name = user?.displayName || p.userId
-                  return (
-                    <Card
-                      key={p.userId}
-                      variant="outlined"
-                      sx={{
-                        p: 1,
-                        pr: 0.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        borderRadius: 3,
-                        borderColor: (t) => t.palette.primary.main + '66',
-                        bgcolor: (t) => t.palette.primary.main + '0a',
-                      }}
-                    >
-                      <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: (t) => t.palette.secondary.main }}>
-                        {initials(name)}
-                      </Avatar>
-                      <Stack sx={{ minWidth: 0 }}>
-                        <Typography variant="caption" sx={{ fontWeight: 700, lineHeight: 1.1 }}>
-                          {name}
-                          {p.userId === me?.id ? ' (you)' : ''}
-                        </Typography>
-                        <TextField
-                          size="small"
-                          type="number"
-                          value={p.amount}
-                          onChange={(e) => updatePayerAmount(p.userId, e.target.value)}
-                          slotProps={{
-                            htmlInput: { step: '0.01', min: 0, style: { paddingTop: 2, paddingBottom: 2 } },
-                            input: {
-                              startAdornment: (
-                                <InputAdornment position="start" sx={{ fontSize: 12 }}>
-                                  {getCurrencySymbol(originalCurrency)}
-                                </InputAdornment>
-                              ),
-                            },
-                          }}
-                          sx={{
-                            mt: 0.25,
-                            '& .MuiInputBase-root': { height: 28, fontSize: 12 },
-                            width: 130,
-                          }}
-                        />
-                      </Stack>
-                      {paidBy.length > 1 && (
-                        <Tooltip title="Remove payer">
-                          <IconButton
-                            size="small"
-                            onClick={() => removePayer(p.userId)}
-                            sx={{ alignSelf: 'flex-start', mt: -0.5 }}
-                          >
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Card>
-                  )
-                })}
-                {members
-                  .filter((m) => !payerSet.has(m.id))
-                  .slice(0, 6 - paidBy.length)
-                  .map((m) => (
-                    <Chip
-                      key={`add-${m.id}`}
-                      avatar={
-                        <Avatar sx={{ width: 24, height: 24, fontSize: 10 }}>
-                          {initials(m.displayName)}
-                        </Avatar>
+                I paid
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!participantIds.length}
+                onClick={applyEvenPaidBy}
+              >
+                Split payments evenly
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {paidBy.map((payer) => (
+                <div key={payer.userId} className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Field
+                      label={`Paid by ${nameOf(payer.userId)}`}
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={payer.amount}
+                      onChange={(e) =>
+                        updatePayerAmount(payer.userId, e.target.value)
                       }
-                      label={`Add ${m.displayName}`}
-                      variant="outlined"
-                      size="small"
-                      onClick={() => addPayer(m.id)}
-                      sx={{ borderRadius: 2 }}
-                      clickable
                     />
-                  ))}
-              </Stack>
-
-              <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Sum:{' '}
-                  <Typography
-                    component="span"
-                    variant="caption"
-                    sx={{ fontWeight: 700, color: 'text.primary' }}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={paidBy.length <= 1}
+                    aria-label={`Remove payer ${nameOf(payer.userId)}`}
+                    onClick={() => removePayer(payer.userId)}
                   >
-                    {formatMoney(paidSum, originalCurrency)}
-                  </Typography>
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color:
-                      Math.abs(paidRemaining) < 0.005
-                        ? 'success.main'
-                        : 'error.main',
-                    fontWeight: 700,
-                  }}
+                    <X />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {members
+                .filter((m) => !payerSet.has(m.id))
+                .map((m) => (
+                  <Button
+                    type="button"
+                    key={m.id}
+                    variant="secondary"
+                    onClick={() => addPayer(m.id)}
+                  >
+                    <Plus />
+                    {m.displayName}
+                  </Button>
+                ))}
+            </div>
+            <p
+              className={`text-sm tabular-nums ${Math.abs(paidRemaining) < 0.005 ? 'text-positive' : 'text-destructive'}`}
+            >
+              Paid {formatMoney(paidSum, originalCurrency)} · Remaining{' '}
+              {formatMoney(paidRemaining, originalCurrency)}
+            </p>
+          </Section>
+          <Section title="3. How is it split?">
+            <div
+              role="group"
+              aria-label="Split method"
+              className="flex flex-wrap gap-2"
+            >
+              {(['equal', 'exact', 'percentage', 'shares'] as SplitType[]).map(
+                (type) => (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant={type === splitType ? 'default' : 'outline'}
+                    aria-pressed={type === splitType}
+                    onClick={() => changeSplit(type)}
+                  >
+                    {type === 'percentage'
+                      ? 'Percentage'
+                      : type[0].toUpperCase() + type.slice(1)}
+                  </Button>
+                ),
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="ghost" onClick={toggleAll}>
+                {allIn ? 'Clear selection' : 'Select everyone'}
+              </Button>
+              {splitType === 'exact' && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={!participantIds.length}
+                  onClick={fillExactRemainder}
                 >
-                  Remaining:{' '}
-                  {Math.abs(paidRemaining) < 0.005
-                    ? '✓ matches total'
-                    : formatMoney(paidRemaining, originalCurrency)}
-                </Typography>
-                {paidBySumError && (
-                  <Typography variant="caption" color="error">
-                    {paidBySumError.message}
-                  </Typography>
-                )}
-                {paidByError && (
-                  <Typography variant="caption" color="error">
-                    {paidByError.message}
-                  </Typography>
-                )}
-                {errors.paidBy && (
-                  <Typography variant="caption" color="error">
-                    {Array.isArray(errors.paidBy)
-                      ? errors.paidBy.map((x) => (x as z.ZodIssue).message || String(x)).join(' ')
-                      : (errors.paidBy as unknown as { message?: string }).message || String(errors.paidBy)}
-                  </Typography>
-                )}
-              </Stack>
-            </Box>
-
-            <Divider />
-
-            <Box>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} useFlexGap sx={{ mb: 2 }}>
-                <Controller
-                  name="splitType"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.splitType || !!splitTypeError}>
-                      <InputLabel id="split-label" shrink>
-                        Split
-                      </InputLabel>
-                      <ToggleButtonGroup
-                        exclusive
-                        color="primary"
-                        value={field.value}
-                        onChange={(_e, value) => {
-                          if (!value) return
-                          field.onChange(value)
-                          const nextType = value as SplitType
-                          const curIds = getValues('participantIds')
-                          const curValues = { ...getValues('participantValues') }
-                          if (nextType === 'percentage') {
-                            const n = curIds.length
-                            curIds.forEach((uid) => {
-                              if (curValues[uid] == null) {
-                                curValues[uid] = roundMoney(100 / n, 4)
-                              }
-                            })
-                            const sum = safeSum(
-                              curIds.map((uid) => roundMoney(Number(curValues[uid]) || 0, 4)),
-                            )
-                            const diff = roundMoney(100 - sum, 4)
-                            if (Math.abs(diff) > 0 && curIds.length) {
-                              const lastId = curIds[curIds.length - 1]
-                              curValues[lastId] = roundMoney(
-                                (Number(curValues[lastId]) || 0) + diff,
-                                4,
-                              )
-                            }
-                          } else if (nextType === 'shares') {
-                            curIds.forEach((uid) => {
-                              if (curValues[uid] == null) curValues[uid] = 1
-                            })
-                          } else if (nextType === 'exact') {
-                            curIds.forEach((uid) => {
-                              if (curValues[uid] == null) curValues[uid] = 0
-                            })
-                          }
-                          setValue('participantValues', curValues, { shouldValidate: true })
-                        }}
-                        fullWidth
-                        sx={{ minHeight: 56, borderRadius: 1.5 }}
-                      >
-                        <ToggleButton value="equal">Equal</ToggleButton>
-                        <ToggleButton value="exact">Exact</ToggleButton>
-                        <ToggleButton value="percentage">%</ToggleButton>
-                        <ToggleButton value="shares">Shares</ToggleButton>
-                      </ToggleButtonGroup>
-                      {(errors.splitType || splitTypeError) && (
-                        <FormHelperText error sx={{ mt: 0.5 }}>
-                          {errors.splitType?.message || splitTypeError?.message}
-                        </FormHelperText>
-                      )}
-                    </FormControl>
-                  )}
-                />
-              </Stack>
-
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
-              >
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  Split with
-                </Typography>
-                <Button size="small" onClick={toggleAll}>
-                  {allIn ? 'Clear all' : 'Select all'}
+                  Fill last share with remainder
                 </Button>
-              </Stack>
-
-              <FormGroup
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: {
-                    xs: 'repeat(1, minmax(0, 1fr))',
-                    md: 'repeat(2, minmax(0, 1fr))',
-                  },
-                  gap: 1.25,
-                }}
-              >
-                {members.map((m) => {
-                  const checked = participantIds.includes(m.id)
-                  const perPerson =
-                    checked && rateState.rate
-                      ? formatMoney(owedPreview[m.id] ?? 0, group.baseCurrency)
-                      : null
-                  const rawVal = Number(participantValues[m.id])
-                  return (
-                    <Box
-                      key={m.id}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.25,
-                        p: 1.5,
-                        borderRadius: 2.5,
-                        border: (t) =>
-                          `1px solid ${
-                            checked ? t.palette.primary.main + '88' : t.palette.divider
-                          }`,
-                        bgcolor: (t) =>
-                          checked ? t.palette.primary.main + '0a' : 'transparent',
-                      }}
-                    >
-                      <Checkbox
-                        size="small"
-                        checked={checked}
-                        onChange={() => toggleParticipant(m.id)}
-                        sx={{ p: 0, alignSelf: 'flex-start', mt: 0.5 }}
+              )}
+            </div>
+            <div className="divide-y">
+              {members.map((member) => {
+                const selected = participantIds.includes(member.id)
+                return (
+                  <div className="flex items-center gap-3 py-3" key={member.id}>
+                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-sm">
+                      <input
+                        type="checkbox"
+                        className="size-4 shrink-0 accent-primary"
+                        checked={selected}
+                        onChange={() => toggleParticipant(member.id)}
                       />
-                      <Avatar
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          fontSize: 12,
-                          bgcolor: (t) => t.palette.secondary.main,
-                          color: '#fff',
-                          flexShrink: 0,
-                          alignSelf: 'flex-start',
-                          mt: 0.25,
-                        }}
-                      >
-                        {initials(m.displayName)}
-                      </Avatar>
-                      <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                            {m.displayName}
-                            {m.id === me?.id ? ' (you)' : ''}
-                          </Typography>
-                          {payerSet.has(m.id) && (
-                            <Chip
-                              label="Payer"
-                              size="small"
-                              color="info"
-                              variant="filled"
-                              sx={{ height: 18, '& .MuiChip-label': { px: 0.75, py: 0, fontSize: 10 } }}
-                            />
+                      <span className="truncate">{member.displayName}</span>
+                    </label>
+                    {selected && splitType !== 'equal' ? (
+                      <div className="flex w-32 shrink-0 items-center gap-1">
+                        <Input
+                          aria-label={`${member.displayName} ${splitType} share`}
+                          type="number"
+                          inputMode="decimal"
+                          min={splitType === 'shares' ? 1 : 0}
+                          step={
+                            splitType === 'shares'
+                              ? 1
+                              : splitType === 'percentage'
+                                ? 0.0001
+                                : 0.01
+                          }
+                          value={
+                            participantValues[member.id] ??
+                            (splitType === 'shares' ? 1 : 0)
+                          }
+                          onChange={(e) =>
+                            setParticipantValue(member.id, e.target.value)
+                          }
+                        />
+                        {splitType === 'percentage' && <span>%</span>}
+                      </div>
+                    ) : (
+                      selected && (
+                        <span className="text-sm tabular-nums text-muted-foreground">
+                          {formatMoney(
+                            owedPreview[member.id] || 0,
+                            group.baseCurrency,
                           )}
-                        </Stack>
-                        {splitType === 'equal' ? (
-                          <Box>
-                            {perPerson ? (
-                              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                owes {perPerson}
-                              </Typography>
-                            ) : checked ? null : (
-                              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                                Not in split
-                              </Typography>
-                            )}
-                          </Box>
-                        ) : (
-                          <Box sx={{ mt: 0.5 }}>
-                            {splitType === 'exact' && (
-                              <TextField
-                                size="small"
-                                type="number"
-                                label="Exact amount"
-                                disabled={!checked}
-                                value={checked ? rawVal : ''}
-                                onChange={(e) => setParticipantValue(m.id, e.target.value)}
-                                slotProps={{
-                                  htmlInput: { step: '0.01', min: 0 },
-                                  input: {
-                                    startAdornment: (
-                                      <InputAdornment position="start">
-                                        {getCurrencySymbol(originalCurrency)}
-                                      </InputAdornment>
-                                    ),
-                                  },
-                                }}
-                                sx={{
-                                  width: 160,
-                                  '& .MuiInputBase-root': { height: 32, fontSize: 12 },
-                                }}
-                              />
-                            )}
-                            {splitType === 'percentage' && (
-                              <TextField
-                                size="small"
-                                type="number"
-                                label="Percentage"
-                                disabled={!checked}
-                                value={checked ? roundMoney(rawVal, 4) : ''}
-                                onChange={(e) => setParticipantValue(m.id, e.target.value)}
-                                slotProps={{
-                                  htmlInput: { step: '0.01', min: 0, max: 100 },
-                                  input: {
-                                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                                  },
-                                }}
-                                sx={{
-                                  width: 150,
-                                  '& .MuiInputBase-root': { height: 32, fontSize: 12 },
-                                }}
-                              />
-                            )}
-                            {splitType === 'shares' && (
-                              <TextField
-                                size="small"
-                                type="number"
-                                label="Shares"
-                                disabled={!checked}
-                                value={checked ? (rawVal > 0 ? Math.round(rawVal) : 1) : ''}
-                                onChange={(e) => setParticipantValue(m.id, e.target.value)}
-                                slotProps={{
-                                  htmlInput: { step: '1', min: 1 },
-                                }}
-                                sx={{
-                                  width: 120,
-                                  '& .MuiInputBase-root': { height: 32, fontSize: 12 },
-                                }}
-                              />
-                            )}
-                          </Box>
-                        )}
-                        {checked && splitType !== 'equal' && perPerson ? (
-                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
-                            → owes {perPerson}
-                          </Typography>
-                        ) : null}
-                      </Box>
-                    </Box>
-                  )
-                })}
-              </FormGroup>
-
-              <Stack
-                direction="row"
-                spacing={2}
-                useFlexGap
-                sx={{
-                  mt: 1.5,
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                }}
-              >
-                {splitType === 'exact' && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 700,
-                      color: Math.abs(exactSum - originalAmount) < 0.005 ? 'success.main' : 'error.main',
-                    }}
+                        </span>
+                      )
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            {!!liveValidationErrors.length && originalAmount > 0 && (
+              <Message error>
+                {liveValidationErrors.map((e) => e.message).join(' ')}
+              </Message>
+            )}
+            {errors.splitType && (
+              <Message error>{errors.splitType.message}</Message>
+            )}
+          </Section>
+          <Section
+            title="Review"
+            description={`Amounts below are in ${group.baseCurrency}.`}
+          >
+            <div className="flex justify-between text-lg font-semibold tabular-nums">
+              <span>Total</span>
+              <span>{formatMoney(convertedAmount, group.baseCurrency)}</span>
+            </div>
+            {!liveValidationErrors.length &&
+            rateState.rate &&
+            !rateState.error ? (
+              <div className="divide-y">
+                {Object.entries(previewNetBalances).map(([id, net]) => (
+                  <div
+                    key={id}
+                    className="flex justify-between gap-3 py-2 text-sm"
                   >
-                    Exact total: {formatMoney(exactSum, originalCurrency)}
-                    {Math.abs(exactSum - originalAmount) < 0.005 ? ' ✓' : ` of ${formatMoney(originalAmount, originalCurrency)}`}
-                  </Typography>
-                )}
-                {splitType === 'percentage' && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 700,
-                      color: Math.abs(pctSum - 100) < 0.005 ? 'success.main' : 'error.main',
-                    }}
-                  >
-                    Percentage total: {pctSum.toFixed(2)}%
-                    {Math.abs(pctSum - 100) < 0.005 ? ' ✓' : ' of 100.00%'}
-                  </Typography>
-                )}
-                {splitType === 'shares' && (
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
-                    Total shares: {totalShares}
-                  </Typography>
-                )}
-                {(participantsError || errors.participantIds) && (
-                  <Typography variant="caption" color="error">
-                    {participantsError?.message ||
-                      (Array.isArray(errors.participantIds)
-                        ? errors.participantIds.map((e) => (e as z.ZodIssue).message || String(e)).join(' ')
-                        : (errors.participantIds as unknown as { message?: string }).message || String(errors.participantIds))}
-                  </Typography>
-                )}
-              </Stack>
-            </Box>
-
-            <Divider />
-
-            <Card sx={{ borderRadius: 3, p: 3, bgcolor: 'action.hover' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
-                Preview
-              </Typography>
-
-              {(splitTypeError || paidBySumError || amountError) && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {splitTypeError?.message || paidBySumError?.message || amountError?.message}
-                </Alert>
-              )}
-
-              {originalAmount > 0 && rateState.rate != null && participants.length && paidBy.length ? (
-                <Stack spacing={2}>
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                      Paid:
-                    </Typography>
-                    <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-                      {paidBy.map((p) => {
-                        const name = memberById.get(p.userId)?.displayName || p.userId
-                        return (
-                          <Chip
-                            key={p.userId}
-                            label={`${name} paid ${formatMoney(p.amount, originalCurrency)}`}
-                            variant="filled"
-                            color="success"
-                            sx={{ borderRadius: 2 }}
-                          />
-                        )
-                      })}
-                      {currencyMismatch && (
-                        <Typography variant="caption" sx={{ color: 'text.secondary', alignSelf: 'center' }}>
-                          (~{formatMoney(convertedAmount, group.baseCurrency)} in group currency)
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                      Split <strong>{splitType}</strong>
-                      {splitType === 'equal' ? ` · ${participants.length} ways` : ''}:
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: {
-                          xs: 'repeat(1, minmax(0, 1fr))',
-                          sm: 'repeat(2, minmax(0, 1fr))',
-                        },
-                        gap: 1,
-                      }}
+                    <span>{nameOf(id)}</span>
+                    <span
+                      className={`text-right tabular-nums ${net > 0 ? 'text-positive' : net < 0 ? 'text-destructive' : 'text-muted-foreground'}`}
                     >
-                      {Object.entries(owedPreview).map(([userId, amount]) => {
-                        const name = memberById.get(userId)?.displayName || userId
-                        const isPayer = payerSet.has(userId)
-                        return (
-                          <Chip
-                            key={userId}
-                            label={
-                              <Box sx={{ textAlign: 'left' }}>
-                                {name}
-                                {isPayer ? ' (payer)' : ''}: owes{' '}
-                                <strong>{formatMoney(amount, group.baseCurrency)}</strong>
-                              </Box>
-                            }
-                            variant={isPayer ? 'filled' : 'outlined'}
-                            color={isPayer ? 'primary' : 'default'}
-                            sx={{
-                              justifyContent: 'flex-start',
-                              px: 1,
-                              py: 1,
-                              height: 'auto',
-                              minHeight: 36,
-                              '& .MuiChip-label': { py: 0.25 },
-                            }}
-                          />
-                        )
-                      })}
-                    </Box>
-                  </Box>
-
-                  {Object.keys(previewNetBalances).length > 0 && (
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        Net effect:
-                      </Typography>
-                      <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-                        {Object.entries(previewNetBalances).map(([userId, amount]) => {
-                          const name = memberById.get(userId)?.displayName || userId
-                          if (Math.abs(amount) < 0.005) {
-                            return (
-                              <Chip
-                                key={userId}
-                                label={`${name}: settled`}
-                                variant="outlined"
-                                size="small"
-                                sx={{ bgcolor: 'background.paper' }}
-                              />
-                            )
-                          }
-                          if (amount > 0) {
-                            return (
-                              <Chip
-                                key={userId}
-                                label={`${name} gets back ${formatMoney(amount, group.baseCurrency)}`}
-                                color="success"
-                                variant="filled"
-                                size="small"
-                              />
-                            )
-                          }
-                          return (
-                            <Chip
-                              key={userId}
-                              label={`${name} owes ${formatMoney(Math.abs(amount), group.baseCurrency)}`}
-                              color="error"
-                              variant="filled"
-                              size="small"
-                            />
-                          )
-                        })}
-                      </Stack>
-                    </Box>
-                  )}
-                </Stack>
-              ) : (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Enter an amount, at least one payer, and select participants to see the split preview.
-                </Typography>
-              )}
-            </Card>
-          </Stack>
-        </Box>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} variant="text" disabled={isSubmitting}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          form="add-expense-form"
-          variant="contained"
-          startIcon={isEdit ? <SaveIcon /> : <AddIcon />}
-          disabled={!canSubmit}
-          sx={{ minWidth: 180 }}
-        >
-          {isSubmitting
-            ? isEdit
-              ? 'Saving…'
-              : 'Adding…'
-            : isEdit
-              ? 'Save changes'
-              : 'Add expense'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+                      {Math.abs(net) < 0.005
+                        ? 'No balance'
+                        : `${net > 0 ? 'Gets back' : 'Owes'} ${formatMoney(Math.abs(net), group.baseCurrency)}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Complete the amounts and split to preview each person's balance.
+              </p>
+            )}
+          </Section>
+        </fieldset>
+        <div className="sticky -bottom-6 -mx-6 -mb-6 flex justify-end gap-2 border-t bg-popover p-4">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={!canSubmit}>
+            {isSubmitting ? (
+              <LoaderCircle className="animate-spin" />
+            ) : (
+              <Check />
+            )}
+            {isSubmitting
+              ? 'Saving...'
+              : isEdit
+                ? 'Save changes'
+                : 'Add expense'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   )
 }

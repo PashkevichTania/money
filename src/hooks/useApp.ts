@@ -1,16 +1,14 @@
-import {createContext, useContext} from "react";
-import type {Theme} from "@mui/material/styles";
+import { createContext, useContext } from 'react'
 
 export interface AppContextValue {
-    theme: Theme
-    themeMode: 'light' | 'dark'
-    toggleTheme: () => void
+  themeMode: 'light' | 'dark'
+  toggleTheme: () => void
 }
 
 export const AppContext = createContext<AppContextValue | undefined>(undefined)
 
 export function useApp() {
-    const ctx = useContext(AppContext)
-    if (!ctx) throw new Error('useApp must be used within AppProviders')
-    return ctx
+  const ctx = useContext(AppContext)
+  if (!ctx) throw new Error('useApp must be used within AppProviders')
+  return ctx
 }

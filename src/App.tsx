@@ -1,12 +1,10 @@
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useEffect } from 'react'
 import { AppRouter } from '@/routes'
 import { AppProviders } from '@/providers/AppProviders'
 import { useAuthStore } from '@/stores/authStore'
 import { isFirebaseConfigured } from '@/config/firebase'
-import Box from '@mui/material/Box'
-import Link from '@mui/material/Link'
-import Alert from '@mui/material/Alert'
-import { useSnackbar } from 'notistack'
+import { useNotify } from '@/hooks/useNotify'
 import { useUIStore } from '@/stores/uiStore'
 
 function AuthInit() {
@@ -18,7 +16,7 @@ function AuthInit() {
 function UIStoreSnackbridge() {
   const toast = useUIStore((s) => s.toast)
   const clearToast = useUIStore((s) => s.clearToast)
-  const { enqueueSnackbar } = useSnackbar()
+  const { enqueueSnackbar } = useNotify()
 
   useEffect(() => {
     if (!toast) return
@@ -34,16 +32,12 @@ function UIStoreSnackbridge() {
 function FirebaseNotice() {
   if (isFirebaseConfigured) return null
   return (
-    <Box sx={{ p: 3 }}>
-      <Alert severity="warning">
-        Firebase is not configured yet. Add the <code>VITE_FIREBASE_*</code> variables to a new{' '}
-        <code>.env.local</code> file (see{' '}
-        <Link href="/settings" color="inherit" sx={{ fontWeight: 700 }}>
-          Settings
-        </Link>{' '}
-        for the template). Auth and data features will be stubbed until configured.
+    <div className="border-b bg-warning/15 p-4">
+      <Alert className="mx-auto max-w-3xl border-warning/50 bg-transparent">
+        <AlertTitle>Workspace connection is not configured</AlertTitle>
+        <AlertDescription>Add the Firebase configuration in your environment to enable sign-in and shared expenses.</AlertDescription>
       </Alert>
-    </Box>
+    </div>
   )
 }
 

@@ -1,50 +1,79 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import Box from '@mui/material/Box'
 import Topbar from './Topbar'
 import Sidebar from './Sidebar'
 import { useUIStore } from '@/stores/uiStore'
-import { useThemeModeListener } from '@/hooks/useThemeModeListener'
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 
 export default function AppLayout() {
-  useThemeModeListener()
+  const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const toggleSidebar = useUIStore((s) => s.toggleSidebar)
   const [mobileOpen, setMobileOpen] = useState(false)
-
+  const toggleElement = useRef<HTMLElement | null>(null)
   useEffect(() => {
+    const query = window.matchMedia('(min-width: 1024px)')
     const onResize = () => {
-      if (window.innerWidth >= 900) setMobileOpen(false)
+      if (query.matches) setMobileOpen(false)
     }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+    query.addEventListener('change', onResize)
+    return () => query.removeEventListener('change', onResize)
   }, [])
-
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Topbar
-        onToggleSidebar={() => {
-          if (window.innerWidth < 900) {
-            setMobileOpen((v) => !v)
-          } else {
-            toggleSidebar()
-          }
-        }}
-      />
-      <Sidebar
-        mobileOpen={mobileOpen}
-        onCloseMobile={() => setMobileOpen(false)}
-      />
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: { xs: 2, md: 4 },
-          width: '100%',
-          mt: { xs: 0, md: 0 },
-        }}
+    <div className="bg-workspace flex min-h-dvh">
+      <a
+        href="#main-content"
+        className="fixed left-4 top-3 z-[100] -translate-y-24 rounded-md bg-primary px-4 py-3 text-primary-foreground focus:translate-y-0"
       >
-        <Outlet />
-      </Box>
-    </Box>
+        Skip to content
+      </a>
+      {sidebarOpen && (
+        <aside
+          id="workspace-navigation"
+          className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r lg:block"
+        >
+          <Sidebar />
+        </aside>
+      )}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent
+          side="left"
+          finalFocus={toggleElement}
+          className="w-72 gap-0 p-0"
+          id="mobile-workspace-navigation"
+        >
+          <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
+          <SheetDescription className="sr-only">
+            Navigate between your overview, groups and settings.
+          </SheetDescription>
+          <Sidebar onNavigate={() => setMobileOpen(false)} />
+        </SheetContent>
+      </Sheet>
+      <div className="min-w-0 flex-1">
+        <Topbar
+          sidebarExpanded={sidebarOpen}
+          mobileExpanded={mobileOpen}
+          onToggleSidebar={() => {
+            if (window.matchMedia('(min-width: 1024px)').matches)
+              toggleSidebar()
+            else {
+              toggleElement.current = document.activeElement as HTMLElement
+              setMobileOpen((v) => !v)
+            }
+          }}
+        />
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-[1440px] p-4 outline-none sm:p-8 lg:p-10"
+        >
+          <Outlet />
+        </main>
+      </div>
+    </div>
   )
 }

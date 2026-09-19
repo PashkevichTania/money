@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { User, AuthError } from 'firebase/auth'
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
   signInWithEmailAndPassword,
   signOut as fbSignOut,
   onAuthStateChanged,
@@ -22,6 +24,7 @@ export interface AuthStoreState {
   init: () => () => void
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, displayName: string) => Promise<void>
+  loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
 }
@@ -29,6 +32,16 @@ export interface AuthStoreState {
 function translateAuthError(error: unknown): string {
   const e = error as AuthError
   switch (e?.code) {
+    case 'auth/popup-blocked':
+      return 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.'
+    case 'auth/unauthorized-domain':
+      return 'Google sign-in is not available on this site yet. Please use email sign-in.'
+    case 'auth/account-exists-with-different-credential':
+      return 'This email already uses another sign-in method. Sign in with that method first.'
+    case 'auth/network-request-failed':
+      return 'Could not connect. Check your internet connection and try again.'
+    case 'auth/invalid-credential':
+      return 'The email or password is incorrect.'
     case 'auth/invalid-email':
       return 'Invalid email address'
     case 'auth/user-disabled':
@@ -146,6 +159,28 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       set({ firebaseUser: credential.user, profile, status: 'authenticated', error: null })
     } catch (error) {
       set({ status: 'unauthenticated', error: translateAuthError(error) })
+      throw error
+    }
+  },
+
+  loginWithGoogle: async () => {
+    if (!isFirebaseConfigured) {
+      const error = new Error('Sign-in is unavailable until this workspace is configured.')
+      set({ error: error.message })
+      throw error
+    }
+    if (get().status === 'loading') return
+    set({ status: 'loading', error: null })
+    try {
+      const provider = new GoogleAuthProvider()
+      provider.setCustomParameters({ prompt: 'select_account' })
+      const credential = await signInWithPopup(auth, provider)
+      const profile = await createProfileIfMissing(credential.user)
+      set({ firebaseUser: credential.user, profile, status: 'authenticated', error: null })
+    } catch (error) {
+      const code = (error as AuthError)?.code
+      const cancelled = code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request'
+      set({ status: 'unauthenticated', error: cancelled ? null : translateAuthError(error) })
       throw error
     }
   },

@@ -1,16 +1,10 @@
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
+import { Field, Message } from '@/components/ui/field'
 import { useState } from 'react'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
-import Alert from '@mui/material/Alert'
-import Stack from '@mui/material/Stack'
 import type { Group } from '@/types/group'
 import { useGroupStore } from '@/stores/groupStore'
-import { useSnackbar } from 'notistack'
+import { useNotify } from '@/hooks/useNotify'
 import { useNavigate } from 'react-router-dom'
 
 export default function DeleteGroupDialog({
@@ -23,7 +17,7 @@ export default function DeleteGroupDialog({
   group: Group
 }) {
   const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
+  const { enqueueSnackbar } = useNotify()
   const removeGroup = useGroupStore((s) => s.removeGroup)
   const [confirmText, setConfirmText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -51,53 +45,35 @@ export default function DeleteGroupDialog({
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onClose={busy ? undefined : onClose}
-      fullWidth
-      maxWidth="sm"
-      slotProps={{ paper: { sx: { borderRadius: 4 } } }}
+      onClose={onClose}
+      title="Delete group?"
+      description="This action permanently removes this group and its expense history."
+      busy={busy}
     >
-      <DialogTitle sx={{ pb: 1 }}>
-        <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
-          Delete group?
-        </Typography>
-      </DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={3}>
-          <Alert severity="error">
-            This permanently deletes the group <strong>&ldquo;{group.name}&rdquo;</strong> and all
-            of its expenses, balances, and activity history. This cannot be undone.
-          </Alert>
-          {localError && (
-            <Alert severity="error">{localError}</Alert>
-          )}
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Type <strong>{group.name}</strong> below to confirm:
-          </Typography>
-          <TextField
-            label={`Type "${group.name}" to confirm`}
-            value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
-            fullWidth
-            autoFocus
-            disabled={busy}
-          />
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} variant="text" disabled={busy}>
+      <Message error>
+        This cannot be undone. Type {group.name} below to confirm.
+      </Message>
+      {localError && <Message error>{localError}</Message>}
+      <Field
+        label="Group name to confirm"
+        value={confirmText}
+        disabled={busy}
+        onChange={(e) => setConfirmText(e.target.value)}
+      />
+      <div className="flex justify-end gap-2 border-t pt-4">
+        <Button variant="outline" disabled={busy} onClick={onClose}>
           Cancel
         </Button>
         <Button
-          color="error"
-          variant="contained"
-          onClick={() => void onConfirm()}
+          variant="destructive"
           disabled={!canDelete || busy}
+          onClick={() => void onConfirm()}
         >
-          {busy ? 'Deleting…' : 'Delete group permanently'}
+          {busy ? 'Deleting...' : 'Delete permanently'}
         </Button>
-      </DialogActions>
-    </Dialog>
+      </div>
+    </Modal>
   )
 }

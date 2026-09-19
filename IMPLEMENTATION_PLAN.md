@@ -182,7 +182,7 @@ src/
   - [x] “Add member by email” UI (search existing users by email)
   - [x] Remove member UI and API
   - [ ] Guard removal when the member has an outstanding balance or appears in historical expenses
-- [x] Settings tab: rename, change base currency (warn existing expenses already converted)
+- [x] Settings tab: rename; read-only base currency chosen at creation
 
 **3.6 Firestore data & structure** ✅
 ```
@@ -391,12 +391,10 @@ export interface Expense {
   - [ ] allow changing date and recomputing rate
   - [ ] allow locking a manual rate if API fails
 
-**6.4 Edges** ⚠️ (warning done, no expense check yet)
-- [x] Changing group base currency on an existing group:
-  - [x] do NOT retroactively convert existing expenses
-  - [x] keep their stored `convertedAmount` as historical snapshot
-  - [x] new expenses use new base currency
-  - [ ] optionally warn user about mismatch (or disallow change if expenses exist)
+**6.4 Base currency policy**
+- [x] Base currency cannot change after creation, regardless of expense count.
+- [x] UI displays a read-only currency; API and Firestore rules reject changes.
+- [ ] Audit legacy groups that already contain expenses in different group currencies before aggregation.
 
 **6.5 Validation gate** ❌
 - [ ] Expense in EUR saved in USD group → converted correctly
@@ -522,28 +520,82 @@ This section records what was verified in the repository. Earlier checkmarks des
 
 ### A. Functional fixes before relying on balances
 
-- [ ] Add member-scoped Firestore rules for the expenses subcollection. Current `firestore.rules` only matches `users/{uid}` and `groups/{gid}`; parent rules do not grant subcollection access. Validate `groupId` against the path and `createdBy`/`updatedBy` against the authenticated user as appropriate.
-- [ ] Fix `exact` split conversion in `src/utils/split.ts`: exact values are entered and validated in the original currency, but `resolveOwedPerUser` currently uses them directly as group-currency amounts. Convert exact shares with the saved rate and distribute any rounding remainder so per-user owed totals equal `convertedAmount`.
-- [ ] Add focused tests for equal, exact, percentage, and shares splits with and without FX, including multiple payers and rounding. Verify that every expense nets to zero in the group currency.
-- [ ] Decide the base-currency change policy for groups with existing expenses. A warning alone leaves historical expense balances in different currencies; either block the change or define a safe migration/conversion policy before aggregation.
-- [ ] Make group deletion handle expenses in its subcollection. `deleteGroup` currently deletes only the parent document; verify cleanup and failure behavior.
-- [ ] Prevent removing a member with unsettled debt, or explicitly retain and display their historical balance. Current API only checks that one member remains.
-- [ ] Verify the existing FX form against Firestore: same currency, historical rate, unsupported currency, network failure, edit with currency/date changes, and saved rate snapshot.
-- [ ] Replace hard-coded zeros on Dashboard with actual data. The `You owe`, `You are owed`, and `Expenses` cards currently show zero; do not sum different group currencies without conversion.
-- [ ] Build Balances and Activity tabs, settlement recording, and filtering. Both tabs are currently placeholders; expense filters exist in store but are not exposed in UI.
+- [x] Add member-scoped expense rules validating group path, authorship, positive totals and group currency. Preserve creator metadata on update; block writes during deletion. Emulator verification and deployment remain pending.
+- [x] Fix exact FX splitting using the saved converted total and original-currency weights, with deterministic largest-remainder rounding.
+- [x] Apply cent allocation to multiple payers, equal splits and automatic payer distribution. Tiny totals no longer produce negative shares.
+- [x] Test all four split modes with/without FX, multiple payers, zero-sum balances, tiny amounts, invalid values, historical rates, unsupported currencies and network failure.
+- [x] Base currency is immutable immediately after creation, even for empty groups. Enforced in UI, API and Firestore rules; obsolete store action removed.
+- [x] Group deletion locks new expense writes, cleans expenses/settlements/activity in batches and deletes the parent last. Failed cleanup retains the parent and can be retried. API tests cover batching and failure/retry.
+- [x] Conservatively retain membership after the first expense; adding members remains allowed. Expense writes atomically set permanent `hasExpenseHistory: true`. Legacy groups without the flag also block removal; new empty groups explicitly start with `false`.
+- [x] Fix FX form state: preserve snapshots for unchanged date/currencies, block stale-rate saves, remove double conversion in preview and clear snapshots when editing back to group currency. API validates totals/membership and rejects edits of concurrently changed/deleted expenses.
+- [ ] Verify create/edit/delete and denial cases against Firestore/emulator. Tests mock Firestore/HTTP; no deployed-rule or live round-trip verification was performed. Java/Firebase CLI are unavailable here.
+
+These remain Phase 7 feature work:
+- [ ] Replace Dashboard placeholders with actual data, keeping group currencies separate.
+- [ ] Build aggregate Balances, settlements, Activity and filter UI.
+
+Allocation retains the existing two-decimal monetary model. Currency-specific minor-unit precision and previously mixed-currency groups require separate work before aggregation. Firestore rules enforce basic invariants; arbitrary payer/split sums are validated in the application API.
 
 ### B. Current quality gate
 
-- [ ] Fix the TypeScript error in `src/features/groups/components/MembersTab.tsx` (`Avatar` `src` may be `null`). `npx tsc -p tsconfig.app.json --noEmit` currently fails.
-- [ ] Fix `npm run lint` errors (9) and review warnings (11), especially ref access during render in `AddExpenseDialog`, effect-driven state updates, and unused values.
-- [ ] Investigate the `Maximum update depth exceeded` TODO in `ExpenseList`. Its Zustand selector creates a new empty array on every call when a group has no cached expenses.
-- [ ] Re-run TypeScript, lint, and a production build after these fixes; perform the Firebase smoke test in section 8.6.
+- [x] Fix nullable Avatar source in MembersTab.
+- [x] Fix lint errors/warnings, ref access, unstable dependencies and effect-driven local state.
+- [x] Fix the unstable empty-array Zustand selector in ExpenseList.
+- [x] Local verification: 27 tests, TypeScript, lint and production build pass. Build retains a bundle-size warning.
+- [ ] Firebase/emulator smoke tests and rule deployment remain required; no live data was changed.
 
 ### C. UI migration
 
-- [ ] Correct `components.json` CSS path: it points to `src/styles/globals.css`, while the file is `src/globals.css`.
-- [ ] Consolidate `src/index.css` and `src/globals.css` into one imported Tailwind entry point, including shadcn tokens and dark mode. Confirm the theme toggle changes the root `.dark` class.
-- [ ] Add only the shadcn components needed for the next screen; put them under `src/components/ui` and keep feature-specific composition in feature folders.
-- [ ] Migrate the app shell (Topbar, Sidebar, AppLayout), then login/signup, groups, expense list, expense form, and settings. Check mobile layout, dialogs, keyboard interaction, validation, loading, and errors after each screen.
-- [ ] Replace MUI theme/CssBaseline and notistack with the chosen shadcn/Tailwind equivalents once all consumers have moved. Remove MUI, Emotion, Roboto, and unused dependencies after the final screen.
-- [ ] Update README and this plan to describe the actual stack and tested behavior; README is still the Vite starter text and the original stack section still names MUI.
+- [x] Correct `components.json` CSS path to `src/globals.css`; expose the root TypeScript alias for future shadcn CLI additions.
+- [x] Use `src/globals.css` as the single Tailwind entry, with semantic palette tokens and root `.dark` synchronization. Theme applies on auth pages and persists on reload.
+- [x] Add the initial shadcn base-nova components under `src/components/ui`: Button, Input, Label, Card, Badge, Alert, DropdownMenu, Sheet, Skeleton and Separator. Add further components as screens migrate.
+- [x] Migrate Topbar, Sidebar, AppLayout, login/signup and protected-route loading. Add accessible mobile navigation, account menu, password visibility controls, inline form errors and a skip link.
+- [x] Migrate Dashboard, groups, members, expense list/form, settings and all dialogs. Live authenticated data-flow verification remains pending.
+- [x] Replace MUI theme/CssBaseline with Tailwind tokens and notistack with Sonner. Remove MUI, Emotion, Roboto and unused theme dependencies.
+- [x] Replace the starter README with setup, current UI migration status and verification limits.
+
+### D. Visual direction and design tokens
+
+The product should feel like a calm financial workspace: clear balances and actions first, with color used to explain state. Avoid making every card or button bright green. Use the palette as semantic tokens rather than hard-coded colors in components.
+
+| Role | Color | Intended use |
+| --- | --- | --- |
+| Brand / strong text | `#0C4137` | Navigation, primary buttons, headings, active controls |
+| Mint accent | `#06D6A0` | Focus, selected details, positive balance accents, small highlights |
+| Soft mint | `#E6FBF6` | Selected rows, summary backgrounds, subtle success surfaces |
+| Yellow | `#FED766` | Pending settlement, tips, attention without error |
+| Raspberry | `#D1345B` | Destructive actions and negative balance accents |
+| Blue | `#3454D1` | Informational states, links, exchange-rate details |
+
+- [x] Define shadcn semantic tokens for background, foreground, card, border, primary, accent, destructive, ring, and sidebar in light and dark themes. Keep neutral white/off-white surfaces and dark readable text alongside this palette.
+- [ ] Check contrast for text, icons, focus rings, and controls. `#06D6A0` and `#FED766` are too light for small text on white; use them as fills/accent marks with `#0C4137` text. `#D1345B` and `#3454D1` can carry text on white.
+- [x] Add development-only `/ui-preview` with button variants, inputs/errors, badges, cards, alerts, sample rows, sheet dialog, skeletons and theme switching. Tabs will be added with the group screen migration.
+- [ ] Use a compact 8px spacing scale, clear type hierarchy, restrained shadows, and consistent radii. Make monetary amounts easy to scan with tabular numerals and align them consistently in expense and balance lists.
+- [ ] Dashboard: replace promotional feature cards with useful recent activity or groups once data exists. Make the balance summary the visual focus; show each currency separately until cross-currency totals are defined.
+- [ ] Groups and expenses: keep content on light surfaces, use soft mint for selection, reserve full dark-green fill for the main action, and use mint sparingly for positive amounts. Give owed amounts a raspberry accent without relying on color alone; include labels and signs.
+- [ ] Expense form: divide the long flow into clear sections (details, who paid, split, conversion, review), keep totals and validation visible, and ensure mobile users can reach the save action without losing context.
+- [ ] Establish hover, focus, disabled, loading, empty, and error states for every migrated component; test keyboard navigation and narrow screens.
+
+### UI migration verification (first slice)
+
+- TypeScript and lint pass; production build checked after migration.
+- Browser checks: login/signup required-field validation; light/dark rendering; 390px mobile layout; account dropdown; sheet confirmation and focus return. No real credentials or records were submitted.
+- The shared shell and gallery were inspected at desktop size. Protected data pages still require a signed-in smoke test.
+- Superseded by the full screen migration below; authenticated smoke testing remains outstanding.
+
+### Dark theme and Google authentication (2026-09-20)
+
+- [x] Use neutral near-black (`#101012`) and graphite (`#18181b`) backgrounds in dark mode, including both auth panels and the temporary MUI theme. Mint remains an accent.
+- [x] Add Google sign-in to login and signup with Firebase `GoogleAuthProvider` and `signInWithPopup`, account selection, shared profile creation, pending state and translated errors. Popup cancellation is silent.
+- [x] Add six mocked auth tests covering first sign-in, existing profile preservation, cancellation, blocked popup/provider/domain/network failures, duplicate requests and missing configuration. All 33 tests pass.
+- [ ] Enable/verify Google provider and authorized domains in the Firebase project, then complete a real Google sign-in smoke test. Setup instructions are in README; remote Firebase configuration was not changed.
+
+### Full UI migration and dotted surfaces (2026-09-20)
+
+- [x] Apply 6px rounded-md surfaces and controls, retaining circular avatars and switch thumbs. Add a 20px radial dot grid to workspace/auth backgrounds.
+- [x] Migrate remaining pages and dialogs to Tailwind/shadcn, including member search, destructive confirmations and all four expense split modes. Group detail uses Base UI tabs.
+- [x] Divide the expense form into details, payers, split and review with a sticky action footer. Exact remainder filling explicitly updates the submitted values as well as the preview.
+- [x] Replace Dashboard promotional/placeholder zero cards with actual groups and currencies. Save the default currency preference from Settings. Aggregate balances and activity remain separate unfinished features.
+- [x] Remove MUI, Emotion, Roboto and notistack; use Sonner notifications.
+- [x] TypeScript, ESLint, production build and all 33 tests pass. Build retains its large-chunk warning. Browser preview verified equal, exact remainder, percentage and weighted shares, safe validation submission without writes and a 390px expense dialog. Browser console has no errors.
+- [ ] Complete authenticated Firebase smoke tests for group/member/expense CRUD and preference persistence. No live records were changed during UI verification.

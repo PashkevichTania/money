@@ -17,74 +17,30 @@ export function computeEqualShares(
   }))
 }
 
+// Largest-remainder allocation keeps totals exact and never assigns negative cents.
+export function allocateMoney(total: number, weights: number[]): number[] {
+  const cents = Math.round(total * 100)
+  const sum = safeSum(weights)
+  if (!Number.isSafeInteger(cents) || cents < 0 || weights.some(w => !Number.isFinite(w) || w < 0)) return weights.map(() => 0)
+  if (!Number.isFinite(sum) || sum <= 0) return weights.map(() => 0)
+  const raw = weights.map(w => cents * (w / sum))
+  const units = raw.map(Math.floor)
+  const order = raw.map((v, i) => ({ i, remainder: v - units[i] }))
+    .sort((a, b) => b.remainder - a.remainder || a.i - b.i)
+  const remaining = cents - units.reduce((a, b) => a + b, 0)
+  for (let i = 0; i < remaining; i++) units[order[i % order.length].i]++
+  return units.map(v => v / 100)
+}
+
 export function resolveOwedPerUser(
   convertedTotal: number,
   participants: ParticipantShare[],
   splitType: SplitType,
 ): Record<string, number> {
-  const out: Record<string, number> = {}
-  if (!participants.length) return out
-
-  if (splitType === 'equal') {
-    const n = participants.length
-    const per = convertedTotal / n
-    const perRounded = roundMoney(per)
-    let sum = 0
-    participants.forEach((p, i) => {
-      if (i === n - 1) {
-        out[p.userId] = roundMoney(convertedTotal - sum)
-      } else {
-        out[p.userId] = perRounded
-        sum += perRounded
-      }
-    })
-    return out
-  }
-
-  if (splitType === 'exact') {
-    participants.forEach((p) => {
-      out[p.userId] = roundMoney(p.value)
-    })
-    return out
-  }
-
-  if (splitType === 'percentage') {
-    participants.forEach((p) => {
-      out[p.userId] = roundMoney((convertedTotal * p.value) / 100)
-    })
-    const totaled = safeSum(Object.values(out))
-    if (participants.length && Math.abs(totaled - convertedTotal) > 0.001) {
-      const diff = roundMoney(convertedTotal - totaled)
-      const lastId = participants[participants.length - 1].userId
-      out[lastId] = roundMoney((out[lastId] ?? 0) + diff)
-    }
-    return out
-  }
-
-  if (splitType === 'shares') {
-    const totalShares = safeSum(participants.map((p) => Math.max(0, p.value)))
-    if (totalShares <= 0) {
-      return computeEqualShares(convertedTotal, participants.map((p) => p.userId)).reduce<
-        Record<string, number>
-      >((acc, p) => {
-        acc[p.userId] = roundMoney(convertedTotal / participants.length)
-        return acc
-      }, {})
-    }
-    const perShare = convertedTotal / totalShares
-    participants.forEach((p) => {
-      out[p.userId] = roundMoney(p.value * perShare)
-    })
-    const totaled = safeSum(Object.values(out))
-    if (participants.length && Math.abs(totaled - convertedTotal) > 0.001) {
-      const diff = roundMoney(convertedTotal - totaled)
-      const lastId = participants[participants.length - 1].userId
-      out[lastId] = roundMoney((out[lastId] ?? 0) + diff)
-    }
-    return out
-  }
-
-  return out
+  // Exact values are original-currency weights; the saved converted total
+  // includes the FX snapshot and its rounding, so no new rate is fetched.
+  const amounts = allocateMoney(convertedTotal, participants.map(p => splitType === 'equal' ? 1 : p.value))
+  return Object.fromEntries(participants.map((p, i) => [p.userId, amounts[i]]))
 }
 
 export function computeNetBalances(
@@ -105,12 +61,9 @@ export function computeNetBalances(
     add(userId, -amount)
   })
 
-  expense.paidBy.forEach((payer: PayerContribution) => {
-    let convertedPaid = payer.amount
-    if (expense.originalCurrency !== expense.groupCurrency && expense.rateSnapshot?.rate) {
-      convertedPaid = payer.amount * expense.rateSnapshot.rate
-    }
-    add(payer.userId, roundMoney(convertedPaid))
+  const payments = allocateMoney(expense.convertedAmount, expense.paidBy.map(p => p.amount))
+  expense.paidBy.forEach((payer: PayerContribution, i) => {
+    add(payer.userId, payments[i])
   })
 
   Object.keys(net).forEach((k) => {
@@ -140,7 +93,7 @@ export function validateSplit(params: {
 }): SplitValidationError[] {
   const errors: SplitValidationError[] = []
 
-  if (!params.originalAmount || params.originalAmount <= 0) {
+  if (!Number.isFinite(params.originalAmount) || params.originalAmount <= 0) {
     errors.push({
       field: 'originalAmount',
       message: 'Amount must be greater than zero.',
@@ -159,6 +112,15 @@ export function validateSplit(params: {
       field: 'paidBy',
       message: 'At least one person must pay.',
     })
+  }
+
+  if (new Set(params.participants.map(p => p.userId)).size !== params.participants.length ||
+      params.participants.some(p => !p.userId || !Number.isFinite(p.value) || p.value < 0)) {
+    errors.push({ field: 'participants', message: 'Participants must be unique with finite, non-negative values.' })
+  }
+  if (new Set(params.paidBy.map(p => p.userId)).size !== params.paidBy.length ||
+      params.paidBy.some(p => !p.userId || !Number.isFinite(p.amount) || p.amount < 0)) {
+    errors.push({ field: 'paidBy', message: 'Payers must be unique with finite, non-negative amounts.' })
   }
 
   const paidSum = safeSum(params.paidBy.map((p) => p.amount))
@@ -290,17 +252,6 @@ export function autoDistributePaidBy(
   total: number,
   userIds: string[],
 ): PayerContribution[] {
-  if (!userIds.length) return []
-  if (userIds.length === 1) {
-    return [{ userId: userIds[0], amount: roundMoney(total) }]
-  }
-  const per = roundMoney(total / userIds.length)
-  let sum = 0
-  return userIds.map((userId, i) => {
-    if (i === userIds.length - 1) {
-      return { userId, amount: roundMoney(total - sum) }
-    }
-    sum = roundMoney(sum + per)
-    return { userId, amount: per }
-  })
+  const amounts = allocateMoney(total, userIds.map(() => 1))
+  return userIds.map((userId, i) => ({ userId, amount: amounts[i] }))
 }
