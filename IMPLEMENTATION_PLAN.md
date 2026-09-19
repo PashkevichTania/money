@@ -511,7 +511,7 @@ export interface Expense {
 2. ✅ `Phase 3` Groups/Members — foundational for everything else
 3. ✅ `Phase 4` Expenses with equal split — app is usable for real equal-split single-payer scenarios
 4. ✅ `Phase 5` flexible splits + multiple payers — all four split types, multi-payer, Edit now works
-5. ❌ `Phase 7 (part 1)` basic balances from net effects across all expenses — see it’s computing right ← **NEXT**
+5. ❌ `Phase 7 (part 1)` basic balances from net effects across all expenses — see it’s computing right
 6. ❌ `Phase 6` FX conversion — makes it multi-currency useful (FX API wired, dialog part done; now finalize edge handling + display)
 7. ❌ `Phase 7 (rest)` settlements + activity log
 8. ❌ `Phase 8` polish + rules + deploy
