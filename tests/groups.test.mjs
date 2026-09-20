@@ -39,7 +39,8 @@ const api = {
 globalThis.__groupTestFirestore = api
 const url = source => 'data:text/javascript;base64,' + Buffer.from(source).toString('base64')
 const firestore = url(Object.keys(api).map(key => `export const ${key} = (...args) => globalThis.__groupTestFirestore.${key}(...args)`).join('\n'))
-const config = url('export const db = {}; export const isFirebaseConfigured = true')
+globalThis.__groupAuth = { currentUser: { uid: 'a' } }
+const config = url('export const db = {}; export const isFirebaseConfigured = true; export const auth = globalThis.__groupAuth')
 const dates = url("export const nowIso = () => '2026-09-19T00:00:00.000Z'")
 let source = readFileSync(new URL('../src/api/groups.ts', import.meta.url), 'utf8')
 for (const [name, value] of [['firebase/firestore', firestore], ['@/config/firebase', config], ['@/utils/dates', dates]]) {
@@ -48,7 +49,7 @@ for (const [name, value] of [['firebase/firestore', firestore], ['@/config/fireb
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
 const { createGroup, getGroup, updateGroup, deleteGroup, addMemberToGroup, removeMemberFromGroup } = await import(url(compiled))
 function reset(history = false) {
-  docs = new Map([['groups/g', { id: 'g', name: 'Trip', baseCurrency: 'EUR', memberIds: ['a', 'b'], hasExpenseHistory: history }]])
+  docs = new Map([['groups/g', { id: 'g', name: 'Trip', createdBy: 'a', baseCurrency: 'EUR', memberIds: ['a', 'b'], hasExpenseHistory: history }]])
   events = []; failBatch = false
 }
 test('currency cannot change even for an empty group', async () => {
@@ -103,4 +104,17 @@ test('failed cleanup retains locked parent and can be retried', async () => {
   assert.ok(docs.has('groups/g/expenses/e'))
   await deleteGroup('g')
   assert.equal(docs.size, 0)
+})
+
+test('only group author may initiate deletion; creator membership is retained', async () => {
+  reset()
+  await assert.rejects(removeMemberFromGroup('g', 'a'), /author must remain/)
+  try {
+    for (const user of [{ uid: 'b' }, null]) {
+      globalThis.__groupAuth.currentUser = user
+      await assert.rejects(deleteGroup('g'), /Only the group author/)
+      assert.equal(docs.get('groups/g').deleting, undefined)
+      assert.equal(events.length, 0)
+    }
+  } finally { globalThis.__groupAuth.currentUser = { uid: 'a' } }
 })

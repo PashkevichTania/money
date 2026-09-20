@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { Field, CurrencySelect, Section, Message } from '@/components/ui/field'
 import { z } from 'zod'
-import { useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNotify } from '@/hooks/useNotify'
@@ -431,6 +431,12 @@ export default function AddExpenseDialog({
       enqueueSnackbar('You must be signed in', { variant: 'error' })
       return
     }
+    if (editingExpense && editingExpense.createdBy !== me.id) {
+      enqueueSnackbar('Only the expense author can edit this expense.', {
+        variant: 'error',
+      })
+      return
+    }
     if (rateState.loading || rateState.error || rateState.rate == null) {
       enqueueSnackbar('A valid FX rate is required for currency conversion', {
         variant: 'error',
@@ -661,7 +667,18 @@ export default function AddExpenseDialog({
                 {...register('originalAmount')}
                 error={errors.originalAmount?.message}
               />
-              <CurrencySelect {...register('originalCurrency')} />
+              <Controller
+                control={control}
+                name="originalCurrency"
+                render={({ field }) => (
+                  <CurrencySelect
+                    value={field.value}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    onValueChange={field.onChange}
+                  />
+                )}
+              />
             </div>
             <Field
               label="Date"

@@ -27,11 +27,15 @@ Migrated: navigation, login/signup, Dashboard, groups and members, expenses, Set
 
 All screens use Tailwind/shadcn and Sonner notifications. MUI, Emotion, Roboto and notistack have been removed. Controls and surfaces use `rounded-md` (6px), with a subtle dotted workspace background. Add future shadcn components with `npx shadcn add <component>`.
 
-Settings saves the default currency for new groups. Dashboard shows actual groups and currencies. The group Balances tab shows all-time expense totals, per-member balances and suggested transfers, including saved settlements. It updates through Firestore subscriptions and uses saved converted amounts, without fetching new exchange rates. Recording settlements, date filtering and activity remain future features. The development gallery includes safe expense-form and balance previews without database writes.
+Settings saves the default currency for new groups. Dashboard shows actual groups and currencies. The group Balances tab shows all-time expense totals, per-member balances and suggested transfers, including saved settlements. It updates through Firestore subscriptions and uses saved converted amounts, without fetching new exchange rates. Date filtering remains future work; Activity is excluded from this friends-only MVP. The development gallery includes safe expense-form, balance and payment previews without database writes.
+
+Under Balances, the sender or recipient can record a full or partial payment already made outside the app. Records use the fixed group currency and can be deleted only by their author (with confirmation) to correct a mistake. A payment changes balances, not expense totals. Stable form identifiers prevent duplicate writes when retrying an uncertain save. No payment processing or Activity logging is performed. Updated settlement rules must be deployed before this feature can save to Firebase.
 
 ## Data integrity
 
-Group base currency is fixed at creation. Splits and payer contributions use deterministic cent allocation. Member removal is conservatively blocked after expense history exists. Group deletion cleans ledger subcollections before removing the parent and can be retried after failure.
+Group base currency is fixed at creation. Splits and payer contributions use deterministic cent allocation. Member removal is conservatively blocked after expense history exists. Only the expense author can edit/delete an expense, and only the group author can delete a group. Group deletion cleans all ledger subcollections (including other authors' expenses) under an owner-only deletion lock before removing the parent; failed cleanup can be retried. The group author remains a member.
+
+Dashboard balances show money owed to you, money you owe and net balance separately for each currency. Currency selectors support search. New FX requests use Frankfurter v2; saved expenses retain their original rate snapshots.
 
 `firestore.rules` must be verified and deployed to the configured Firebase project before relying on the new server-side constraints. Local tests cover arithmetic, HTTP failure handling and API cleanup behavior; live Firebase verification is still pending.
 

@@ -11,10 +11,16 @@ import {
   updateGroup,
   type CreateGroupInput,
 } from '@/api/groups'
-import { getUserByEmail, getUsersByIds, searchUsersByEmail, type SearchUserResult } from '@/api/users'
+import {
+  getUserByEmail,
+  getUsersByIds,
+  searchUsersByEmail,
+  type SearchUserResult,
+} from '@/api/users'
 import { isFirebaseConfigured } from '@/config/firebase'
 
 export interface GroupStoreState {
+  groupsUserId: string | null
   groups: Group[]
   selectedGroupId: string | null
   membersMap: Record<string, UserProfile>
@@ -25,7 +31,9 @@ export interface GroupStoreState {
   errors: Record<string, string | undefined>
   initGroupsForUser: (userId: string) => Promise<Group[]>
   refreshGroup: (groupId: string) => Promise<void>
-  createGroupAndSelect: (input: Omit<CreateGroupInput, 'createdBy'> & { createdBy: string }) => Promise<Group>
+  createGroupAndSelect: (
+    input: Omit<CreateGroupInput, 'createdBy'> & { createdBy: string },
+  ) => Promise<Group>
   renameGroup: (groupId: string, name: string) => Promise<void>
   removeGroup: (groupId: string) => Promise<void>
   setSelectedGroupId: (id: string | null) => void
@@ -57,6 +65,7 @@ function makeErrorBoundary<T>(
 }
 
 export const useGroupStore = create<GroupStoreState>((set, get) => ({
+  groupsUserId: null,
   groups: [],
   selectedGroupId: null,
   membersMap: {},
@@ -73,19 +82,33 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
   setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 
   initGroupsForUser: async (userId) => {
+    set({
+      groupsUserId: userId,
+      groups: get().groupsUserId === userId ? get().groups : [],
+      errors: {},
+    })
     if (!isFirebaseConfigured) {
       set({ groups: [], loading: false })
       return []
     }
     set({ loading: true })
     try {
-      return await makeErrorBoundary(set, 'groups', async () => {
-        const groups = await getGroupsForUser(userId)
-        set({ groups, loading: false })
-        return groups
-      })
+      const groups = await getGroupsForUser(userId)
+      if (get().groupsUserId === userId) set({ groups, loading: false })
+      return groups
+    } catch (error) {
+      if (get().groupsUserId === userId)
+        set((s) => ({
+          errors: {
+            ...s.errors,
+            groups:
+              error instanceof Error ? error.message : 'Unable to load groups.',
+          },
+        }))
+      throw error
     } finally {
-      if (get().loading) set({ loading: false })
+      if (get().groupsUserId === userId && get().loading)
+        set({ loading: false })
     }
   },
 
@@ -146,7 +169,8 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
       await deleteGroup(groupId)
       set((s) => ({
         groups: s.groups.filter((g) => g.id !== groupId),
-        selectedGroupId: s.selectedGroupId === groupId ? null : s.selectedGroupId,
+        selectedGroupId:
+          s.selectedGroupId === groupId ? null : s.selectedGroupId,
       }))
     })
   },
@@ -159,7 +183,10 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
         const users = await getUsersByIds(memberIds)
         const map: Record<string, UserProfile> = {}
         for (const u of users) map[u.id] = u
-        set((s) => ({ membersMap: { ...s.membersMap, ...map }, loadingMembers: false }))
+        set((s) => ({
+          membersMap: { ...s.membersMap, ...map },
+          loadingMembers: false,
+        }))
         return users
       })
     } finally {
@@ -176,7 +203,8 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
           `No user found with email "${email.trim()}". Ask them to sign up first, then add them.`,
         )
       }
-      const current = get().groups.find((g) => g.id === groupId) ?? (await getGroup(groupId))
+      const current =
+        get().groups.find((g) => g.id === groupId) ?? (await getGroup(groupId))
       const memberIds = current?.memberIds ?? []
       if (memberIds.includes(user.id)) {
         throw new Error('This user is already a member of the group')

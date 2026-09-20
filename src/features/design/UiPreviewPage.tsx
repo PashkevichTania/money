@@ -1,6 +1,9 @@
 import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
 import { BalanceSummary } from '@/features/groups/components/BalancesTab'
-import type { Expense } from '@/types/expense'
+import type { Expense, Settlement } from '@/types/expense'
+import RecordSettlementDialog, {
+  type TransferSuggestion,
+} from '@/features/groups/components/RecordSettlementDialog'
 import type { Group } from '@/types/group'
 import type { UserProfile } from '@/types/user'
 import { useState } from 'react'
@@ -49,6 +52,10 @@ const previewMembers: UserProfile[] = previewGroup.memberIds.map((id) => ({
 }))
 
 export default function UiPreviewPage() {
+  const [previewPayments, setPreviewPayments] = useState<Settlement[]>([])
+  const [recordPayment, setRecordPayment] = useState<{
+    suggestion?: TransferSuggestion
+  } | null>(null)
   const [balancesOpen, setBalancesOpen] = useState(false)
   const [expenseOpen, setExpenseOpen] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -90,7 +97,13 @@ export default function UiPreviewPage() {
           group={previewGroup}
           members={previewMembers}
           currentUserId="jamie"
-          settlements={[]}
+          settlements={previewPayments}
+          onRecord={(suggestion) => setRecordPayment({ suggestion })}
+          onDelete={(payment) =>
+            setPreviewPayments((payments) =>
+              payments.filter((p) => p.id !== payment.id),
+            )
+          }
           expenses={[
             {
               id: 'sample-dinner',
@@ -122,6 +135,26 @@ export default function UiPreviewPage() {
           group={previewGroup}
           members={previewMembers}
           onClose={() => setExpenseOpen(false)}
+        />
+      )}
+      {recordPayment && (
+        <RecordSettlementDialog
+          group={previewGroup}
+          members={previewMembers}
+          currentUserId="jamie"
+          suggestion={recordPayment.suggestion}
+          onClose={() => setRecordPayment(null)}
+          onSave={async (id, input) => {
+            setPreviewPayments((payments) => [
+              ...payments.filter((p) => p.id !== id),
+              {
+                ...input,
+                id,
+                createdBy: 'jamie',
+                createdAt: new Date().toISOString(),
+              },
+            ])
+          }}
         />
       )}
       <div className="grid gap-4 sm:grid-cols-3">

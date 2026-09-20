@@ -7,7 +7,9 @@ const compile = source => 'data:text/javascript;base64,' + Buffer.from(ts.transp
 const read = path => readFileSync(new URL(path, import.meta.url), 'utf8')
 const currency = compile(read('../src/utils/currency.ts'))
 const split = compile(read('../src/utils/split.ts').replace("'./currency'", JSON.stringify(currency)))
-const { calculateBalances, aggregateNetBalances, simplifyDebts } = await import(compile(read('../src/utils/balances.ts').replace("'./split'", JSON.stringify(split))))
+const balances = compile(read('../src/utils/balances.ts').replace("'./split'", JSON.stringify(split)))
+const { calculateBalances, aggregateNetBalances, simplifyDebts } = await import(balances)
+const { summarizeDashboard } = await import(compile(read('../src/utils/dashboard.ts').replace("'./balances'", JSON.stringify(balances))))
 const expense = (patch = {}) => ({ id: 'e', title: 'Dinner', groupCurrency: 'EUR', originalAmount: 90, convertedAmount: 90, splitType: 'equal', paidBy: [{ userId: 'a', amount: 90 }], participants: ['a', 'b', 'c'].map(userId => ({ userId, value: 1 })), ...patch })
 
 test('empty group includes members with zero balances and no suggestions', () => {
@@ -47,4 +49,19 @@ test('mixed currencies, malformed splits and unbalanced nets fail closed', () =>
   assert.throws(() => calculateBalances([expense({ paidBy: [] })], [], 'EUR'), /invalid/)
   assert.throws(() => calculateBalances([], [{ currency: 'EUR', fromUserId: 'a', toUserId: 'a', amount: 1 }], 'EUR'), /invalid/)
   assert.throws(() => simplifyDebts(new Map([['a', 1], ['b', -2]])), /zero/)
+})
+
+test('dashboard sums across groups while keeping currencies and debts separate', () => {
+  const groups = [
+    { currency: 'EUR', expenses: [expense()], settlements: [] },
+    { currency: 'EUR', expenses: [expense({ paidBy: [{ userId: 'b', amount: 90 }] })], settlements: [] },
+    { currency: 'USD', expenses: [expense({ groupCurrency: 'USD' })], settlements: [] },
+  ]
+  assert.deepEqual(summarizeDashboard(groups, 'a'), [
+    { currency: 'EUR', owed: 60, owing: 30, net: 30 },
+    { currency: 'USD', owed: 60, owing: 0, net: 60 },
+  ])
+  assert.deepEqual(summarizeDashboard([], 'a'), [])
+  groups[0].settlements.push({ fromUserId: 'b', toUserId: 'a', amount: 20, currency: 'EUR' })
+  assert.equal(summarizeDashboard(groups, 'a')[0].net, 10)
 })

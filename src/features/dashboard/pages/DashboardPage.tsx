@@ -6,6 +6,7 @@ import { Section, Message } from '@/components/ui/field'
 import { useAuthStore } from '@/stores/authStore'
 import { useGroupStore } from '@/stores/groupStore'
 import { useGroups } from '@/hooks/useGroups'
+import DashboardBalances from '../components/DashboardBalances'
 export default function DashboardPage() {
   const profile = useAuthStore((s) => s.profile)
   const { groups, loading } = useGroups()
@@ -31,6 +32,9 @@ export default function DashboardPage() {
         </Button>
       </header>
       {error && <Message error>{error}</Message>}
+      {profile && !loading && !error && (
+        <DashboardBalances groups={groups} userId={profile.id} />
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <Section title="Your groups">
           <div className="flex items-center justify-between">

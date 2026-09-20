@@ -1,7 +1,8 @@
 import { useId, type ComponentProps, type ReactNode } from 'react'
 import { Input } from './input'
 import { Label } from './label'
-import { NativeSelect } from './native-select'
+import { Combobox } from '@base-ui/react/combobox'
+import { ChevronDown, Check } from 'lucide-react'
 import { CURRENCIES } from '@/config/currencies'
 export function Field({
   label,
@@ -30,19 +31,71 @@ export function Field({
 }
 export function CurrencySelect({
   label = 'Currency',
-  ...props
-}: Omit<ComponentProps<'select'>, 'size'> & { label?: string }) {
+  value,
+  onValueChange,
+  disabled,
+  name,
+  onBlur,
+}: {
+  label?: string
+  value: string
+  onValueChange: (value: string) => void
+  disabled?: boolean
+  name?: string
+  onBlur?: () => void
+}) {
   const id = useId()
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <NativeSelect {...props} id={id} className="w-full">
-        {CURRENCIES.map((c) => (
-          <option key={c.code} value={c.code}>
-            {c.code} · {c.label}
-          </option>
-        ))}
-      </NativeSelect>
+      <Combobox.Root
+        items={CURRENCIES}
+        value={CURRENCIES.find((c) => c.code === value) ?? null}
+        onValueChange={(currency) => {
+          if (currency) onValueChange(currency.code)
+        }}
+        itemToStringLabel={(c) => `${c.code} · ${c.label}`}
+        itemToStringValue={(c) => c.code}
+        name={name}
+        disabled={disabled}
+      >
+        <Combobox.Trigger
+          id={id}
+          onBlur={onBlur}
+          className="flex h-11 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-left text-sm disabled:opacity-50 dark:bg-input/30"
+        >
+          <Combobox.Value placeholder="Select currency" />
+          <ChevronDown className="size-4 shrink-0" />
+        </Combobox.Trigger>
+        <Combobox.Portal>
+          <Combobox.Positioner sideOffset={6} className="z-[100]" align="start">
+            <Combobox.Popup className="w-[var(--anchor-width)] min-w-60 max-w-[calc(100vw-2rem)] rounded-md border bg-popover p-2 text-popover-foreground shadow-lg dark:bg-neutral-900">
+              <Combobox.Input
+                aria-label="Search currencies"
+                placeholder="Search code or currency..."
+                className="mb-2 h-10 w-full rounded-md border bg-background px-3 text-sm"
+              />
+              <Combobox.Empty className="p-3 text-sm text-muted-foreground">
+                No currencies found.
+              </Combobox.Empty>
+              <Combobox.List className="max-h-64 overflow-y-auto overscroll-contain">
+                {(currency: (typeof CURRENCIES)[number]) => (
+                  <Combobox.Item
+                    key={currency.code}
+                    value={currency}
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 text-sm data-highlighted:bg-accent data-highlighted:text-accent-foreground"
+                  >
+                    {currency.code} · {currency.label}
+                    <Combobox.ItemIndicator>
+                      <Check className="size-4" />
+                    </Combobox.ItemIndicator>
+                  </Combobox.Item>
+                )}
+              </Combobox.List>
+            </Combobox.Popup>
+          </Combobox.Positioner>
+        </Combobox.Portal>
+      </Combobox.Root>
     </div>
   )
 }

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { Field, CurrencySelect, Message } from '@/components/ui/field'
 import { z } from 'zod'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCallback, useEffect, useState } from 'react'
 import { DEFAULT_BASE_CURRENCY } from '@/config/currencies'
@@ -43,6 +43,7 @@ export default function CreateGroupDialog({
   const defaultCurrency = me?.defaultCurrency || DEFAULT_BASE_CURRENCY
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -107,7 +108,19 @@ export default function CreateGroupDialog({
             {...register('name')}
             error={formErrors.name?.message}
           />
-          <CurrencySelect label="Base currency" {...register('baseCurrency')} />
+          <Controller
+            control={control}
+            name="baseCurrency"
+            render={({ field }) => (
+              <CurrencySelect
+                label="Base currency"
+                value={field.value}
+                name={field.name}
+                onBlur={field.onBlur}
+                onValueChange={field.onChange}
+              />
+            )}
+          />
           <p className="text-xs leading-5 text-muted-foreground">
             This currency is fixed once the group is created. Expenses in other
             currencies will be converted to it.

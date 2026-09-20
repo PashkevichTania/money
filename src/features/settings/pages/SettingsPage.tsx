@@ -54,7 +54,7 @@ export default function SettingsPage() {
           label="Default currency for new groups"
           value={profile?.defaultCurrency || 'USD'}
           disabled={busy || !profile}
-          onChange={(e) => void saveCurrency(e.target.value)}
+          onValueChange={(value) => void saveCurrency(value)}
         />
         <p className="text-xs text-muted-foreground">
           Existing groups keep the currency they were created with.

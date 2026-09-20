@@ -13,13 +13,7 @@ import ExpenseList from '@/features/expenses/components/ExpenseList'
 import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
 import type { Expense } from '@/types/expense'
 
-const TAB_LABELS = [
-  'Expenses',
-  'Balances',
-  'Members',
-  'Activity',
-  'Settings',
-] as const
+const TAB_LABELS = ['Expenses', 'Balances', 'Members', 'Settings'] as const
 
 export default function GroupDetailPage() {
   const { group, members, loadingMembers, loading, notFound, error } =
@@ -110,13 +104,6 @@ export default function GroupDetailPage() {
               />
             </TabsContent>
             <TabsContent value={3}>
-              <Section title="Activity">
-                <p className="text-sm text-muted-foreground">
-                  Group activity history is not available yet.
-                </p>
-              </Section>
-            </TabsContent>
-            <TabsContent value={4}>
               <GroupSettingsTab group={group} />
             </TabsContent>
           </Tabs>

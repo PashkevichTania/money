@@ -8,7 +8,7 @@ const transpile = source => 'data:text/javascript;base64,' + Buffer.from(ts.tran
 }).outputText).toString('base64')
 const currency = transpile(readFileSync(new URL('../src/utils/currency.ts', import.meta.url), 'utf8'))
 const source = readFileSync(new URL('../src/utils/split.ts', import.meta.url), 'utf8').replace("'./currency'", JSON.stringify(currency))
-const { computeNetBalances, resolveOwedPerUser, allocateMoney, validateSplit } = await import(transpile(source))
+const { computeNetBalances, resolveOwedPerUser, allocateMoney, validateSplit, buildParticipants } = await import(transpile(source))
 const cents = values => Math.round(values.reduce((a, b) => a + b, 0) * 100)
 
 for (const splitType of ['equal', 'exact', 'percentage', 'shares']) {
@@ -49,4 +49,13 @@ test('rejects invalid money and duplicate identities', () => {
     assert.ok(validateSplit({ originalAmount: amount, paidBy: [], participants: [], splitType: 'equal' }).length)
   }
   assert.ok(validateSplit({ originalAmount: 1, paidBy: [{ userId: 'a', amount: 1 }], participants: [{ userId: 'a', value: -1 }], splitType: 'exact' }).length)
+})
+
+test('share inputs retain entered values and reject fractional or zero weights', () => {
+  for (const value of [0, -1, 1.5]) {
+    const participants = buildParticipants('shares', ['a'], { a: value })
+    assert.equal(participants[0].value, value)
+    assert.ok(validateSplit({ originalAmount: 1, paidBy: [{ userId: 'a', amount: 1 }], participants, splitType: 'shares' }).some(e => e.field === 'split.shares'))
+  }
+  assert.equal(buildParticipants('shares', ['a'], {})[0].value, 1)
 })

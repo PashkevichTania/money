@@ -179,7 +179,12 @@ export default function MembersTab({
                 <Button
                   variant="ghost"
                   size="icon"
-                  disabled={!canRemove || busy || !member}
+                  disabled={
+                    !canRemove ||
+                    busy ||
+                    !member ||
+                    member.id === group.createdBy
+                  }
                   aria-label={`Remove ${member?.displayName || 'member'}`}
                   onClick={() => member && setToRemove(member)}
                 >

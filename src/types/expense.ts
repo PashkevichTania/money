@@ -48,21 +48,3 @@ export interface Settlement {
   createdBy: string
   createdAt: string
 }
-
-export type ActivityType =
-  | 'EXPENSE_CREATED'
-  | 'EXPENSE_UPDATED'
-  | 'EXPENSE_DELETED'
-  | 'SETTLEMENT_CREATED'
-  | 'MEMBER_ADDED'
-  | 'MEMBER_REMOVED'
-
-export interface ActivityLog {
-  id: string
-  groupId: string
-  type: ActivityType
-  entityId: string
-  message: string
-  createdBy: string
-  createdAt: string
-}

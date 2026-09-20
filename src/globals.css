@@ -178,6 +178,8 @@
 }
 
 @layer utilities {
+  .dark select { color-scheme: dark; }
+  .dark select option { background-color: #171717; color: #fafafa; }
   .bg-workspace {
     background-image: radial-gradient(circle, #73737330 1px, transparent 1px);
     background-size: 20px 20px;

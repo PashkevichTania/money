@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const FRANKFURTER_BASE = 'https://api.frankfurter.app'
+const FRANKFURTER_BASE = 'https://api.frankfurter.dev/v2/rates'
 
 export interface RateResult {
   rate: number
@@ -23,20 +23,36 @@ export async function getExchangeRate(
       source: 'identity',
     }
   }
-  const dateSegment = date ? date.slice(0, 10) : 'latest'
-  const url = `${FRANKFURTER_BASE}/${dateSegment}?from=${fromCurrency.toUpperCase()}&to=${toCurrency.toUpperCase()}`
+  const base = fromCurrency.trim().toUpperCase()
+  const quote = toCurrency.trim().toUpperCase()
+  const params = new URLSearchParams({ base, quotes: quote })
+  if (date) params.set('date', date.slice(0, 10))
+  const url = `${FRANKFURTER_BASE}?${params}`
   try {
-    const { data } = await axios.get<{
-      date: string
-      rates: Record<string, number>
-    }>(url)
-    const rate = data?.rates?.[toCurrency.toUpperCase()]
-    if (!rate || !Number.isFinite(rate) || rate <= 0) {
+    const { data } = await axios.get<
+      {
+        date: string
+        base: string
+        quote: string
+        rate: number
+      }[]
+    >(url, { timeout: 15000 })
+    const entry = Array.isArray(data)
+      ? data.find((row) => row.base === base && row.quote === quote)
+      : undefined
+    const rate = entry?.rate
+    if (
+      !rate ||
+      !Number.isFinite(rate) ||
+      rate <= 0 ||
+      !entry ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)
+    ) {
       throw new Error(`Rate not available for ${fromCurrency} -> ${toCurrency}`)
     }
     return {
       rate,
-      date: data.date,
+      date: entry.date,
       source: 'frankfurter',
     }
   } catch {

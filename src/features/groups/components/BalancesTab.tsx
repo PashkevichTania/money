@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { subscribeExpenses } from '@/api/expenses'
-import { subscribeSettlements } from '@/api/settlements'
+import {
+  subscribeSettlements,
+  createSettlement,
+  deleteSettlement,
+} from '@/api/settlements'
+import RecordSettlementDialog, {
+  type TransferSuggestion,
+} from './RecordSettlementDialog'
+import { Modal } from '@/components/ui/modal'
+import { useNotify } from '@/hooks/useNotify'
+import { formatDate } from '@/utils/dates'
 import { Button } from '@/components/ui/button'
 import { Section, Message } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -18,12 +28,16 @@ export function BalanceSummary({
   expenses,
   settlements,
   currentUserId,
+  onRecord,
+  onDelete,
 }: {
   group: Group
   members: UserProfile[]
   expenses: Expense[]
   settlements: Settlement[]
   currentUserId?: string
+  onRecord?: (suggestion?: TransferSuggestion) => void
+  onDelete?: (settlement: Settlement) => void
 }) {
   let rows, suggestions
   try {
@@ -129,8 +143,11 @@ export function BalanceSummary({
       </Section>
       <Section
         title="Suggested transfers"
-        description="These suggestions simplify group debts. They do not record or send payments."
+        description="These suggestions simplify group debts. Record a payment after transferring the money."
       >
+        {onRecord && group.memberIds.length > 1 && (
+          <Button onClick={() => onRecord()}>Record a payment</Button>
+        )}
         {!suggestions.length ? (
           <p className="text-sm text-muted-foreground">
             {expenses.length || settlements.length
@@ -151,11 +168,66 @@ export function BalanceSummary({
                 <span className="font-semibold tabular-nums">
                   {money(s.amount)}
                 </span>
+                {onRecord &&
+                  (s.from === currentUserId || s.to === currentUserId) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => onRecord(s)}
+                      aria-label={`Record payment from ${name(s.from)} to ${name(s.to)}`}
+                    >
+                      Record payment
+                    </Button>
+                  )}
               </li>
             ))}
           </ul>
         )}
       </Section>
+      {!!settlements.length && (
+        <Section
+          title="Recorded payments"
+          description="Deleting an incorrect record reverses its effect on balances."
+        >
+          <ul className="divide-y">
+            {[...settlements]
+              .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+              .map((payment) => (
+                <li
+                  key={payment.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="break-words">
+                      <strong>{name(payment.fromUserId)}</strong> paid{' '}
+                      <strong>{name(payment.toUserId)}</strong>
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatDate(payment.createdAt)} · Recorded by{' '}
+                      {name(payment.createdBy)}
+                    </p>
+                    {payment.note && (
+                      <p className="mt-1 break-words text-muted-foreground">
+                        {payment.note}
+                      </p>
+                    )}
+                  </div>
+                  <span className="font-semibold tabular-nums">
+                    {money(payment.amount)}
+                  </span>
+                  {onDelete && payment.createdBy === currentUserId && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => onDelete(payment)}
+                      aria-label={`Delete payment from ${name(payment.fromUserId)} to ${name(payment.toUserId)}`}
+                    >
+                      Delete record
+                    </Button>
+                  )}
+                </li>
+              ))}
+          </ul>
+        </Section>
+      )}
     </div>
   )
 }
@@ -168,6 +240,13 @@ export default function BalancesTab({
   members: UserProfile[]
 }) {
   const me = useCurrentUser()
+  const { enqueueSnackbar } = useNotify()
+  const [record, setRecord] = useState<{
+    suggestion?: TransferSuggestion
+  } | null>(null)
+  const [toDelete, setToDelete] = useState<Settlement | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState<{
     groupId: string
@@ -243,12 +322,78 @@ export default function BalancesTab({
       </div>
     )
   return (
-    <BalanceSummary
-      group={group}
-      members={members}
-      expenses={state.expenses}
-      settlements={state.settlements}
-      currentUserId={me?.id}
-    />
+    <>
+      <BalanceSummary
+        group={group}
+        members={members}
+        expenses={state.expenses}
+        settlements={state.settlements}
+        currentUserId={me?.id}
+        onRecord={me ? (suggestion) => setRecord({ suggestion }) : undefined}
+        onDelete={(payment) => {
+          setDeleteError('')
+          setToDelete(payment)
+        }}
+      />
+      {record && me && (
+        <RecordSettlementDialog
+          group={group}
+          members={members}
+          currentUserId={me.id}
+          suggestion={record.suggestion}
+          onClose={() => setRecord(null)}
+          onSave={async (id, input) => {
+            await createSettlement(id, input)
+            enqueueSnackbar('Payment recorded', { variant: 'success' })
+          }}
+        />
+      )}
+      {toDelete && (
+        <Modal
+          open
+          onClose={() => setToDelete(null)}
+          title="Delete payment record?"
+          description={`Remove this ${formatMoney(toDelete.amount, group.baseCurrency)} payment record and restore the corresponding debt? This does not reverse the actual transfer.`}
+          busy={deleting}
+        >
+          {deleteError && <Message error>{deleteError}</Message>}
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              disabled={deleting}
+              onClick={() => setToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={async () => {
+                if (deleting) return
+                setDeleting(true)
+                setDeleteError('')
+                try {
+                  await deleteSettlement(group.id, toDelete.id)
+                  setToDelete(null)
+                  enqueueSnackbar('Payment record deleted', {
+                    variant: 'success',
+                  })
+                } catch (error) {
+                  setDeleteError(
+                    error instanceof Error
+                      ? error.message
+                      : 'Unable to delete payment.',
+                  )
+                } finally {
+                  setDeleting(false)
+                }
+              }}
+            >
+              {deleting ? 'Deleting...' : 'Delete record'}
+            </Button>
+          </div>
+        </Modal>
+      )}
+    </>
   )
 }

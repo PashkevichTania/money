@@ -6,6 +6,7 @@ import ts from 'typescript'
 const compile = source => 'data:text/javascript;base64,' + Buffer.from(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText).toString('base64')
 const read = path => readFileSync(new URL(path, import.meta.url), 'utf8')
 let docs, concurrentChange
+globalThis.__expenseAuth = { currentUser: { uid: 'a' } }
 const ref = path => ({ path, id: path.split('/').at(-1), withConverter() { return this } })
 const snap = reference => {
   const value = structuredClone(docs.get(reference.path))
@@ -30,7 +31,7 @@ const firestore = compile(Object.keys(api).map(key => `export const ${key} = (..
 const currency = compile(read('../src/utils/currency.ts'))
 const split = compile(read('../src/utils/split.ts').replace("'./currency'", JSON.stringify(currency)))
 let source = read('../src/api/expenses.ts')
-for (const [key, value] of [['firebase/firestore', firestore], ['@/config/firebase', compile('export const db = {}; export const isFirebaseConfigured = true')], ['@/utils/currency', currency], ['@/utils/split', split], ['@/utils/dates', compile("export const nowIso = () => '2026-09-20T00:00:00.000Z'")]]) source = source.replace(`'${key}'`, JSON.stringify(value))
+for (const [key, value] of [['firebase/firestore', firestore], ['@/config/firebase', compile('export const db = {}; export const isFirebaseConfigured = true; export const auth = globalThis.__expenseAuth')], ['@/utils/currency', currency], ['@/utils/split', split], ['@/utils/dates', compile("export const nowIso = () => '2026-09-20T00:00:00.000Z'")]]) source = source.replace(`'${key}'`, JSON.stringify(value))
 const { createExpense, updateExpense, listExpenses, deleteExpense } = await import(compile(source))
 const input = () => ({ groupId: 'g', title: ' Dinner ', originalAmount: 100, originalCurrency: 'EUR', convertedAmount: 100, groupCurrency: 'EUR', paidBy: [{ userId: 'a', amount: 100 }], participants: [{ userId: 'a', value: 60 }, { userId: 'b', value: 40 }], splitType: 'exact', expenseDate: '2026-09-20', createdBy: 'a' })
 const reset = () => { docs = new Map([['groups/g', { baseCurrency: 'EUR', memberIds: ['a', 'b'], hasExpenseHistory: false }]]); concurrentChange = undefined }
@@ -41,10 +42,10 @@ test('expense create/list/edit/delete round trip retains group expense history',
   assert.equal(expense.title, 'Dinner')
   assert.equal(docs.get('groups/g').hasExpenseHistory, true)
   assert.equal((await listExpenses('g')).length, 1)
-  const updated = await updateExpense('g', expense.id, { title: 'Lunch', updatedBy: 'b' })
+  const updated = await updateExpense('g', expense.id, { title: 'Lunch', updatedBy: 'a' })
   assert.equal(updated.title, 'Lunch')
   assert.equal(updated.createdBy, 'a')
-  assert.equal(updated.updatedBy, 'b')
+  assert.equal(updated.updatedBy, 'a')
   await deleteExpense('g', expense.id)
   assert.deepEqual(await listExpenses('g'), [])
   assert.equal(docs.get('groups/g').hasExpenseHistory, true)
@@ -72,4 +73,17 @@ test('concurrent edits and deletion locks reject stale expense writes', async ()
   concurrentChange = undefined
   docs.get('groups/g').deleting = true
   await assert.rejects(createExpense(input()), /being deleted/)
+})
+
+test('non-authors and signed-out users cannot edit or delete expenses, even with spoofed updatedBy', async () => {
+  reset()
+  const expense = await createExpense(input())
+  try {
+    for (const user of [{ uid: 'b' }, null]) {
+      globalThis.__expenseAuth.currentUser = user
+      await assert.rejects(updateExpense('g', expense.id, { title: 'Forbidden', updatedBy: 'a' }), /Only the expense author/)
+      await assert.rejects(deleteExpense('g', expense.id), /Only the expense author/)
+      assert.equal(docs.get(`groups/g/expenses/${expense.id}`).title, 'Dinner')
+    }
+  } finally { globalThis.__expenseAuth.currentUser = { uid: 'a' } }
 })

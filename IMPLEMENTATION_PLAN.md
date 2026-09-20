@@ -415,35 +415,26 @@ export interface Expense {
 **7.2 Balances tab UI** ✅ (all-time view; date filtering deferred)
 - [x] Header cards:
   - [x] “You are owed X” / “You owe Y” in group currency
-- [x] Suggested transfers list: who pays whom (read-only)
+- [x] Suggested transfers list with payment-recording actions for sender/recipient.
 - [x] Per-member summary table: name, paid total, owed total, settlement adjustment, net
 - [ ] Filter by date range
 
-**7.3 Settlements** ❌ (types only defined)
-- [ ] Settlement is a special expense or separate document:
-  - I recommend separate `settlements` subcollection for clarity:
-  - `groups/{gid}/settlements/{sid}`
-    - `{ id, fromUserId, toUserId, amount, currency, note, createdBy, createdAt }`
-- [ ] UI:
-  - [ ] “Record settlement” button next to suggestion
-  - [ ] Pre-fill from/to/amount
-  - [ ] Confirmation writes settlement doc
-  - [ ] Balances instantly update
+**7.3 Settlements** ✅ (implemented; live Firebase verification pending)
+- [x] Separate `groups/{gid}/settlements/{sid}` documents with participants, amount, integer `amountMinor`, group currency, note, author and creation date.
+- [x] Record-payment actions with prefilled participants/amount, partial payments and explicit confirmation that money was already transferred outside the app.
+- [x] Sender or recipient can create a record; only its author can delete it with confirmation. No settlement editing: delete an incorrect record and record the correction.
+- [x] Stable submission identifiers make retries idempotent; reject conflicting details for an existing identifier.
+- [x] Transaction checks group membership, fixed currency and deletion lock. Preserve member history. Existing history groups need one document write per payment; no Activity writes.
+- [x] Recorded payments appear under Balances. Creation/deletion updates group and Dashboard balances through existing subscriptions.
 - [x] Balance calculator includes settlements; live subscriptions read expenses and settlements and unsubscribe when leaving the tab.
 
-**7.4 Activity log** ❌ (types only defined)
-- [ ] Subcollection `groups/{gid}/activity/{aid}`
-  - `{ id, type: 'EXPENSE_CREATED'|'EXPENSE_UPDATED'|'EXPENSE_DELETED'|'SETTLEMENT_CREATED'|'MEMBER_ADDED'|'MEMBER_REMOVED', entityId, message, createdBy, createdAt }`
-- [ ] On every write (create/edit/delete expense, add/remove members, settlement):
-  - [ ] client-side insert activity log entry
-  - OR move to Cloud Functions once stable (but client-side is fine for MVP)
-- [ ] Group detail → Activity tab: chronological timeline with avatars, colored pills, messages
+**7.4 Activity log — excluded from MVP**
+Activity tab and unused types removed at the user's request. No activity documents are created or subscribed to. Keep only legacy child cleanup when deleting a group, so any older data is not orphaned. Expense author/update metadata and payment records remain available.
 
 **7.5 Validation gate** ❌
 - [ ] Balances match real-world scenarios you test manually
-- [ ] Settlement reduces suggested debt
-- [ ] Activity log shows the 5 main events
-- Commit: `feat: balances + settlements + activity`
+- [x] Settlement reduces suggested debt in unit tests and the interactive preview (28 → 18 → 0); production Firebase integration remains pending.
+- Commit: `feat: balances and settlements`
 
 ---
 
@@ -495,66 +486,13 @@ export interface Expense {
 5. [ ] Balances tab shows correct net for A and B
 6. [ ] A records settlement for exact suggested amount to B
 7. [ ] Balances go to zero
-8. [ ] Activity log shows all 5 events
-9. [ ] Edit an expense → values + activity update correctly
+8. [ ] Payment records show the correct author, participants and amount
+9. [ ] Edit an expense → values and balances update correctly
 10. [ ] Delete an expense → balances revert
 
-**Commit:** `chore: polish, security rules, deploy setup`
-
 ---
 
-## Suggested Implementation Order of Work (by priority)
-
-1. Fix the Firestore expense rules, TypeScript/lint failures, and multi-currency exact-split math (audit below).
-2. Connect the existing Tailwind/shadcn setup and migrate the app shell and auth pages.
-3. Migrate groups and expenses screen by screen, keeping existing behavior working.
-4. Implement aggregate balances and replace Dashboard placeholders.
-5. Verify FX create/edit flows, then implement settlements and activity.
-6. Finish member-removal guards, group deletion, filters, deployment, and smoke tests.
-
----
-
-## Code Audit and shadcn/ui + Tailwind Migration (2026-09-19)
-
-This section records what was verified in the repository. Earlier checkmarks describe implementation history, not a current passing release gate. No Firebase runtime test was performed during this audit.
-
-### A. Functional fixes before relying on balances
-
-- [x] Add member-scoped expense rules validating group path, authorship, positive totals and group currency. Preserve creator metadata on update; block writes during deletion. Emulator verification and deployment remain pending.
-- [x] Fix exact FX splitting using the saved converted total and original-currency weights, with deterministic largest-remainder rounding.
-- [x] Apply cent allocation to multiple payers, equal splits and automatic payer distribution. Tiny totals no longer produce negative shares.
-- [x] Test all four split modes with/without FX, multiple payers, zero-sum balances, tiny amounts, invalid values, historical rates, unsupported currencies and network failure.
-- [x] Base currency is immutable immediately after creation, even for empty groups. Enforced in UI, API and Firestore rules; obsolete store action removed.
-- [x] Group deletion locks new expense writes, cleans expenses/settlements/activity in batches and deletes the parent last. Failed cleanup retains the parent and can be retried. API tests cover batching and failure/retry.
-- [x] Conservatively retain membership after the first expense; adding members remains allowed. Expense writes atomically set permanent `hasExpenseHistory: true`. Legacy groups without the flag also block removal; new empty groups explicitly start with `false`.
-- [x] Fix FX form state: preserve snapshots for unchanged date/currencies, block stale-rate saves, remove double conversion in preview and clear snapshots when editing back to group currency. API validates totals/membership and rejects edits of concurrently changed/deleted expenses.
-- [ ] Verify create/edit/delete and denial cases against Firestore/emulator. Tests mock Firestore/HTTP; no deployed-rule or live round-trip verification was performed. Java/Firebase CLI are unavailable here.
-
-These remain Phase 7 feature work:
-- [ ] Replace Dashboard placeholders with actual data, keeping group currencies separate.
-- [ ] Build aggregate Balances, settlements, Activity and filter UI.
-
-Allocation retains the existing two-decimal monetary model. Currency-specific minor-unit precision and previously mixed-currency groups require separate work before aggregation. Firestore rules enforce basic invariants; arbitrary payer/split sums are validated in the application API.
-
-### B. Current quality gate
-
-- [x] Fix nullable Avatar source in MembersTab.
-- [x] Fix lint errors/warnings, ref access, unstable dependencies and effect-driven local state.
-- [x] Fix the unstable empty-array Zustand selector in ExpenseList.
-- [x] Local verification: 27 tests, TypeScript, lint and production build pass. Build retains a bundle-size warning.
-- [ ] Firebase/emulator smoke tests and rule deployment remain required; no live data was changed.
-
-### C. UI migration
-
-- [x] Correct `components.json` CSS path to `src/globals.css`; expose the root TypeScript alias for future shadcn CLI additions.
-- [x] Use `src/globals.css` as the single Tailwind entry, with semantic palette tokens and root `.dark` synchronization. Theme applies on auth pages and persists on reload.
-- [x] Add the initial shadcn base-nova components under `src/components/ui`: Button, Input, Label, Card, Badge, Alert, DropdownMenu, Sheet, Skeleton and Separator. Add further components as screens migrate.
-- [x] Migrate Topbar, Sidebar, AppLayout, login/signup and protected-route loading. Add accessible mobile navigation, account menu, password visibility controls, inline form errors and a skip link.
-- [x] Migrate Dashboard, groups, members, expense list/form, settings and all dialogs. Live authenticated data-flow verification remains pending.
-- [x] Replace MUI theme/CssBaseline with Tailwind tokens and notistack with Sonner. Remove MUI, Emotion, Roboto and unused theme dependencies.
-- [x] Replace the starter README with setup, current UI migration status and verification limits.
-
-### D. Visual direction and design tokens
+### Visual direction and design tokens
 
 The product should feel like a calm financial workspace: clear balances and actions first, with color used to explain state. Avoid making every card or button bright green. Use the palette as semantic tokens rather than hard-coded colors in components.
 
@@ -576,26 +514,3 @@ The product should feel like a calm financial workspace: clear balances and acti
 - [ ] Expense form: divide the long flow into clear sections (details, who paid, split, conversion, review), keep totals and validation visible, and ensure mobile users can reach the save action without losing context.
 - [ ] Establish hover, focus, disabled, loading, empty, and error states for every migrated component; test keyboard navigation and narrow screens.
 
-### UI migration verification (first slice)
-
-- TypeScript and lint pass; production build checked after migration.
-- Browser checks: login/signup required-field validation; light/dark rendering; 390px mobile layout; account dropdown; sheet confirmation and focus return. No real credentials or records were submitted.
-- The shared shell and gallery were inspected at desktop size. Protected data pages still require a signed-in smoke test.
-- Superseded by the full screen migration below; authenticated smoke testing remains outstanding.
-
-### Dark theme and Google authentication (2026-09-20)
-
-- [x] Use neutral near-black (`#101012`) and graphite (`#18181b`) backgrounds in dark mode, including both auth panels and the temporary MUI theme. Mint remains an accent.
-- [x] Add Google sign-in to login and signup with Firebase `GoogleAuthProvider` and `signInWithPopup`, account selection, shared profile creation, pending state and translated errors. Popup cancellation is silent.
-- [x] Add six mocked auth tests covering first sign-in, existing profile preservation, cancellation, blocked popup/provider/domain/network failures, duplicate requests and missing configuration. All 33 tests pass.
-- [ ] Enable/verify Google provider and authorized domains in the Firebase project, then complete a real Google sign-in smoke test. Setup instructions are in README; remote Firebase configuration was not changed.
-
-### Full UI migration and dotted surfaces (2026-09-20)
-
-- [x] Apply 6px rounded-md surfaces and controls, retaining circular avatars and switch thumbs. Add a 20px radial dot grid to workspace/auth backgrounds.
-- [x] Migrate remaining pages and dialogs to Tailwind/shadcn, including member search, destructive confirmations and all four expense split modes. Group detail uses Base UI tabs.
-- [x] Divide the expense form into details, payers, split and review with a sticky action footer. Exact remainder filling explicitly updates the submitted values as well as the preview.
-- [x] Replace Dashboard promotional/placeholder zero cards with actual groups and currencies. Save the default currency preference from Settings. Aggregate balances and activity remain separate unfinished features.
-- [x] Remove MUI, Emotion, Roboto and notistack; use Sonner notifications.
-- [x] TypeScript, ESLint, production build and all 33 tests pass. Build retains its large-chunk warning. Browser preview verified equal, exact remainder, percentage and weighted shares, safe validation submission without writes and a 390px expense dialog. Browser console has no errors.
-- [ ] Complete authenticated Firebase smoke tests for group/member/expense CRUD and preference persistence. No live records were changed during UI verification.

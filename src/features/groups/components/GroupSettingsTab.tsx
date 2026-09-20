@@ -5,8 +5,10 @@ import { useNotify } from '@/hooks/useNotify'
 import type { Group } from '@/types/group'
 import { useGroupStore } from '@/stores/groupStore'
 import DeleteGroupDialog from './DeleteGroupDialog'
+import { useCurrentUser } from '@/hooks/useGroups'
 
 export default function GroupSettingsTab({ group }: { group: Group }) {
+  const me = useCurrentUser()
   const { enqueueSnackbar } = useNotify()
   const renameGroup = useGroupStore((s) => s.renameGroup)
   const [draft, setDraft] = useState({
@@ -58,15 +60,17 @@ export default function GroupSettingsTab({ group }: { group: Group }) {
           The base currency cannot be changed after creation.
         </p>
       </Section>
-      <Section
-        title="Delete this group"
-        description="Permanently remove the group and its expense history."
-      >
-        <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-          Delete group
-        </Button>
-      </Section>
-      {deleteOpen && (
+      {group.createdBy === me?.id && (
+        <Section
+          title="Delete this group"
+          description="Permanently remove the group and its expense history."
+        >
+          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+            Delete group
+          </Button>
+        </Section>
+      )}
+      {deleteOpen && group.createdBy === me?.id && (
         <DeleteGroupDialog
           open
           onClose={() => setDeleteOpen(false)}

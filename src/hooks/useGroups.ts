@@ -1,20 +1,26 @@
 import { useGroupStore } from '@/stores/groupStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useEffect } from 'react'
+import type { Group } from '@/types/group'
+const EMPTY: Group[] = []
 
 export function useGroups() {
   const profile = useAuthStore((s) => s.profile)
   const initGroupsForUser = useGroupStore((s) => s.initGroupsForUser)
   const groups = useGroupStore((s) => s.groups)
   const loading = useGroupStore((s) => s.loading)
+  const groupsUserId = useGroupStore((s) => s.groupsUserId)
 
   useEffect(() => {
-    if (profile?.id && groups.length === 0) {
-      void initGroupsForUser(profile.id)
+    if (profile?.id && groupsUserId !== profile.id) {
+      void initGroupsForUser(profile.id).catch(() => undefined)
     }
-  }, [profile?.id, groups.length, initGroupsForUser])
+  }, [profile?.id, groupsUserId, initGroupsForUser])
 
-  return { groups, loading }
+  return {
+    groups: groupsUserId === profile?.id ? groups : EMPTY,
+    loading: loading || (!!profile && groupsUserId !== profile.id),
+  }
 }
 
 export function useCurrentUser() {

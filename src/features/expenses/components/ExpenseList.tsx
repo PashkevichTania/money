@@ -46,7 +46,7 @@ export default function ExpenseList({
   const getName = (id: string) =>
     members.find((m) => m.id === id)?.displayName || id.slice(0, 6)
   const confirmDelete = async () => {
-    if (!toDelete) return
+    if (!toDelete || toDelete.createdBy !== me?.id) return
     setBusy(true)
     try {
       await remove(group.id, toDelete.id)
@@ -156,32 +156,34 @@ export default function ExpenseList({
                     </p>
                   )}
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Actions for ${expense.title}`}
-                      />
-                    }
-                  >
-                    <MoreHorizontal />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEditExpense(expense)}>
-                      <Pencil />
-                      Edit expense
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => setToDelete(expense)}
+                {expense.createdBy === me?.id && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Actions for ${expense.title}`}
+                        />
+                      }
                     >
-                      <Trash2 />
-                      Delete expense
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <MoreHorizontal />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEditExpense(expense)}>
+                        <Pencil />
+                        Edit expense
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => setToDelete(expense)}
+                      >
+                        <Trash2 />
+                        Delete expense
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </article>
             )
           })}
