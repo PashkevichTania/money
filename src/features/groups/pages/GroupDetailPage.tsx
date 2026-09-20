@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Plus, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,6 +17,7 @@ import type { Expense } from '@/types/expense'
 const TAB_LABELS = ['Expenses', 'Balances', 'Members', 'Settings'] as const
 
 export default function GroupDetailPage() {
+  const { t } = useTranslation()
   const { group, members, loadingMembers, loading, notFound, error } =
     useSelectedGroup()
   const [tab, setTab] = useState(0)
@@ -43,7 +45,7 @@ export default function GroupDetailPage() {
         nativeButton={false}
       >
         <ArrowLeft />
-        All groups
+        {t('All groups')}
       </Button>
       {loading ? (
         <div className="space-y-4">
@@ -51,9 +53,9 @@ export default function GroupDetailPage() {
           <Skeleton className="h-64" />
         </div>
       ) : !group || notFound ? (
-        <Section title="Group unavailable">
+        <Section title={t('Group unavailable')}>
           <Message error>
-            {error || 'This group does not exist or you do not have access.'}
+            {error || t('This group does not exist or you do not have access.')}
           </Message>
         </Section>
       ) : (
@@ -64,12 +66,13 @@ export default function GroupDetailPage() {
                 {group.name}
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                {group.baseCurrency} · {group.memberIds.length} members
+                {group.baseCurrency} ·{' '}
+                {t('members', { count: group.memberIds.length })}
               </p>
             </div>
             <Button onClick={openAddExpense} disabled={loadingMembers}>
               <Plus />
-              Add expense
+              {t('Add expense')}
             </Button>
           </header>
           <Tabs
@@ -80,8 +83,8 @@ export default function GroupDetailPage() {
             <div className="overflow-x-auto">
               <TabsList className="h-11 min-w-max border bg-card p-1">
                 {TAB_LABELS.map((label, i) => (
-                  <TabsTrigger key={label} value={i} className="px-4">
-                    {label}
+                  <TabsTrigger key={t(label)} value={i} className="px-4">
+                    {t(label)}
                   </TabsTrigger>
                 ))}
               </TabsList>

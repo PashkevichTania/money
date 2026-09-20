@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { Field, Message } from '@/components/ui/field'
@@ -16,6 +17,7 @@ export default function DeleteGroupDialog({
   onClose: () => void
   group: Group
 }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { enqueueSnackbar } = useNotify()
   const removeGroup = useGroupStore((s) => s.removeGroup)
@@ -31,7 +33,9 @@ export default function DeleteGroupDialog({
     setLocalError(null)
     try {
       await removeGroup(group.id)
-      enqueueSnackbar(`Group "${group.name}" deleted`, { variant: 'success' })
+      enqueueSnackbar(t('Group "{{name}}" deleted', { name: group.name }), {
+        variant: 'success',
+      })
       onClose()
       setConfirmText('')
       navigate('/groups', { replace: true })
@@ -48,30 +52,34 @@ export default function DeleteGroupDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title="Delete group?"
-      description="This action permanently removes this group and its expense history."
+      title={t('Delete group?')}
+      description={t(
+        'This action permanently removes this group and its expense history.',
+      )}
       busy={busy}
     >
       <Message error>
-        This cannot be undone. Type {group.name} below to confirm.
+        {t('This cannot be undone. Type {{name}} below to confirm.', {
+          name: group.name,
+        })}
       </Message>
       {localError && <Message error>{localError}</Message>}
       <Field
-        label="Group name to confirm"
+        label={t('Group name to confirm')}
         value={confirmText}
         disabled={busy}
         onChange={(e) => setConfirmText(e.target.value)}
       />
       <div className="flex justify-end gap-2 border-t pt-4">
         <Button variant="outline" disabled={busy} onClick={onClose}>
-          Cancel
+          {t('Cancel')}
         </Button>
         <Button
           variant="destructive"
           disabled={!canDelete || busy}
           onClick={() => void onConfirm()}
         >
-          {busy ? 'Deleting...' : 'Delete permanently'}
+          {busy ? t('Deleting...') : t('Delete permanently')}
         </Button>
       </div>
     </Modal>

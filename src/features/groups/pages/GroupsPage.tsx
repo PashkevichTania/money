@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import { Plus, Users, ArrowUpRight, Search } from 'lucide-react'
@@ -9,6 +10,7 @@ import { useGroups } from '@/hooks/useGroups'
 import { useGroupStore } from '@/stores/groupStore'
 import CreateGroupDialog from '../components/CreateGroupDialog'
 export default function GroupsPage() {
+  const { t } = useTranslation()
   const { groups, loading } = useGroups()
   const error = useGroupStore((s) => s.errors.groups)
   const [params, setParams] = useSearchParams()
@@ -28,16 +30,18 @@ export default function GroupsPage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-positive">
-            Shared spaces
+            {t('Shared spaces')}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight">Your groups</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {t('Your groups')}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Trips, everyday things and everything you share.
+            {t('Trips, everyday things and everything you share.')}
           </p>
         </div>
         <Button onClick={() => setOpen(true)}>
           <Plus />
-          New group
+          {t('New group')}
         </Button>
       </header>
       {error && <Message error>{error}</Message>}
@@ -48,8 +52,8 @@ export default function GroupsPage() {
         />
         <Input
           className="bg-card pl-10"
-          aria-label="Search groups"
-          placeholder="Find a group..."
+          aria-label={t('Search groups')}
+          placeholder={t('Find a group...')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -76,7 +80,7 @@ export default function GroupsPage() {
               </div>
               <h2 className="mt-6 truncate text-lg font-semibold">{g.name}</h2>
               <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-                <span>{g.memberIds.length} members</span>
+                <span>{t('members', { count: g.memberIds.length })}</span>
                 <span className="rounded-md border px-2 py-1 text-xs">
                   {g.baseCurrency}
                 </span>
@@ -88,16 +92,20 @@ export default function GroupsPage() {
         <div className="rounded-md border border-dashed bg-card p-10 text-center">
           <Users className="mx-auto mb-4 size-8 text-positive" />
           <h2 className="font-semibold">
-            {query ? 'No matching groups' : 'Your next shared plan starts here'}
+            {query
+              ? t('No matching groups')
+              : t('Your next shared plan starts here')}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {query
-              ? 'Try another name.'
-              : 'Create a group, add your people and start recording expenses.'}
+              ? t('Try another name.')
+              : t(
+                  'Create a group, add your people and start recording expenses.',
+                )}
           </p>
           {!query && (
             <Button className="mt-5" onClick={() => setOpen(true)}>
-              Create your first group
+              {t('Create your first group')}
             </Button>
           )}
         </div>

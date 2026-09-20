@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useEffect } from 'react'
 import { AppRouter } from '@/routes'
@@ -30,12 +31,17 @@ function UIStoreSnackbridge() {
 }
 
 function FirebaseNotice() {
+  const { t } = useTranslation()
   if (isFirebaseConfigured) return null
   return (
     <div className="border-b bg-warning/15 p-4">
       <Alert className="mx-auto max-w-3xl border-warning/50 bg-transparent">
-        <AlertTitle>Workspace connection is not configured</AlertTitle>
-        <AlertDescription>Add the Firebase configuration in your environment to enable sign-in and shared expenses.</AlertDescription>
+        <AlertTitle>{t('Workspace connection is not configured')}</AlertTitle>
+        <AlertDescription>
+          {t(
+            'Add the Firebase configuration in your environment to enable sign-in and shared expenses.',
+          )}
+        </AlertDescription>
       </Alert>
     </div>
   )

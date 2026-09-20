@@ -31,6 +31,12 @@ Settings saves the default currency for new groups. Dashboard shows actual group
 
 Under Balances, the sender or recipient can record a full or partial payment already made outside the app. Records use the fixed group currency and can be deleted only by their author (with confirmation) to correct a mistake. A payment changes balances, not expense totals. Stable form identifiers prevent duplicate writes when retrying an uncertain save. No payment processing or Activity logging is performed. Updated settlement rules must be deployed before this feature can save to Firebase.
 
+## Languages
+
+English and Russian are available under **Settings → Language**, and on the login/signup screens. The choice applies immediately and is saved in this browser (`splitsmart.language` in localStorage). It does not add Firestore reads/writes or sync across devices. English is the default and fallback.
+
+UI dictionaries live in `src/i18n/en.json` and `src/i18n/ru.json`; use `useTranslation()` for new UI text and interpolation for dynamic values. Member counts use plural forms; displayed amounts, dates and currency names use the selected locale. User-entered names, expense descriptions and notes are not translated. Native date/number controls may follow the browser/OS locale. The development-only design gallery keeps its sample copy in English; its embedded production forms and settings are localized.
+
 ## Data integrity
 
 Group base currency is fixed at creation. Splits and payer contributions use deterministic cent allocation. Member removal is conservatively blocked after expense history exists. Only the expense author can edit/delete an expense, and only the group author can delete a group. Group deletion cleans all ledger subcollections (including other authors' expenses) under an owner-only deletion lock before removing the parent; failed cleanup can be retried. The group author remains a member.

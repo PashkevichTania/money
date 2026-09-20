@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { UserPlus, UserMinus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
@@ -28,6 +29,7 @@ export default function MembersTab({
   members: UserProfile[]
   loadingMembers: boolean
 }) {
+  const { t } = useTranslation()
   const me = useCurrentUser()
   const { enqueueSnackbar } = useNotify()
   const searchUsers = useGroupStore((s) => s.searchUsers)
@@ -82,7 +84,9 @@ export default function MembersTab({
     setBusy(true)
     try {
       await removeMember(group.id, toRemove.id)
-      enqueueSnackbar(`${toRemove.displayName} removed`, { variant: 'success' })
+      enqueueSnackbar(t('{{name}} removed', { name: toRemove.displayName }), {
+        variant: 'success',
+      })
       setToRemove(null)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not remove member'
@@ -94,8 +98,8 @@ export default function MembersTab({
 
   return (
     <Section
-      title="Members"
-      description="Add people who already have a SplitSmart account."
+      title={t('Members')}
+      description={t('Add people who already have a SplitSmart account.')}
     >
       <form
         onSubmit={(e) => {
@@ -106,7 +110,7 @@ export default function MembersTab({
       >
         <div className="flex-1">
           <Field
-            label="Add by email"
+            label={t('Add by email')}
             type="email"
             placeholder="friend@example.com"
             value={query}
@@ -116,18 +120,18 @@ export default function MembersTab({
         </div>
         <Button type="submit" disabled={busy || !query.trim()}>
           <UserPlus />
-          {busy ? 'Working...' : 'Add member'}
+          {busy ? t('Working...') : t('Add member')}
         </Button>
       </form>
       {addError && <Message error>{addError}</Message>}
       {searchingUsers && (
         <p role="status" className="text-xs text-muted-foreground">
-          Searching...
+          {t('Searching...')}
         </p>
       )}
       {query.trim() && options.length > 0 && (
         <ul
-          aria-label="Matching accounts"
+          aria-label={t('Matching accounts')}
           className="divide-y rounded-md border"
         >
           {options.map(({ user }) => (
@@ -165,10 +169,10 @@ export default function MembersTab({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
-                    {member?.displayName || 'Loading member'}
+                    {member?.displayName || t('Loading member')}
                     {id === me?.id && (
                       <span className="ml-2 text-xs text-muted-foreground">
-                        (you)
+                        {t('(you)')}
                       </span>
                     )}
                   </p>
@@ -185,7 +189,9 @@ export default function MembersTab({
                     !member ||
                     member.id === group.createdBy
                   }
-                  aria-label={`Remove ${member?.displayName || 'member'}`}
+                  aria-label={t('Remove {{name}}', {
+                    name: member?.displayName || t('Member'),
+                  })}
                   onClick={() => member && setToRemove(member)}
                 >
                   <UserMinus className="text-destructive" />
@@ -196,18 +202,22 @@ export default function MembersTab({
         )}
       </div>
       <p className="text-xs text-muted-foreground">
-        Members are retained once the group has expense history.
+        {t('Members are retained once the group has expense history.')}
       </p>
       <Modal
         open={!!toRemove}
         onClose={() => setToRemove(null)}
-        title="Remove member?"
-        description={`Remove ${toRemove?.displayName || 'this member'} from ${group.name}?`}
+        title={t('Remove member?')}
+        description={t('Remove {{name}} from {{group}}?', {
+          name: toRemove?.displayName || t('Member'),
+          group: group.name,
+        })}
         busy={busy}
       >
         <p className="text-sm text-muted-foreground">
-          They will lose access to the group. Removal is blocked if the group
-          has expense history.
+          {t(
+            'They will lose access to the group. Removal is blocked if the group has expense history.',
+          )}
         </p>
         <div className="flex justify-end gap-2">
           <Button
@@ -215,14 +225,14 @@ export default function MembersTab({
             disabled={busy}
             onClick={() => setToRemove(null)}
           >
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button
             variant="destructive"
             disabled={busy}
             onClick={() => void onConfirmRemove()}
           >
-            {busy ? 'Removing...' : 'Remove member'}
+            {busy ? t('Removing...') : t('Remove member')}
           </Button>
         </div>
       </Modal>

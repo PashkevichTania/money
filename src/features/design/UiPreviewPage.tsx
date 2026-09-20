@@ -1,3 +1,4 @@
+import SettingsPage from '@/features/settings/pages/SettingsPage'
 import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
 import { BalanceSummary } from '@/features/groups/components/BalancesTab'
 import type { Expense, Settlement } from '@/types/expense'
@@ -52,6 +53,7 @@ const previewMembers: UserProfile[] = previewGroup.memberIds.map((id) => ({
 }))
 
 export default function UiPreviewPage() {
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [previewPayments, setPreviewPayments] = useState<Settlement[]>([])
   const [recordPayment, setRecordPayment] = useState<{
     suggestion?: TransferSuggestion
@@ -61,6 +63,13 @@ export default function UiPreviewPage() {
   const [saved, setSaved] = useState(false)
   return (
     <div className="space-y-8">
+      <Button
+        variant="outline"
+        onClick={() => setSettingsOpen((value) => !value)}
+      >
+        Preview settings
+      </Button>
+      {settingsOpen && <SettingsPage />}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-positive">

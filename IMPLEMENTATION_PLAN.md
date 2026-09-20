@@ -475,8 +475,30 @@ Activity tab and unused types removed at the user's request. No activity documen
 
 **8.5 Performance / monitoring** ❌
 - [ ] Add Firestore indexes for common queries: `expenses by groupId + expenseDate`
-- [ ] Avoid reading entire group history on every visit: implement pagination or date window
+- [ ] Paginate expense lists when needed. All-time balances must still include the entire ledger; never calculate them from only the visible page or date window.
 - [ ] Optional: enable Firebase Performance Monitoring (free tier)
+
+**Planned: TanStack Query and shared Firestore subscriptions**
+
+Goal: reduce repeated Firestore reads for the friends-only MVP while preserving real-time updates and correct balances. This is future work, not yet implemented.
+
+- [ ] Move server-data caching (groups, expenses, settlements, profiles) to TanStack Query. Keep Zustand for UI state; avoid storing duplicate server datasets in both systems.
+- [ ] Define shared query keys scoped to the authenticated user, group and data type. Dashboard, Expenses and Balances must consume the same cached ledger.
+- [ ] Introduce a shared subscription manager: at most one `onSnapshot` listener per collection/query and user within the app session. Publish snapshots with `queryClient.setQueryData`; do not issue an additional `getDocs` for the same active data.
+- [ ] Track subscription consumers and use a short release grace period to avoid reconnecting during navigation. Restore subscriptions when needed and unsubscribe when unused. TanStack Query alone does not deduplicate arbitrary `onSnapshot` calls.
+- [ ] Configure `staleTime`, `gcTime`, retries and focus/reconnect refetch behavior explicitly. Ordinary queries may remain fresh for several minutes. For subscribed data, manage freshness through the listener lifecycle; `staleTime: Infinity` must not leave disconnected data permanently stale.
+- [ ] Coordinate mutations with snapshot updates; avoid blanket invalidation/refetch after every write. Preserve loading, errors, idempotent payment retries and updates from other members.
+- [ ] On sign-out/account change, unsubscribe, cancel pending queries and clear user-scoped caches. Ignore late responses from the previous session.
+- [ ] Verify repeated Dashboard → Expenses → Balances navigation shares data/listeners; test simultaneous consumers, reconnects, errors, mutation updates and account switching. Compare actual Firestore reads before/after using the same usage scenario.
+- [ ] Evaluate persistent Firestore caching separately after the shared-cache migration. If history grows substantially, consider transactionally maintained balance summaries so Dashboard need not read the entire ledger; defer this additional complexity until measurements justify it.
+
+**Localization: English / Russian**
+
+- [x] Add `react-i18next` with bundled English and Russian dictionaries; English remains the default/fallback.
+- [x] Add immediate language switching in Settings and login/signup. Persist only in browser localStorage, with no Firestore reads/writes or cross-device synchronization.
+- [x] Translate production navigation, auth, Dashboard, groups, expenses, balances, payment forms and expected validation messages. Keep user-entered content unchanged.
+- [x] Localize displayed money, dates and currency names; support Russian member-count plurals. Native input controls retain browser/OS behavior.
+- [x] Cover preference persistence/fallback, blocked storage, pluralization, formatting, interpolation and dictionary coverage with automated tests. Add embedded Settings to the development preview for UI verification.
 
 **8.6 Final manual smoke test script** ❌
 1. [ ] Sign up user A and user B

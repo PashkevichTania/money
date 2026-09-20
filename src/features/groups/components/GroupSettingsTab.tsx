@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Section, Field } from '@/components/ui/field'
 import { useState } from 'react'
@@ -8,6 +9,7 @@ import DeleteGroupDialog from './DeleteGroupDialog'
 import { useCurrentUser } from '@/hooks/useGroups'
 
 export default function GroupSettingsTab({ group }: { group: Group }) {
+  const { t } = useTranslation()
   const me = useCurrentUser()
   const { enqueueSnackbar } = useNotify()
   const renameGroup = useGroupStore((s) => s.renameGroup)
@@ -42,9 +44,9 @@ export default function GroupSettingsTab({ group }: { group: Group }) {
 
   return (
     <div className="space-y-6">
-      <Section title="Group settings">
+      <Section title={t('Group settings')}>
         <Field
-          label="Group name"
+          label={t('Group name')}
           value={name}
           maxLength={60}
           onChange={(e) => setName(e.target.value)}
@@ -53,20 +55,22 @@ export default function GroupSettingsTab({ group }: { group: Group }) {
           disabled={!nameDirty || savingName}
           onClick={() => void onSaveName()}
         >
-          {savingName ? 'Saving...' : 'Save name'}
+          {savingName ? t('Saving...') : t('Save name')}
         </Button>
-        <Field label="Base currency" value={group.baseCurrency} readOnly />
+        <Field label={t('Base currency')} value={group.baseCurrency} readOnly />
         <p className="text-xs text-muted-foreground">
-          The base currency cannot be changed after creation.
+          {t('The base currency cannot be changed after creation.')}
         </p>
       </Section>
       {group.createdBy === me?.id && (
         <Section
-          title="Delete this group"
-          description="Permanently remove the group and its expense history."
+          title={t('Delete this group')}
+          description={t(
+            'Permanently remove the group and its expense history.',
+          )}
         >
           <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-            Delete group
+            {t('Delete group')}
           </Button>
         </Section>
       )}

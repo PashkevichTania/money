@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, type ComponentProps } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,7 @@ export function AuthField({
   type,
   ...props
 }: ComponentProps<'input'> & { label: string; error?: string; id: string }) {
+  const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
   const password = type === 'password'
   return (
@@ -31,7 +33,7 @@ export function AuthField({
             variant="ghost"
             size="icon"
             className="absolute right-0.5 top-0.5 size-10"
-            aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
+            aria-label={t(visible ? 'Hide password' : 'Show password')}
             aria-pressed={visible}
             onClick={() => setVisible((v) => !v)}
           >
@@ -45,7 +47,7 @@ export function AuthField({
       </div>
       {error && (
         <p id={`${id}-error`} className="text-xs text-destructive">
-          {error}
+          {t(error)}
         </p>
       )}
     </div>

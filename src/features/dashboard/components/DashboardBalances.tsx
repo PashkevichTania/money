@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { subscribeExpenses } from '@/api/expenses'
 import { subscribeSettlements } from '@/api/settlements'
@@ -17,6 +18,7 @@ export default function DashboardBalances({
   groups: Group[]
   userId: string
 }) {
+  const { t } = useTranslation()
   const key = JSON.stringify(groups.map((g) => [g.id, g.baseCurrency]).sort())
   const [retry, setRetry] = useState(0)
   const [state, setState] = useState<{
@@ -94,8 +96,10 @@ export default function DashboardBalances({
   }
   return (
     <Section
-      title="Your balances"
-      description="All your groups, separated by currency. Includes recorded settlements."
+      title={t('Your balances')}
+      description={t(
+        'All your groups, separated by currency. Includes recorded settlements.',
+      )}
     >
       {error ? (
         <>
@@ -107,14 +111,14 @@ export default function DashboardBalances({
               setRetry((value) => value + 1)
             }}
           >
-            Retry
+            {t('Retry')}
           </Button>
         </>
       ) : !ready ? (
-        <Skeleton className="h-28" aria-label="Loading balances" />
+        <Skeleton className="h-28" aria-label={t('Loading balances')} />
       ) : !totals.length ? (
         <p className="text-sm text-muted-foreground">
-          Your balances will appear when you join or create a group.
+          {t('Your balances will appear when you join or create a group.')}
         </p>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -123,19 +127,19 @@ export default function DashboardBalances({
               <h3 className="font-semibold">{total.currency}</h3>
               <dl className="mt-3 space-y-2 text-sm tabular-nums">
                 <div className="flex justify-between gap-3">
-                  <dt>You are owed</dt>
+                  <dt>{t('You are owed')}</dt>
                   <dd className="text-positive">
                     {formatMoney(total.owed, total.currency)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt>You owe</dt>
+                  <dt>{t('You owe')}</dt>
                   <dd className="text-destructive">
                     {formatMoney(total.owing, total.currency)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3 border-t pt-2 font-medium">
-                  <dt>Net balance</dt>
+                  <dt>{t('Net balance')}</dt>
                   <dd>{formatMoney(total.net, total.currency)}</dd>
                 </div>
               </dl>

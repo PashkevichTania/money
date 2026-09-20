@@ -1,4 +1,6 @@
-import { useId, type ComponentProps, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
+import { translateError } from '@/i18n/errors'
+import { useMemo, useId, type ComponentProps, type ReactNode } from 'react'
 import { Input } from './input'
 import { Label } from './label'
 import { Combobox } from '@base-ui/react/combobox'
@@ -10,6 +12,7 @@ export function Field({
   id: suppliedId,
   ...props
 }: ComponentProps<'input'> & { label: string; error?: string }) {
+  useTranslation()
   const generated = useId()
   const id = suppliedId || generated
   return (
@@ -23,14 +26,14 @@ export function Field({
       />
       {error && (
         <p id={`${id}-error`} className="text-xs text-destructive">
-          {error}
+          {translateError(error)}
         </p>
       )}
     </div>
   )
 }
 export function CurrencySelect({
-  label = 'Currency',
+  label,
   value,
   onValueChange,
   disabled,
@@ -44,13 +47,23 @@ export function CurrencySelect({
   name?: string
   onBlur?: () => void
 }) {
+  const { t, i18n } = useTranslation()
+  const currencies = useMemo(() => {
+    const names = new Intl.DisplayNames([i18n.resolvedLanguage || 'en'], {
+      type: 'currency',
+    })
+    return CURRENCIES.map((currency) => ({
+      ...currency,
+      label: names.of(currency.code) || currency.label,
+    }))
+  }, [i18n.resolvedLanguage])
   const id = useId()
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id}>{label ?? t('Currency')}</Label>
       <Combobox.Root
-        items={CURRENCIES}
-        value={CURRENCIES.find((c) => c.code === value) ?? null}
+        items={currencies}
+        value={currencies.find((c) => c.code === value) ?? null}
         onValueChange={(currency) => {
           if (currency) onValueChange(currency.code)
         }}
@@ -64,19 +77,19 @@ export function CurrencySelect({
           onBlur={onBlur}
           className="flex h-11 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-left text-sm disabled:opacity-50 dark:bg-input/30"
         >
-          <Combobox.Value placeholder="Select currency" />
+          <Combobox.Value placeholder={t('Select currency')} />
           <ChevronDown className="size-4 shrink-0" />
         </Combobox.Trigger>
         <Combobox.Portal>
           <Combobox.Positioner sideOffset={6} className="z-[100]" align="start">
             <Combobox.Popup className="w-[var(--anchor-width)] min-w-60 max-w-[calc(100vw-2rem)] rounded-md border bg-popover p-2 text-popover-foreground shadow-lg dark:bg-neutral-900">
               <Combobox.Input
-                aria-label="Search currencies"
-                placeholder="Search code or currency..."
+                aria-label={t('Search currencies')}
+                placeholder={t('Search code or currency...')}
                 className="mb-2 h-10 w-full rounded-md border bg-background px-3 text-sm"
               />
               <Combobox.Empty className="p-3 text-sm text-muted-foreground">
-                No currencies found.
+                {t('No currencies found.')}
               </Combobox.Empty>
               <Combobox.List className="max-h-64 overflow-y-auto overscroll-contain">
                 {(currency: (typeof CURRENCIES)[number]) => (
@@ -127,12 +140,15 @@ export function Message({
   children: ReactNode
   error?: boolean
 }) {
+  useTranslation()
   return (
     <p
       role={error ? 'alert' : 'status'}
       className={`rounded-md border p-3 text-sm leading-6 ${error ? 'border-destructive/30 bg-destructive/5 text-destructive' : 'bg-muted/50 text-muted-foreground'}`}
     >
-      {children}
+      {error && typeof children === 'string'
+        ? translateError(children)
+        : children}
     </p>
   )
 }

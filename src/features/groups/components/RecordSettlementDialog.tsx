@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
@@ -26,6 +27,7 @@ export default function RecordSettlementDialog({
   onClose: () => void
   onSave: (id: string, input: CreateSettlementInput) => Promise<unknown>
 }) {
+  const { t } = useTranslation()
   const [id] = useState(() => crypto.randomUUID())
   const [from, setFrom] = useState(suggestion?.from ?? currentUserId)
   const [to, setTo] = useState(
@@ -39,14 +41,14 @@ export default function RecordSettlementDialog({
   const [error, setError] = useState('')
   const name = (id: string) =>
     members.find((member) => member.id === id)?.displayName ||
-    `Member ${id.slice(0, 6)}`
+    t('Member {{id}}', { id: id.slice(0, 6) })
   const validPeople = from !== to && [from, to].includes(currentUserId)
   return (
     <Modal
       open
       onClose={onClose}
-      title="Record a payment"
-      description="Record money already transferred outside this app."
+      title={t('Record a payment')}
+      description={t('Record money already transferred outside this app.')}
       busy={busy}
     >
       <form
@@ -82,7 +84,7 @@ export default function RecordSettlementDialog({
         <fieldset disabled={busy} className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="settlement-from">Paid by</Label>
+              <Label htmlFor="settlement-from">{t('Paid by')}</Label>
               <NativeSelect
                 id="settlement-from"
                 className="w-full"
@@ -95,13 +97,13 @@ export default function RecordSettlementDialog({
                 {group.memberIds.map((id) => (
                   <option key={id} value={id}>
                     {name(id)}
-                    {id === currentUserId ? ' (you)' : ''}
+                    {id === currentUserId ? t(' (you)') : ''}
                   </option>
                 ))}
               </NativeSelect>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="settlement-to">Paid to</Label>
+              <Label htmlFor="settlement-to">{t('Paid to')}</Label>
               <NativeSelect
                 id="settlement-to"
                 className="w-full"
@@ -114,7 +116,7 @@ export default function RecordSettlementDialog({
                 {group.memberIds.map((id) => (
                   <option key={id} value={id}>
                     {name(id)}
-                    {id === currentUserId ? ' (you)' : ''}
+                    {id === currentUserId ? t(' (you)') : ''}
                   </option>
                 ))}
               </NativeSelect>
@@ -122,11 +124,13 @@ export default function RecordSettlementDialog({
           </div>
           {!validPeople && (
             <Message error>
-              Choose two different members. You must be the sender or recipient.
+              {t(
+                'Choose two different members. You must be the sender or recipient.',
+              )}
             </Message>
           )}
           <Field
-            label={`Amount (${group.baseCurrency})`}
+            label={t('Amount ({{currency}})', { currency: group.baseCurrency })}
             type="number"
             inputMode="decimal"
             required
@@ -140,15 +144,20 @@ export default function RecordSettlementDialog({
             }}
           />
           <Field
-            label="Note (optional)"
+            label={t('Note (optional)')}
             maxLength={500}
             value={note}
             onChange={(event) => setNote(event.target.value)}
           />
           <Message>
-            {name(from)} paid {name(to)}{' '}
-            {formatMoney(Number(amount) || 0, group.baseCurrency)}. Partial
-            payments are allowed. Only record the amount actually transferred.
+            {t(
+              '{{from}} paid {{to}} {{amount}}. Partial payments are allowed. Only record the amount actually transferred.',
+              {
+                from: name(from),
+                to: name(to),
+                amount: formatMoney(Number(amount) || 0, group.baseCurrency),
+              },
+            )}
           </Message>
           <label className="flex items-start gap-3 text-sm">
             <input
@@ -158,7 +167,7 @@ export default function RecordSettlementDialog({
               onChange={(event) => setConfirmed(event.target.checked)}
               required
             />
-            I confirm this payment has already been made.
+            {t('I confirm this payment has already been made.')}
           </label>
         </fieldset>
         {error && <Message error>{error}</Message>}
@@ -169,13 +178,13 @@ export default function RecordSettlementDialog({
             disabled={busy}
             onClick={onClose}
           >
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button
             type="submit"
             disabled={busy || !confirmed || !validPeople || !Number(amount)}
           >
-            {busy ? 'Saving...' : 'Record payment'}
+            {busy ? t('Saving...') : t('Record payment')}
           </Button>
         </div>
       </form>

@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/authStore'
 
 export function GoogleSignInButton({ disabled }: { disabled?: boolean }) {
+  const { t } = useTranslation()
   const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle)
   const [pending, setPending] = useState(false)
   const onClick = async () => {
@@ -50,11 +52,11 @@ export function GoogleSignInButton({ disabled }: { disabled?: boolean }) {
             />
           </svg>
         )}
-        {pending ? 'Connecting to Google...' : 'Continue with Google'}
+        {pending ? t('Connecting to Google...') : t('Continue with Google')}
       </Button>
       <div className="mt-6 flex items-center gap-4 text-xs text-muted-foreground">
         <span className="h-px flex-1 bg-border" />
-        <span>or continue with email</span>
+        <span>{t('or continue with email')}</span>
         <span className="h-px flex-1 bg-border" />
       </div>
     </div>

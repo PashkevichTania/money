@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { GoogleSignInButton } from '../components/GoogleSignInButton'
 import { ArrowRight, LoaderCircle, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -17,7 +18,7 @@ const schema = z
     displayName: z
       .string()
       .min(2, 'Name must be at least 2 characters')
-      .max(40),
+      .max(40, 'Name must be at most 40 characters'),
     email: z.string().email('Enter a valid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string().min(6, 'Please confirm your password'),
@@ -30,6 +31,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>
 
 export default function SignupPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const signup = useAuthStore((s) => s.signup)
   const error = useAuthStore((s) => s.error)
@@ -71,29 +73,29 @@ export default function SignupPage() {
   const busy = isSubmitting || status === 'loading'
   return (
     <AuthLayout
-      title="Make room for sharing."
-      description="Create your account and start your first group."
+      title={t('Make room for sharing.')}
+      description={t('Create your account and start your first group.')}
       footer={
         <>
-          Already have an account?{' '}
+          {t('Already have an account?')}{' '}
           <RouterLink
             to="/login"
             className="font-semibold text-primary underline-offset-4 hover:underline"
           >
-            Sign in
+            {t('Sign in')}
           </RouterLink>
         </>
       }
     >
       {error && (
         <Alert variant="destructive" className="mb-6 pr-12">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{t(error)}</AlertDescription>
           <Button
             variant="ghost"
             size="icon"
             className="absolute right-1 top-1"
             onClick={clearError}
-            aria-label="Dismiss error"
+            aria-label={t('Dismiss error')}
           >
             <X aria-hidden="true" />
           </Button>
@@ -109,16 +111,16 @@ export default function SignupPage() {
         <fieldset disabled={busy} className="space-y-5">
           <AuthField
             id="displayName"
-            label="Full name"
+            label={t('Full name')}
             type="text"
             autoComplete="name"
-            placeholder="Your name"
+            placeholder={t('Your name')}
             {...register('displayName')}
             error={errors.displayName?.message}
           />
           <AuthField
             id="email"
-            label="Email"
+            label={t('Email')}
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
@@ -127,19 +129,19 @@ export default function SignupPage() {
           />
           <AuthField
             id="password"
-            label="Password"
+            label={t('Password')}
             type="password"
             autoComplete="new-password"
-            placeholder="At least 6 characters"
+            placeholder={t('At least 6 characters')}
             {...register('password')}
             error={errors.password?.message}
           />
           <AuthField
             id="confirmPassword"
-            label="Confirm password"
+            label={t('Confirm password')}
             type="password"
             autoComplete="new-password"
-            placeholder="Repeat your password"
+            placeholder={t('Repeat your password')}
             {...register('confirmPassword')}
             error={errors.confirmPassword?.message}
           />
@@ -152,11 +154,11 @@ export default function SignupPage() {
             {isSubmitting ? (
               <>
                 <LoaderCircle className="animate-spin" aria-hidden="true" />
-                Creating account...
+                {t('Creating account...')}
               </>
             ) : (
               <>
-                Create account
+                {t('Create account')}
                 <ArrowRight aria-hidden="true" />
               </>
             )}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { MoreHorizontal, Pencil, Trash2, Receipt, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,6 +31,7 @@ export default function ExpenseList({
   members: UserProfile[]
   onEditExpense: (expense: Expense) => void
 }) {
+  const { t } = useTranslation()
   const expenses = useExpenseStore((s) => s.expensesByGroup[group.id] ?? EMPTY)
   const loading = useExpenseStore((s) => s.loadingByGroup[group.id])
   const error = useExpenseStore((s) => s.errorsByGroup[group.id])
@@ -73,8 +75,8 @@ export default function ExpenseList({
         <Search className="absolute left-3 top-3 size-5 text-muted-foreground" />
         <Input
           className="bg-card pl-10"
-          aria-label="Search expenses"
-          placeholder="Search expenses..."
+          aria-label={t('Search expenses')}
+          placeholder={t('Search expenses...')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -85,12 +87,12 @@ export default function ExpenseList({
         <div className="rounded-md border border-dashed bg-card p-10 text-center">
           <Receipt className="mx-auto mb-4 size-8 text-positive" />
           <h2 className="font-semibold">
-            {query ? 'No matching expenses' : 'No expenses yet'}
+            {query ? t('No matching expenses') : t('No expenses yet')}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {query
-              ? 'Try another search.'
-              : 'Add your first expense to start keeping track together.'}
+              ? t('Try another search.')
+              : t('Add your first expense to start keeping track together.')}
           </p>
         </div>
       ) : (
@@ -112,8 +114,9 @@ export default function ExpenseList({
                         {expense.title}
                       </h3>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {formatDate(expense.expenseDate)} · {expense.splitType}{' '}
-                        · {expense.participants.length} people
+                        {formatDate(expense.expenseDate)} ·{' '}
+                        {t(expense.splitType)} ·{' '}
+                        {t('members', { count: expense.participants.length })}
                       </p>
                     </div>
                     <div className="text-right">
@@ -135,9 +138,14 @@ export default function ExpenseList({
                   </div>
                   <p className="mt-3 text-xs leading-5 text-muted-foreground">
                     {expense.paidBy
-                      .map(
-                        (p) =>
-                          `${getName(p.userId)} paid ${formatMoney(p.amount, expense.originalCurrency)}`,
+                      .map((p) =>
+                        t('{{name}} paid {{amount}}', {
+                          name: getName(p.userId),
+                          amount: formatMoney(
+                            p.amount,
+                            expense.originalCurrency,
+                          ),
+                        }),
                       )
                       .join(' · ')}
                   </p>
@@ -151,8 +159,8 @@ export default function ExpenseList({
                       className={`mt-3 text-xs font-medium tabular-nums ${mine > 0 ? 'text-positive' : mine < 0 ? 'text-destructive' : 'text-muted-foreground'}`}
                     >
                       {Math.abs(mine) < 0.005
-                        ? 'No balance on this expense'
-                        : `${mine > 0 ? 'You get back' : 'You owe'} ${formatMoney(Math.abs(mine), expense.groupCurrency)}`}
+                        ? t('No balance on this expense')
+                        : `${mine > 0 ? t('You get back') : t('You owe')} ${formatMoney(Math.abs(mine), expense.groupCurrency)}`}
                     </p>
                   )}
                 </div>
@@ -163,7 +171,9 @@ export default function ExpenseList({
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label={`Actions for ${expense.title}`}
+                          aria-label={t('Actions for {{title}}', {
+                            title: expense.title,
+                          })}
                         />
                       }
                     >
@@ -172,14 +182,14 @@ export default function ExpenseList({
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => onEditExpense(expense)}>
                         <Pencil />
-                        Edit expense
+                        {t('Edit expense')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         variant="destructive"
                         onClick={() => setToDelete(expense)}
                       >
                         <Trash2 />
-                        Delete expense
+                        {t('Delete expense')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -192,12 +202,16 @@ export default function ExpenseList({
       <Modal
         open={!!toDelete}
         onClose={() => setToDelete(null)}
-        title="Delete expense?"
-        description={`Permanently delete ${toDelete?.title || 'this expense'}?`}
+        title={t('Delete expense?')}
+        description={t('Permanently delete {{title}}?', {
+          title: toDelete?.title || '',
+        })}
         busy={busy}
       >
         <p className="text-sm text-muted-foreground">
-          This cannot be undone. Its effect on the balances will be removed.
+          {t(
+            'This cannot be undone. Its effect on the balances will be removed.',
+          )}
         </p>
         <div className="flex justify-end gap-2">
           <Button
@@ -205,14 +219,14 @@ export default function ExpenseList({
             disabled={busy}
             onClick={() => setToDelete(null)}
           >
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button
             variant="destructive"
             disabled={busy}
             onClick={() => void confirmDelete()}
           >
-            {busy ? 'Deleting...' : 'Delete expense'}
+            {busy ? t('Deleting...') : t('Delete expense')}
           </Button>
         </div>
       </Modal>

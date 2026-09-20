@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Plus, Users, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -8,6 +9,7 @@ import { useGroupStore } from '@/stores/groupStore'
 import { useGroups } from '@/hooks/useGroups'
 import DashboardBalances from '../components/DashboardBalances'
 export default function DashboardPage() {
+  const { t } = useTranslation()
   const profile = useAuthStore((s) => s.profile)
   const { groups, loading } = useGroups()
   const error = useGroupStore((s) => s.errors.groups)
@@ -17,18 +19,22 @@ export default function DashboardPage() {
       <header className="flex flex-wrap justify-between gap-4">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-positive">
-            Your workspace
+            {t('Your workspace')}
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">
-            Hello, {profile?.displayName?.split(' ')[0] || 'there'}.
+            {profile?.displayName
+              ? t('Hello, {{name}}.', {
+                  name: profile.displayName.split(' ')[0],
+                })
+              : t('Hello!')}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            A clear place for everything you share.
+            {t('A clear place for everything you share.')}
           </p>
         </div>
         <Button render={<Link to="/groups?new=1" />} nativeButton={false}>
           <Plus />
-          Create a group
+          {t('Create a group')}
         </Button>
       </header>
       {error && <Message error>{error}</Message>}
@@ -36,7 +42,7 @@ export default function DashboardPage() {
         <DashboardBalances groups={groups} userId={profile.id} />
       )}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Section title="Your groups">
+        <Section title={t('Your groups')}>
           <div className="flex items-center justify-between">
             <span className="text-4xl font-semibold tabular-nums">
               {loading ? '—' : groups.length}
@@ -44,24 +50,24 @@ export default function DashboardPage() {
             <Users className="size-6 text-positive" />
           </div>
           <p className="text-sm text-muted-foreground">
-            Shared plans, all in one place.
+            {t('Shared plans, all in one place.')}
           </p>
         </Section>
-        <Section title="Group currencies">
+        <Section title={t('Group currencies')}>
           <div className="flex items-center justify-between gap-3">
             <span className="text-2xl font-semibold">
-              {loading ? '—' : currencies.join(' · ') || 'No currencies yet'}
+              {loading ? '—' : currencies.join(' · ') || t('No currencies yet')}
             </span>
             <Globe className="size-6 shrink-0 text-positive" />
           </div>
           <p className="text-sm text-muted-foreground">
-            Each group keeps its own base currency.
+            {t('Each group keeps its own base currency.')}
           </p>
         </Section>
       </div>
       <Section
-        title="Recently updated groups"
-        description="Pick up where you left off."
+        title={t('Recently updated groups')}
+        description={t('Pick up where you left off.')}
       >
         {loading && !groups.length ? (
           <Skeleton className="h-32" />
@@ -79,7 +85,8 @@ export default function DashboardPage() {
                 <div className="min-w-0">
                   <p className="truncate font-medium">{g.name}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {g.memberIds.length} members · {g.baseCurrency}
+                    {t('members', { count: g.memberIds.length })} ·{' '}
+                    {g.baseCurrency}
                   </p>
                 </div>
                 <ArrowUpRight className="ml-auto size-4" />
@@ -88,7 +95,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <p className="py-5 text-sm text-muted-foreground">
-            No groups yet. Create your first group to get started.
+            {t('No groups yet. Create your first group to get started.')}
           </p>
         )}
         <Button
@@ -96,7 +103,7 @@ export default function DashboardPage() {
           render={<Link to="/groups" />}
           nativeButton={false}
         >
-          View all groups
+          {t('View all groups')}
           <ArrowUpRight />
         </Button>
       </Section>

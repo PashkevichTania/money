@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { subscribeExpenses } from '@/api/expenses'
@@ -39,6 +40,7 @@ export function BalanceSummary({
   onRecord?: (suggestion?: TransferSuggestion) => void
   onDelete?: (settlement: Settlement) => void
 }) {
+  const { t } = useTranslation()
   let rows, suggestions
   try {
     rows = calculateBalances(
@@ -53,20 +55,23 @@ export function BalanceSummary({
       <Message error>
         {error instanceof Error
           ? error.message
-          : 'Unable to calculate balances.'}
+          : t('Unable to calculate balances.')}
       </Message>
     )
   }
   const money = (value: number) => formatMoney(value, group.baseCurrency)
   const name = (id: string) =>
-    members.find((m) => m.id === id)?.displayName || `Member ${id.slice(0, 6)}`
+    members.find((m) => m.id === id)?.displayName ||
+    t('Member {{id}}', { id: id.slice(0, 6) })
   const mine = rows.find((r) => r.userId === currentUserId)?.net ?? 0
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <Section
-          title="Total expenses"
-          description={`All time · ${group.baseCurrency}`}
+          title={t('Total expenses')}
+          description={t('All time · {{currency}}', {
+            currency: group.baseCurrency,
+          })}
         >
           <p className="text-3xl font-semibold tabular-nums">
             {money(
@@ -76,9 +81,13 @@ export function BalanceSummary({
         </Section>
         <Section
           title={
-            mine > 0 ? 'You are owed' : mine < 0 ? 'You owe' : 'Your balance'
+            mine > 0
+              ? t('You are owed')
+              : mine < 0
+                ? t('You owe')
+                : t('Your balance')
           }
-          description="Including recorded settlements"
+          description={t('Including recorded settlements')}
         >
           <p
             className={`text-3xl font-semibold tabular-nums ${mine > 0 ? 'text-positive' : mine < 0 ? 'text-destructive' : ''}`}
@@ -89,29 +98,38 @@ export function BalanceSummary({
       </div>
       {!expenses.length && !settlements.length && (
         <Message>
-          No expenses yet. Add the first expense to start tracking balances.
+          {t(
+            'No expenses yet. Add the first expense to start tracking balances.',
+          )}
         </Message>
       )}
       <Section
-        title="Member balances"
-        description={`All amounts in ${group.baseCurrency}. Positive balances are money to receive.`}
+        title={t('Member balances')}
+        description={t(
+          'All amounts in {{currency}}. Positive balances are money to receive.',
+          { currency: group.baseCurrency },
+        )}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <caption className="sr-only">Group member balances</caption>
+            <caption className="sr-only">{t('Group member balances')}</caption>
             <thead>
               <tr className="border-b text-muted-foreground">
-                {['Member', 'Paid', 'Share', 'Settlements', 'Balance'].map(
-                  (label, i) => (
-                    <th
-                      key={label}
-                      scope="col"
-                      className={`whitespace-nowrap px-3 py-3 font-medium ${i ? 'text-right' : 'text-left'}`}
-                    >
-                      {label}
-                    </th>
-                  ),
-                )}
+                {[
+                  t('Member'),
+                  t('Paid'),
+                  t('Share'),
+                  t('Settlements'),
+                  t('Balance'),
+                ].map((label, i) => (
+                  <th
+                    key={label}
+                    scope="col"
+                    className={`whitespace-nowrap px-3 py-3 font-medium ${i ? 'text-right' : 'text-left'}`}
+                  >
+                    {label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -119,7 +137,7 @@ export function BalanceSummary({
                 <tr key={r.userId} className="border-b last:border-0">
                   <th scope="row" className="px-3 py-4 text-left font-medium">
                     {name(r.userId)}
-                    {r.userId === currentUserId && ' (you)'}
+                    {r.userId === currentUserId && t(' (you)')}
                   </th>
                   {[r.paid, r.owed, r.settlementNet].map((value, i) => (
                     <td
@@ -132,7 +150,7 @@ export function BalanceSummary({
                   <td
                     className={`whitespace-nowrap px-3 py-4 text-right tabular-nums ${r.net > 0 ? 'text-positive' : r.net < 0 ? 'text-destructive' : 'text-muted-foreground'}`}
                   >
-                    {r.net > 0 ? 'Gets back ' : r.net < 0 ? 'Owes ' : ''}
+                    {r.net > 0 ? t('Gets back ') : r.net < 0 ? t('Owes ') : ''}
                     {money(Math.abs(r.net))}
                   </td>
                 </tr>
@@ -142,17 +160,19 @@ export function BalanceSummary({
         </div>
       </Section>
       <Section
-        title="Suggested transfers"
-        description="These suggestions simplify group debts. Record a payment after transferring the money."
+        title={t('Suggested transfers')}
+        description={t(
+          'These suggestions simplify group debts. Record a payment after transferring the money.',
+        )}
       >
         {onRecord && group.memberIds.length > 1 && (
-          <Button onClick={() => onRecord()}>Record a payment</Button>
+          <Button onClick={() => onRecord()}>{t('Record a payment')}</Button>
         )}
         {!suggestions.length ? (
           <p className="text-sm text-muted-foreground">
             {expenses.length || settlements.length
-              ? 'All settled up. Nobody owes anything.'
-              : 'Suggestions will appear after expenses are added.'}
+              ? t('All settled up. Nobody owes anything.')
+              : t('Suggestions will appear after expenses are added.')}
           </p>
         ) : (
           <ul className="divide-y">
@@ -162,8 +182,10 @@ export function BalanceSummary({
                 className="flex flex-wrap justify-between gap-3 py-3 text-sm"
               >
                 <span>
-                  <strong>{name(s.from)}</strong> pays{' '}
-                  <strong>{name(s.to)}</strong>
+                  {t('{{from}} pays {{to}}', {
+                    from: name(s.from),
+                    to: name(s.to),
+                  })}
                 </span>
                 <span className="font-semibold tabular-nums">
                   {money(s.amount)}
@@ -173,9 +195,12 @@ export function BalanceSummary({
                     <Button
                       variant="outline"
                       onClick={() => onRecord(s)}
-                      aria-label={`Record payment from ${name(s.from)} to ${name(s.to)}`}
+                      aria-label={t('Record payment from {{from}} to {{to}}', {
+                        from: name(s.from),
+                        to: name(s.to),
+                      })}
                     >
-                      Record payment
+                      {t('Record payment')}
                     </Button>
                   )}
               </li>
@@ -185,8 +210,10 @@ export function BalanceSummary({
       </Section>
       {!!settlements.length && (
         <Section
-          title="Recorded payments"
-          description="Deleting an incorrect record reverses its effect on balances."
+          title={t('Recorded payments')}
+          description={t(
+            'Deleting an incorrect record reverses its effect on balances.',
+          )}
         >
           <ul className="divide-y">
             {[...settlements]
@@ -198,12 +225,16 @@ export function BalanceSummary({
                 >
                   <div className="min-w-0">
                     <p className="break-words">
-                      <strong>{name(payment.fromUserId)}</strong> paid{' '}
-                      <strong>{name(payment.toUserId)}</strong>
+                      {t('{{from}} paid {{to}}', {
+                        from: name(payment.fromUserId),
+                        to: name(payment.toUserId),
+                      })}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {formatDate(payment.createdAt)} · Recorded by{' '}
-                      {name(payment.createdBy)}
+                      {formatDate(payment.createdAt)} ·{' '}
+                      {t('Recorded by {{name}}', {
+                        name: name(payment.createdBy),
+                      })}
                     </p>
                     {payment.note && (
                       <p className="mt-1 break-words text-muted-foreground">
@@ -218,9 +249,12 @@ export function BalanceSummary({
                     <Button
                       variant="ghost"
                       onClick={() => onDelete(payment)}
-                      aria-label={`Delete payment from ${name(payment.fromUserId)} to ${name(payment.toUserId)}`}
+                      aria-label={t('Delete payment from {{from}} to {{to}}', {
+                        from: name(payment.fromUserId),
+                        to: name(payment.toUserId),
+                      })}
                     >
-                      Delete record
+                      {t('Delete record')}
                     </Button>
                   )}
                 </li>
@@ -239,6 +273,7 @@ export default function BalancesTab({
   group: Group
   members: UserProfile[]
 }) {
+  const { t } = useTranslation()
   const me = useCurrentUser()
   const { enqueueSnackbar } = useNotify()
   const [record, setRecord] = useState<{
@@ -301,7 +336,7 @@ export default function BalancesTab({
   }, [group.id, attempt])
   if (state.groupId === group.id && state.error)
     return (
-      <Section title="Balances unavailable">
+      <Section title={t('Balances unavailable')}>
         <Message error>{state.error}</Message>
         <Button
           variant="outline"
@@ -311,13 +346,13 @@ export default function BalancesTab({
           }}
         >
           <RefreshCw />
-          Retry
+          {t('Retry')}
         </Button>
       </Section>
     )
   if (state.groupId !== group.id || !state.expenses || !state.settlements)
     return (
-      <div role="status" aria-label="Loading balances">
+      <div role="status" aria-label={t('Loading balances')}>
         <Skeleton className="h-64" />
       </div>
     )
@@ -352,8 +387,11 @@ export default function BalancesTab({
         <Modal
           open
           onClose={() => setToDelete(null)}
-          title="Delete payment record?"
-          description={`Remove this ${formatMoney(toDelete.amount, group.baseCurrency)} payment record and restore the corresponding debt? This does not reverse the actual transfer.`}
+          title={t('Delete payment record?')}
+          description={t(
+            'Remove this {{amount}} payment record and restore the corresponding debt? This does not reverse the actual transfer.',
+            { amount: formatMoney(toDelete.amount, group.baseCurrency) },
+          )}
           busy={deleting}
         >
           {deleteError && <Message error>{deleteError}</Message>}
@@ -363,7 +401,7 @@ export default function BalancesTab({
               disabled={deleting}
               onClick={() => setToDelete(null)}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -389,7 +427,7 @@ export default function BalancesTab({
                 }
               }}
             >
-              {deleting ? 'Deleting...' : 'Delete record'}
+              {deleting ? t('Deleting...') : t('Delete record')}
             </Button>
           </div>
         </Modal>

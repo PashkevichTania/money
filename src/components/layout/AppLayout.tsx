@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Topbar from './Topbar'
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/sheet'
 
 export default function AppLayout() {
+  const { t } = useTranslation()
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const toggleSidebar = useUIStore((s) => s.toggleSidebar)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -29,7 +31,7 @@ export default function AppLayout() {
         href="#main-content"
         className="fixed left-4 top-3 z-[100] -translate-y-24 rounded-md bg-primary px-4 py-3 text-primary-foreground focus:translate-y-0"
       >
-        Skip to content
+        {t('Skip to content')}
       </a>
       {sidebarOpen && (
         <aside
@@ -46,9 +48,11 @@ export default function AppLayout() {
           className="w-72 gap-0 p-0"
           id="mobile-workspace-navigation"
         >
-          <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
+          <SheetTitle className="sr-only">
+            {t('Workspace navigation')}
+          </SheetTitle>
           <SheetDescription className="sr-only">
-            Navigate between your overview, groups and settings.
+            {t('Navigate between your overview, groups and settings.')}
           </SheetDescription>
           <Sidebar onNavigate={() => setMobileOpen(false)} />
         </SheetContent>

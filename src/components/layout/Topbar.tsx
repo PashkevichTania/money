@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -29,6 +30,7 @@ export default function Topbar({
   sidebarExpanded: boolean
   mobileExpanded: boolean
 }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const profile = useAuthStore((s) => s.profile)
@@ -69,7 +71,7 @@ export default function Topbar({
         size="icon"
         className="hidden lg:inline-flex"
         onClick={onToggleSidebar}
-        aria-label="Toggle navigation"
+        aria-label={t('Toggle navigation')}
         aria-expanded={sidebarExpanded}
         aria-controls="workspace-navigation"
       >
@@ -80,13 +82,13 @@ export default function Topbar({
         size="icon"
         className="lg:hidden"
         onClick={onToggleSidebar}
-        aria-label="Toggle navigation"
+        aria-label={t('Toggle navigation')}
         aria-expanded={mobileExpanded}
         aria-controls="mobile-workspace-navigation"
       >
         <Menu aria-hidden="true" />
       </Button>
-      <p className="text-sm font-medium text-muted-foreground">{title}</p>
+      <p className="text-sm font-medium text-muted-foreground">{t(title)}</p>
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
         <Button
           render={<Link to="/groups?new=1" />}
@@ -94,7 +96,7 @@ export default function Topbar({
           className="hidden sm:inline-flex"
         >
           <Plus aria-hidden="true" />
-          New group
+          {t('New group')}
         </Button>
         <ThemeToggle />
         <div className="mx-1 hidden h-6 border-l sm:block" />
@@ -104,7 +106,7 @@ export default function Topbar({
               <Button
                 variant="ghost"
                 className="gap-2 px-1.5"
-                aria-label="Account menu"
+                aria-label={t('Account menu')}
               />
             }
           >
@@ -112,7 +114,7 @@ export default function Topbar({
               {initials}
             </span>
             <span className="hidden max-w-28 truncate text-sm md:block">
-              {profile?.displayName || 'Account'}
+              {profile?.displayName || t('Account')}
             </span>
             <ChevronDown
               className="size-3 text-muted-foreground"
@@ -122,10 +124,10 @@ export default function Topbar({
           <DropdownMenuContent align="end" className="w-64">
             <div className="px-3 py-3">
               <p className="truncate text-sm font-semibold">
-                {profile?.displayName || 'Your account'}
+                {profile?.displayName || t('Your account')}
               </p>
               <p className="mt-1 truncate text-xs text-muted-foreground">
-                {profile?.email || 'Manage your workspace'}
+                {profile?.email || t('Manage your workspace')}
               </p>
             </div>
             <DropdownMenuSeparator />
@@ -134,14 +136,14 @@ export default function Topbar({
               className="min-h-10 px-3"
             >
               <UserRound aria-hidden="true" />
-              Overview
+              {t('Overview')}
             </DropdownMenuItem>
             <DropdownMenuItem
               render={<Link to="/settings" />}
               className="min-h-10 px-3"
             >
               <Settings aria-hidden="true" />
-              Settings
+              {t('Settings')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -151,7 +153,7 @@ export default function Topbar({
               className="min-h-10 px-3"
             >
               <LogOut aria-hidden="true" />
-              {signingOut ? 'Signing out...' : 'Sign out'}
+              {signingOut ? t('Signing out...') : t('Sign out')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

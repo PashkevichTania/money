@@ -1,4 +1,5 @@
 import { Toaster as Sonner, type ToasterProps } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -8,9 +9,11 @@ import {
 } from 'lucide-react'
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const { t } = useTranslation()
   return (
     <Sonner
       className="toaster group"
+      containerAriaLabel={t('Notifications')}
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,
@@ -27,6 +30,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as React.CSSProperties
       }
       toastOptions={{
+        closeButtonAriaLabel: t('Close notification'),
         classNames: {
           toast: 'cn-toast',
         },

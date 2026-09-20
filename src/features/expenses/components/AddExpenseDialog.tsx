@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+import { translateError } from '@/i18n/errors'
 import { Plus, X, Check, LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,7 +24,7 @@ import { DEFAULT_BASE_CURRENCY } from '@/config/currencies'
 import { useCurrentUser } from '@/hooks/useGroups'
 import { useExpenseStore } from '@/stores/expenseStore'
 import { formatMoney, roundMoney, safeSum } from '@/utils/currency'
-import { nowIso, toIsoDate } from '@/utils/dates'
+import { formatDate, nowIso, toIsoDate } from '@/utils/dates'
 import {
   autoDistributePaidBy,
   autoFillExactRemainder,
@@ -35,8 +37,14 @@ import {
 import { getExchangeRate } from '@/api/rates'
 
 const schema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters').max(100),
-  description: z.string().max(500).optional(),
+  title: z
+    .string()
+    .min(2, 'Title must be at least 2 characters')
+    .max(100, 'Title must be at most 100 characters'),
+  description: z
+    .string()
+    .max(500, 'Description must be at most 500 characters')
+    .optional(),
   expenseDate: z.string().min(1, 'Date is required'),
   originalCurrency: z.string().min(3, 'Currency is required').max(3),
   originalAmount: z.coerce
@@ -83,6 +91,7 @@ export default function AddExpenseDialog({
   editingExpense?: Expense | null
   preview?: boolean
 }) {
+  const { t, i18n } = useTranslation()
   const isEdit = Boolean(editingExpense)
   const me = useCurrentUser()
   const { enqueueSnackbar } = useNotify()
@@ -640,8 +649,10 @@ export default function AddExpenseDialog({
       onClose={onClose}
       busy={isSubmitting}
       wide
-      title={isEdit ? 'Edit expense' : 'Add expense'}
-      description={`Record a shared expense in ${group.name}.`}
+      title={isEdit ? t('Edit expense') : t('Add expense')}
+      description={t('Record a shared expense in {{group}}.', {
+        group: group.name,
+      })}
     >
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -650,16 +661,16 @@ export default function AddExpenseDialog({
         className="space-y-5"
       >
         <fieldset disabled={isSubmitting} className="space-y-5">
-          <Section title="1. The details">
+          <Section title={t('1. The details')}>
             <Field
-              label="Title"
-              placeholder="e.g. Dinner with friends"
+              label={t('Title')}
+              placeholder={t('e.g. Dinner with friends')}
               {...register('title')}
               error={errors.title?.message}
             />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
-                label="Amount"
+                label={t('Amount')}
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -681,37 +692,53 @@ export default function AddExpenseDialog({
               />
             </div>
             <Field
-              label="Date"
+              label={t('Date')}
               type="date"
               {...register('expenseDate')}
               error={errors.expenseDate?.message}
             />
             <div className="space-y-2">
-              <Label htmlFor="expense-notes">Notes (optional)</Label>
+              <Label htmlFor="expense-notes">{t('Notes (optional)')}</Label>
               <Textarea
                 id="expense-notes"
-                placeholder="Anything useful to remember"
+                placeholder={t('Anything useful to remember')}
                 {...register('description')}
                 aria-invalid={!!errors.description}
               />
               {errors.description && (
                 <p className="text-xs text-destructive">
-                  {errors.description.message}
+                  {t(errors.description.message || '')}
                 </p>
               )}
             </div>
             {currencyMismatch && (
               <Message error={!!rateState.error}>
                 {rateState.loading
-                  ? 'Looking up the exchange rate...'
+                  ? t('Looking up the exchange rate...')
                   : rateState.error ||
-                    `1 ${originalCurrency} = ${rateState.rate} ${group.baseCurrency} · ${rateState.date}. Converted total: ${formatMoney(convertedAmount, group.baseCurrency)}`}
+                    t(
+                      '1 {{from}} = {{rate}} {{to}} · {{date}}. Converted total: {{amount}}',
+                      {
+                        from: originalCurrency,
+                        rate: new Intl.NumberFormat(i18n.resolvedLanguage, {
+                          maximumFractionDigits: 6,
+                        }).format(rateState.rate || 0),
+                        to: group.baseCurrency,
+                        date: rateState.date ? formatDate(rateState.date) : '',
+                        amount: formatMoney(
+                          convertedAmount,
+                          group.baseCurrency,
+                        ),
+                      },
+                    )}
               </Message>
             )}
           </Section>
           <Section
-            title="2. Who paid?"
-            description={`Enter contributions in ${originalCurrency}.`}
+            title={t('2. Who paid?')}
+            description={t('Enter contributions in {{currency}}.', {
+              currency: originalCurrency,
+            })}
           >
             <div className="flex flex-wrap gap-2">
               <Button
@@ -719,7 +746,7 @@ export default function AddExpenseDialog({
                 variant="outline"
                 onClick={() => applySinglePayer(defaultPayerId)}
               >
-                I paid
+                {t('I paid')}
               </Button>
               <Button
                 type="button"
@@ -727,7 +754,7 @@ export default function AddExpenseDialog({
                 disabled={!participantIds.length}
                 onClick={applyEvenPaidBy}
               >
-                Split payments evenly
+                {t('Split payments evenly')}
               </Button>
             </div>
             <div className="space-y-3">
@@ -735,7 +762,9 @@ export default function AddExpenseDialog({
                 <div key={payer.userId} className="flex items-end gap-2">
                   <div className="flex-1">
                     <Field
-                      label={`Paid by ${nameOf(payer.userId)}`}
+                      label={t('Paid by {{name}}', {
+                        name: nameOf(payer.userId),
+                      })}
                       type="number"
                       inputMode="decimal"
                       min="0"
@@ -751,7 +780,9 @@ export default function AddExpenseDialog({
                     variant="ghost"
                     size="icon"
                     disabled={paidBy.length <= 1}
-                    aria-label={`Remove payer ${nameOf(payer.userId)}`}
+                    aria-label={t('Remove payer {{name}}', {
+                      name: nameOf(payer.userId),
+                    })}
                     onClick={() => removePayer(payer.userId)}
                   >
                     <X />
@@ -777,14 +808,16 @@ export default function AddExpenseDialog({
             <p
               className={`text-sm tabular-nums ${Math.abs(paidRemaining) < 0.005 ? 'text-positive' : 'text-destructive'}`}
             >
-              Paid {formatMoney(paidSum, originalCurrency)} · Remaining{' '}
-              {formatMoney(paidRemaining, originalCurrency)}
+              {t('Paid {{paid}} · Remaining {{remaining}}', {
+                paid: formatMoney(paidSum, originalCurrency),
+                remaining: formatMoney(paidRemaining, originalCurrency),
+              })}
             </p>
           </Section>
-          <Section title="3. How is it split?">
+          <Section title={t('3. How is it split?')}>
             <div
               role="group"
-              aria-label="Split method"
+              aria-label={t('Split method')}
               className="flex flex-wrap gap-2"
             >
               {(['equal', 'exact', 'percentage', 'shares'] as SplitType[]).map(
@@ -796,16 +829,14 @@ export default function AddExpenseDialog({
                     aria-pressed={type === splitType}
                     onClick={() => changeSplit(type)}
                   >
-                    {type === 'percentage'
-                      ? 'Percentage'
-                      : type[0].toUpperCase() + type.slice(1)}
+                    {t(type)}
                   </Button>
                 ),
               )}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="ghost" onClick={toggleAll}>
-                {allIn ? 'Clear selection' : 'Select everyone'}
+                {allIn ? t('Clear selection') : t('Select everyone')}
               </Button>
               {splitType === 'exact' && (
                 <Button
@@ -814,7 +845,7 @@ export default function AddExpenseDialog({
                   disabled={!participantIds.length}
                   onClick={fillExactRemainder}
                 >
-                  Fill last share with remainder
+                  {t('Fill last share with remainder')}
                 </Button>
               )}
             </div>
@@ -835,7 +866,10 @@ export default function AddExpenseDialog({
                     {selected && splitType !== 'equal' ? (
                       <div className="flex w-32 shrink-0 items-center gap-1">
                         <Input
-                          aria-label={`${member.displayName} ${splitType} share`}
+                          aria-label={t('{{name}}: {{method}}', {
+                            name: member.displayName,
+                            method: t(splitType),
+                          })}
                           type="number"
                           inputMode="decimal"
                           min={splitType === 'shares' ? 1 : 0}
@@ -872,7 +906,9 @@ export default function AddExpenseDialog({
             </div>
             {!!liveValidationErrors.length && originalAmount > 0 && (
               <Message error>
-                {liveValidationErrors.map((e) => e.message).join(' ')}
+                {liveValidationErrors
+                  .map((e) => translateError(e.message))
+                  .join(' ')}
               </Message>
             )}
             {errors.splitType && (
@@ -880,11 +916,13 @@ export default function AddExpenseDialog({
             )}
           </Section>
           <Section
-            title="Review"
-            description={`Amounts below are in ${group.baseCurrency}.`}
+            title={t('Review')}
+            description={t('Amounts below are in {{currency}}.', {
+              currency: group.baseCurrency,
+            })}
           >
             <div className="flex justify-between text-lg font-semibold tabular-nums">
-              <span>Total</span>
+              <span>{t('Total')}</span>
               <span>{formatMoney(convertedAmount, group.baseCurrency)}</span>
             </div>
             {!liveValidationErrors.length &&
@@ -901,15 +939,17 @@ export default function AddExpenseDialog({
                       className={`text-right tabular-nums ${net > 0 ? 'text-positive' : net < 0 ? 'text-destructive' : 'text-muted-foreground'}`}
                     >
                       {Math.abs(net) < 0.005
-                        ? 'No balance'
-                        : `${net > 0 ? 'Gets back' : 'Owes'} ${formatMoney(Math.abs(net), group.baseCurrency)}`}
+                        ? t('No balance')
+                        : `${net > 0 ? t('Gets back') : t('Owes')} ${formatMoney(Math.abs(net), group.baseCurrency)}`}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Complete the amounts and split to preview each person's balance.
+                {t(
+                  "Complete the amounts and split to preview each person's balance.",
+                )}
               </p>
             )}
           </Section>
@@ -921,7 +961,7 @@ export default function AddExpenseDialog({
             disabled={isSubmitting}
             onClick={onClose}
           >
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button type="submit" disabled={!canSubmit}>
             {isSubmitting ? (
@@ -930,10 +970,10 @@ export default function AddExpenseDialog({
               <Check />
             )}
             {isSubmitting
-              ? 'Saving...'
+              ? t('Saving...')
               : isEdit
-                ? 'Save changes'
-                : 'Add expense'}
+                ? t('Save changes')
+                : t('Add expense')}
           </Button>
         </div>
       </form>

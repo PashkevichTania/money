@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { GoogleSignInButton } from '../components/GoogleSignInButton'
 import { ArrowRight, LoaderCircle, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export default function LoginPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const login = useAuthStore((s) => s.login)
@@ -62,29 +64,29 @@ export default function LoginPage() {
   const busy = isSubmitting || status === 'loading'
   return (
     <AuthLayout
-      title="Welcome back."
-      description="Sign in to pick up where you left off."
+      title={t('Welcome back.')}
+      description={t('Sign in to pick up where you left off.')}
       footer={
         <>
-          New to SplitSmart?{' '}
+          {t('New to SplitSmart?')}{' '}
           <RouterLink
             to="/signup"
             className="font-semibold text-primary underline-offset-4 hover:underline"
           >
-            Create an account
+            {t('Create an account')}
           </RouterLink>
         </>
       }
     >
       {error && (
         <Alert variant="destructive" className="mb-6 pr-12">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{t(error)}</AlertDescription>
           <Button
             variant="ghost"
             size="icon"
             className="absolute right-1 top-1"
             onClick={clearError}
-            aria-label="Dismiss error"
+            aria-label={t('Dismiss error')}
           >
             <X aria-hidden="true" />
           </Button>
@@ -100,7 +102,7 @@ export default function LoginPage() {
         <fieldset disabled={busy} className="space-y-5">
           <AuthField
             id="email"
-            label="Email"
+            label={t('Email')}
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
@@ -109,10 +111,10 @@ export default function LoginPage() {
           />
           <AuthField
             id="password"
-            label="Password"
+            label={t('Password')}
             type="password"
             autoComplete="current-password"
-            placeholder="Enter your password"
+            placeholder={t('Enter your password')}
             {...register('password')}
             error={errors.password?.message}
           />
@@ -125,11 +127,11 @@ export default function LoginPage() {
             {isSubmitting ? (
               <>
                 <LoaderCircle className="animate-spin" aria-hidden="true" />
-                Signing in...
+                {t('Signing in...')}
               </>
             ) : (
               <>
-                Sign in
+                {t('Sign in')}
                 <ArrowRight aria-hidden="true" />
               </>
             )}

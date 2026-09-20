@@ -1,7 +1,9 @@
 export function formatMoney(
   amount: number,
   currency: string,
-  locale: string = 'en-US',
+  locale: string = typeof document === 'undefined'
+    ? 'en-US'
+    : document.documentElement.lang || 'en-US',
 ): string {
   try {
     return new Intl.NumberFormat(locale, {
