@@ -13,8 +13,9 @@ export function GoogleSignInButton({ disabled }: { disabled?: boolean }) {
     try {
       await loginWithGoogle()
       // The page's existing profile observer handles navigation for both methods.
-    } catch {
+    } catch (error) {
       // Actionable errors are displayed by the page; closing the popup is silent.
+        console.error(error)
     } finally {
       setPending(false)
     }

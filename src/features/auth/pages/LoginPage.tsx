@@ -56,8 +56,9 @@ export default function LoginPage() {
       await login(values.email, values.password)
       enqueueSnackbar('Welcome back!', { variant: 'success' })
       navigate(from, { replace: true })
-    } catch {
+    } catch (error) {
       // error already set in store
+      console.error(error)
     }
   }
 
