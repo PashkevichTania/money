@@ -4,21 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Field, Section, Message } from '@/components/ui/field'
-import { useEffect, useMemo, useState } from 'react'
-import { useNotify } from '@/hooks/useNotify'
 import type { Group } from '@/types/group'
 import type { UserProfile } from '@/types/user'
 import { useCurrentUser } from '@/hooks/useGroups'
-import { useGroupStore } from '@/stores/groupStore'
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('')
-}
+import { useMemberManagement } from '@/features/groups/hooks/useMemberManagement'
+import { getInitials } from '@/utils/user'
 
 export default function MembersTab({
   group,
@@ -31,70 +21,19 @@ export default function MembersTab({
 }) {
   const { t } = useTranslation()
   const me = useCurrentUser()
-  const { enqueueSnackbar } = useNotify()
-  const searchUsers = useGroupStore((s) => s.searchUsers)
-  const clearSearch = useGroupStore((s) => s.clearSearch)
-  const searchResults = useGroupStore((s) => s.searchResults)
-  const searchingUsers = useGroupStore((s) => s.searchingUsers)
-  const addMemberByEmail = useGroupStore((s) => s.addMemberByEmail)
-  const removeMember = useGroupStore((s) => s.removeMember)
-  const errors = useGroupStore((s) => s.errors)
-
-  const [query, setQuery] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [toRemove, setToRemove] = useState<UserProfile | null>(null)
-
-  useEffect(() => {
-    const handle = window.setTimeout(() => {
-      void searchUsers(query, group.memberIds)
-    }, 250)
-    return () => window.clearTimeout(handle)
-  }, [query, group.memberIds, searchUsers])
-
-  useEffect(() => () => clearSearch(), [clearSearch])
-
-  const addError = errors[`addMember:${group.id}`]
-
-  const canRemove = group.memberIds.length > 1
-
-  const options = useMemo(
-    () => searchResults.filter((r) => !r.alreadyMember),
-    [searchResults],
-  )
-
-  const onAddEmail = async (email: string) => {
-    const trimmed = email.trim()
-    if (!trimmed) return
-    setBusy(true)
-    try {
-      await addMemberByEmail(group.id, trimmed)
-      enqueueSnackbar('Member added', { variant: 'success' })
-      setQuery('')
-      clearSearch()
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not add member'
-      enqueueSnackbar(msg, { variant: 'error' })
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const onConfirmRemove = async () => {
-    if (!toRemove) return
-    setBusy(true)
-    try {
-      await removeMember(group.id, toRemove.id)
-      enqueueSnackbar(t('{{name}} removed', { name: toRemove.displayName }), {
-        variant: 'success',
-      })
-      setToRemove(null)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not remove member'
-      enqueueSnackbar(msg, { variant: 'error' })
-    } finally {
-      setBusy(false)
-    }
-  }
+  const {
+    addError,
+    addMember,
+    busy,
+    canRemove,
+    confirmRemove,
+    memberToRemove,
+    options,
+    query,
+    searchingUsers,
+    setMemberToRemove,
+    setQuery,
+  } = useMemberManagement(group)
 
   return (
     <Section
@@ -104,7 +43,7 @@ export default function MembersTab({
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          void onAddEmail(query)
+          void addMember(query)
         }}
         className="flex flex-col gap-3 sm:flex-row sm:items-end"
       >
@@ -140,7 +79,7 @@ export default function MembersTab({
                 type="button"
                 disabled={busy}
                 className="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-muted"
-                onClick={() => void onAddEmail(user.email)}
+                onClick={() => void addMember(user.email)}
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium">
@@ -165,7 +104,7 @@ export default function MembersTab({
             return (
               <div key={id} className="flex items-center gap-3 py-4">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
-                  {initials(member?.displayName || id)}
+                  {getInitials(member?.displayName || id)}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
@@ -192,7 +131,7 @@ export default function MembersTab({
                   aria-label={t('Remove {{name}}', {
                     name: member?.displayName || t('Member'),
                   })}
-                  onClick={() => member && setToRemove(member)}
+                  onClick={() => member && setMemberToRemove(member)}
                 >
                   <UserMinus className="text-destructive" />
                 </Button>
@@ -205,11 +144,11 @@ export default function MembersTab({
         {t('Members are retained once the group has expense history.')}
       </p>
       <Modal
-        open={!!toRemove}
-        onClose={() => setToRemove(null)}
+        open={!!memberToRemove}
+        onClose={() => setMemberToRemove(null)}
         title={t('Remove member?')}
         description={t('Remove {{name}} from {{group}}?', {
-          name: toRemove?.displayName || t('Member'),
+          name: memberToRemove?.displayName || t('Member'),
           group: group.name,
         })}
         busy={busy}
@@ -223,14 +162,14 @@ export default function MembersTab({
           <Button
             variant="outline"
             disabled={busy}
-            onClick={() => setToRemove(null)}
+            onClick={() => setMemberToRemove(null)}
           >
             {t('Cancel')}
           </Button>
           <Button
             variant="destructive"
             disabled={busy}
-            onClick={() => void onConfirmRemove()}
+            onClick={() => void confirmRemove()}
           >
             {busy ? t('Removing...') : t('Remove member')}
           </Button>

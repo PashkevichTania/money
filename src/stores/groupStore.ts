@@ -18,6 +18,7 @@ import {
   type SearchUserResult,
 } from '@/api/users'
 import { isFirebaseConfigured } from '@/config/firebase'
+import { getErrorMessage, removeById, replaceById, setRecordValue } from './utils'
 
 export interface GroupStoreState {
   groupsUserId: string | null
@@ -57,10 +58,11 @@ function makeErrorBoundary<T>(
   scope: string,
   fn: () => Promise<T>,
 ): Promise<T> {
-  return fn().catch((err) => {
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    set((s) => ({ errors: { ...s.errors, [scope]: msg } }))
-    throw err
+  return fn().catch((error) => {
+    set((state) => ({
+      errors: setRecordValue(state.errors, scope, getErrorMessage(error)),
+    }))
+    throw error
   })
 }
 
@@ -76,7 +78,9 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
   errors: {},
 
   setError: (key, message) =>
-    set((s) => ({ errors: { ...s.errors, [key]: message } })),
+    set((state) => ({
+      errors: setRecordValue(state.errors, key, message),
+    })),
   clearErrors: () => set({ errors: {} }),
 
   setSelectedGroupId: (id) => set({ selectedGroupId: id }),
@@ -94,16 +98,16 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
     set({ loading: true })
     try {
       const groups = await getGroupsForUser(userId)
-      if (get().groupsUserId === userId) set({ groups, loading: false })
+      if (get().groupsUserId === userId) set({ groups })
       return groups
     } catch (error) {
       if (get().groupsUserId === userId)
-        set((s) => ({
-          errors: {
-            ...s.errors,
-            groups:
-              error instanceof Error ? error.message : 'Unable to load groups.',
-          },
+        set((state) => ({
+          errors: setRecordValue(
+            state.errors,
+            'groups',
+            getErrorMessage(error, 'Unable to load groups.'),
+          ),
         }))
       throw error
     } finally {
@@ -117,12 +121,12 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
     return makeErrorBoundary(set, `group:${groupId}`, async () => {
       const updated = await getGroup(groupId)
       if (!updated) return
-      set((s) => {
-        const exists = s.groups.some((g) => g.id === groupId)
+      set((state) => {
+        const exists = state.groups.some(({ id }) => id === groupId)
         return {
           groups: exists
-            ? s.groups.map((g) => (g.id === groupId ? updated : g))
-            : [updated, ...s.groups],
+            ? replaceById(state.groups, updated)
+            : [updated, ...state.groups],
         }
       })
     })
@@ -141,10 +145,9 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
           memberIds: Array.from(new Set([input.createdBy, ...input.memberIds])),
           createdBy: input.createdBy,
         })
-        set((s) => ({
-          groups: [group, ...s.groups],
+        set((state) => ({
+          groups: [group, ...state.groups],
           selectedGroupId: group.id,
-          loading: false,
         }))
         return group
       })
@@ -157,8 +160,8 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
     if (!isFirebaseConfigured) return
     return makeErrorBoundary(set, `group:${groupId}`, async () => {
       const updated = await updateGroup(groupId, { name })
-      set((s) => ({
-        groups: s.groups.map((g) => (g.id === groupId ? updated : g)),
+      set((state) => ({
+        groups: replaceById(state.groups, updated),
       }))
     })
   },
@@ -167,10 +170,10 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
     if (!isFirebaseConfigured) return
     return makeErrorBoundary(set, `group:${groupId}`, async () => {
       await deleteGroup(groupId)
-      set((s) => ({
-        groups: s.groups.filter((g) => g.id !== groupId),
+      set((state) => ({
+        groups: removeById(state.groups, groupId),
         selectedGroupId:
-          s.selectedGroupId === groupId ? null : s.selectedGroupId,
+          state.selectedGroupId === groupId ? null : state.selectedGroupId,
       }))
     })
   },
@@ -181,11 +184,12 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
     try {
       return await makeErrorBoundary(set, 'members', async () => {
         const users = await getUsersByIds(memberIds)
-        const map: Record<string, UserProfile> = {}
-        for (const u of users) map[u.id] = u
-        set((s) => ({
-          membersMap: { ...s.membersMap, ...map },
-          loadingMembers: false,
+        const memberEntries = users.map((user) => [user.id, user] as const)
+        set((state) => ({
+          membersMap: {
+            ...state.membersMap,
+            ...Object.fromEntries(memberEntries),
+          },
         }))
         return users
       })
@@ -204,15 +208,15 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
         )
       }
       const current =
-        get().groups.find((g) => g.id === groupId) ?? (await getGroup(groupId))
+        get().groups.find(({ id }) => id === groupId) ?? (await getGroup(groupId))
       const memberIds = current?.memberIds ?? []
       if (memberIds.includes(user.id)) {
         throw new Error('This user is already a member of the group')
       }
       const updated = await addMemberToGroup(groupId, user.id)
-      set((s) => ({
-        groups: s.groups.map((g) => (g.id === groupId ? updated : g)),
-        membersMap: { ...s.membersMap, [user.id]: user },
+      set((state) => ({
+        groups: replaceById(state.groups, updated),
+        membersMap: setRecordValue(state.membersMap, user.id, user),
       }))
     })
   },
@@ -221,8 +225,8 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
     if (!isFirebaseConfigured) return
     return makeErrorBoundary(set, `removeMember:${groupId}`, async () => {
       const updated = await removeMemberFromGroup(groupId, userId)
-      set((s) => ({
-        groups: s.groups.map((g) => (g.id === groupId ? updated : g)),
+      set((state) => ({
+        groups: replaceById(state.groups, updated),
       }))
     })
   },
@@ -236,10 +240,9 @@ export const useGroupStore = create<GroupStoreState>((set, get) => ({
     try {
       const results = await searchUsersByEmail(term, { excludeMemberIds })
       set({ searchResults: results, searchingUsers: false })
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Search failed'
+    } catch (error) {
       set({ searchResults: [], searchingUsers: false })
-      get().setError('userSearch', msg)
+      get().setError('userSearch', getErrorMessage(error, 'Search failed'))
     }
   },
 

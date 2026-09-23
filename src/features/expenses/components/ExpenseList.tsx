@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
 import { MoreHorizontal, Pencil, Trash2, Receipt, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,14 +14,12 @@ import {
 import type { Group } from '@/types/group'
 import type { Expense } from '@/types/expense'
 import type { UserProfile } from '@/types/user'
-import { useExpenseStore } from '@/stores/expenseStore'
-import { useCurrentUser } from '@/hooks/useGroups'
-import { useNotify } from '@/hooks/useNotify'
 import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/dates'
 import { getExpenseTypeDetails } from '@/config/expenseTypes'
 import { computeNetBalances } from '@/utils/split'
-const EMPTY: Expense[] = []
+import { useExpenseList } from '@/features/expenses/hooks/useExpenseList'
+
 export default function ExpenseList({
   group,
   members,
@@ -33,42 +30,20 @@ export default function ExpenseList({
   onEditExpense: (expense: Expense) => void
 }) {
   const { t } = useTranslation()
-  const expenses = useExpenseStore((s) => s.expensesByGroup[group.id] ?? EMPTY)
-  const loading = useExpenseStore((s) => s.loadingByGroup[group.id])
-  const error = useExpenseStore((s) => s.errorsByGroup[group.id])
-  const load = useExpenseStore((s) => s.loadExpenses)
-  const remove = useExpenseStore((s) => s.removeExpense)
-  const me = useCurrentUser()
-  const { enqueueSnackbar } = useNotify()
-  const [query, setQuery] = useState('')
-  const [toDelete, setToDelete] = useState<Expense | null>(null)
-  const [busy, setBusy] = useState(false)
-  useEffect(() => {
-    void load(group.id).catch(() => undefined)
-  }, [group.id, load])
-  const getName = (id: string) =>
-    members.find((m) => m.id === id)?.displayName || id.slice(0, 6)
-  const confirmDelete = async () => {
-    if (!toDelete || toDelete.createdBy !== me?.id) return
-    setBusy(true)
-    try {
-      await remove(group.id, toDelete.id)
-      setToDelete(null)
-      enqueueSnackbar('Expense deleted', { variant: 'success' })
-    } catch (error) {
-      enqueueSnackbar(
-        error instanceof Error ? error.message : 'Could not delete expense',
-        { variant: 'error' },
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
-  const visible = expenses.filter((e) =>
-    `${e.title} ${e.description || ''}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  )
+  const {
+    confirmDelete,
+    currentUser: me,
+    deleting: busy,
+    error,
+    expenseToDelete: toDelete,
+    expenses,
+    getMemberName: getName,
+    loading,
+    query,
+    setExpenseToDelete: setToDelete,
+    setQuery,
+    visibleExpenses: visible,
+  } = useExpenseList(group.id, members)
   return (
     <div className="space-y-4">
       {error && <Message error>{error}</Message>}

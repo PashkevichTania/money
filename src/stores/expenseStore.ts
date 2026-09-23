@@ -9,6 +9,7 @@ import {
   type UpdateExpenseInput,
 } from '@/api/expenses'
 import { isFirebaseConfigured } from '@/config/firebase'
+import { getErrorMessage, removeById, replaceById, setRecordValue } from './utils'
 
 export interface ExpenseFilters {
   dateFrom?: string
@@ -46,17 +47,42 @@ type ExpenseSetState = (
     | ((state: ExpenseStoreState) => Partial<ExpenseStoreState>),
 ) => void
 
-function makeErrorBoundary<T>(
+type ExpenseGetState = () => ExpenseStoreState
+
+async function runGroupRequest<T>(
   set: ExpenseSetState,
+  get: ExpenseGetState,
   groupId: string,
-  fn: () => Promise<T>,
-): Promise<T> {
-  return fn().catch((err) => {
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    set((s) => ({ errorsByGroup: { ...s.errorsByGroup, [groupId]: msg } }))
-    throw err
-  })
+  request: () => Promise<T>,
+) {
+  set((state) => ({
+    loadingByGroup: setRecordValue(state.loadingByGroup, groupId, true),
+    errorsByGroup: setRecordValue(state.errorsByGroup, groupId, undefined),
+  }))
+  try {
+    return await request()
+  } catch (error) {
+    set((state) => ({
+      errorsByGroup: setRecordValue(
+        state.errorsByGroup,
+        groupId,
+        getErrorMessage(error),
+      ),
+    }))
+    throw error
+  } finally {
+    if (get().loadingByGroup[groupId]) {
+      set((state) => ({
+        loadingByGroup: setRecordValue(state.loadingByGroup, groupId, false),
+      }))
+    }
+  }
 }
+
+const sortExpenses = (expenses: Expense[]) =>
+  [...expenses].sort((first, second) =>
+    second.expenseDate.localeCompare(first.expenseDate),
+  )
 
 export const useExpenseStore = create<ExpenseStoreState>((set, get) => ({
   expensesByGroup: {},
@@ -75,7 +101,7 @@ export const useExpenseStore = create<ExpenseStoreState>((set, get) => ({
 
   setError: (groupId, message) =>
     set((s) => ({
-      errorsByGroup: { ...s.errorsByGroup, [groupId]: message },
+      errorsByGroup: setRecordValue(s.errorsByGroup, groupId, message),
     })),
 
   getExpense: (groupId, expenseId) => {
@@ -85,107 +111,67 @@ export const useExpenseStore = create<ExpenseStoreState>((set, get) => ({
 
   loadExpenses: async (groupId, force = false) => {
     if (!isFirebaseConfigured) {
-      set({ loadedGroups: { ...get().loadedGroups, [groupId]: true } })
+      set((state) => ({
+        loadedGroups: setRecordValue(state.loadedGroups, groupId, true),
+      }))
       return []
     }
     if (!force && get().loadedGroups[groupId]) {
       return get().expensesByGroup[groupId] ?? []
     }
-    set({
-      loadingByGroup: { ...get().loadingByGroup, [groupId]: true },
-      errorsByGroup: { ...get().errorsByGroup, [groupId]: undefined },
+    return runGroupRequest(set, get, groupId, async () => {
+      const expenses = await listExpenses(groupId)
+      set((state) => ({
+        expensesByGroup: setRecordValue(state.expensesByGroup, groupId, expenses),
+        loadedGroups: setRecordValue(state.loadedGroups, groupId, true),
+      }))
+      return expenses
     })
-    try {
-      return await makeErrorBoundary(set, groupId, async () => {
-        const expenses = await listExpenses(groupId)
-        set({
-          expensesByGroup: { ...get().expensesByGroup, [groupId]: expenses },
-          loadingByGroup: { ...get().loadingByGroup, [groupId]: false },
-          loadedGroups: { ...get().loadedGroups, [groupId]: true },
-        })
-        return expenses
-      })
-    } finally {
-      if (get().loadingByGroup[groupId]) {
-        set({
-          loadingByGroup: { ...get().loadingByGroup, [groupId]: false },
-        })
-      }
-    }
   },
 
   addExpense: async (groupId, input) => {
     if (!isFirebaseConfigured) throw new Error('Firebase is not configured')
-    set({ loadingByGroup: { ...get().loadingByGroup, [groupId]: true } })
-    try {
-      return await makeErrorBoundary(set, groupId, async () => {
-        const expense = await apiCreateExpense(input)
-        const current = get().expensesByGroup[groupId] ?? []
-        const next = [expense, ...current].sort((a, b) =>
-          b.expenseDate.localeCompare(a.expenseDate),
-        )
-        set({
-          expensesByGroup: { ...get().expensesByGroup, [groupId]: next },
-          loadingByGroup: { ...get().loadingByGroup, [groupId]: false },
-        })
-        return expense
-      })
-    } finally {
-      if (get().loadingByGroup[groupId]) {
-        set({
-          loadingByGroup: { ...get().loadingByGroup, [groupId]: false },
-        })
-      }
-    }
+    return runGroupRequest(set, get, groupId, async () => {
+      const expense = await apiCreateExpense(input)
+      set((state) => ({
+        expensesByGroup: setRecordValue(
+          state.expensesByGroup,
+          groupId,
+          sortExpenses([expense, ...(state.expensesByGroup[groupId] ?? [])]),
+        ),
+      }))
+      return expense
+    })
   },
 
   updateExpense: async (groupId, expenseId, patch) => {
     if (!isFirebaseConfigured) throw new Error('Firebase is not configured')
-    set({ loadingByGroup: { ...get().loadingByGroup, [groupId]: true } })
-    try {
-      return await makeErrorBoundary(set, groupId, async () => {
-        const updated = await apiUpdateExpense(groupId, expenseId, patch)
-        const current = get().expensesByGroup[groupId] ?? []
-        const next = current
-          .map((e) => (e.id === expenseId ? updated : e))
-          .sort((a, b) => b.expenseDate.localeCompare(a.expenseDate))
-        set({
-          expensesByGroup: { ...get().expensesByGroup, [groupId]: next },
-          loadingByGroup: { ...get().loadingByGroup, [groupId]: false },
-        })
-        return updated
-      })
-    } finally {
-      if (get().loadingByGroup[groupId]) {
-        set({
-          loadingByGroup: { ...get().loadingByGroup, [groupId]: false },
-        })
-      }
-    }
+    return runGroupRequest(set, get, groupId, async () => {
+      const updated = await apiUpdateExpense(groupId, expenseId, patch)
+      set((state) => ({
+        expensesByGroup: setRecordValue(
+          state.expensesByGroup,
+          groupId,
+          sortExpenses(replaceById(state.expensesByGroup[groupId] ?? [], updated)),
+        ),
+      }))
+      return updated
+    })
   },
 
   removeExpense: async (groupId, expenseId) => {
     if (!isFirebaseConfigured) throw new Error('Firebase is not configured')
-    set({ loadingByGroup: { ...get().loadingByGroup, [groupId]: true } })
-    try {
-      await makeErrorBoundary(set, groupId, async () => {
-        await apiDeleteExpense(groupId, expenseId)
-        const current = get().expensesByGroup[groupId] ?? []
-        const next = current.filter((e) => e.id !== expenseId)
-        const deselected =
-          get().selectedExpenseId === expenseId ? null : get().selectedExpenseId
-        set({
-          expensesByGroup: { ...get().expensesByGroup, [groupId]: next },
-          loadingByGroup: { ...get().loadingByGroup, [groupId]: false },
-          selectedExpenseId: deselected,
-        })
-      })
-    } finally {
-      if (get().loadingByGroup[groupId]) {
-        set({
-          loadingByGroup: { ...get().loadingByGroup, [groupId]: false },
-        })
-      }
-    }
+    await runGroupRequest(set, get, groupId, async () => {
+      await apiDeleteExpense(groupId, expenseId)
+      set((state) => ({
+        expensesByGroup: setRecordValue(
+          state.expensesByGroup,
+          groupId,
+          removeById(state.expensesByGroup[groupId] ?? [], expenseId),
+        ),
+        selectedExpenseId:
+          state.selectedExpenseId === expenseId ? null : state.selectedExpenseId,
+      }))
+    })
   },
 }))

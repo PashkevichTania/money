@@ -4,7 +4,7 @@ import { getExpenseTypeDetails } from '@/config/expenseTypes'
 import { useNotify } from '@/hooks/useNotify'
 import SettingsPage from '@/features/settings/pages/SettingsPage'
 import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
-import { BalanceSummary } from '@/features/groups/components/BalancesTab'
+import { BalanceSummary } from '@/features/groups/components/BalanceSummary'
 import type { Expense, Settlement } from '@/types/expense'
 import RecordSettlementDialog, {
   type TransferSuggestion,

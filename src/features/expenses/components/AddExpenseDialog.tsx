@@ -1,84 +1,28 @@
 import { useTranslation } from 'react-i18next'
-import { translateError } from '@/i18n/errors'
-import { Plus, X, Check, LoaderCircle } from 'lucide-react'
+import { Check, LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import { EXPENSE_TYPES } from '@/types/expense'
-import { EXPENSE_TYPE_DETAILS } from '@/config/expenseTypes'
 import { Modal } from '@/components/ui/modal'
-import { Field, CurrencySelect, Section, Message } from '@/components/ui/field'
-import { z } from 'zod'
-import { Controller, useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNotify } from '@/hooks/useNotify'
+import { useCallback, useEffect, useMemo } from 'react'
 import type { Group } from '@/types/group'
 import type { UserProfile } from '@/types/user'
-import type {
-  Expense,
-  ParticipantShare,
-  PayerContribution,
-  SplitType,
-} from '@/types/expense'
+import type { Expense } from '@/types/expense'
 import { DEFAULT_BASE_CURRENCY } from '@/config/currencies'
 import { useCurrentUser } from '@/hooks/useGroups'
-import { useExpenseStore } from '@/stores/expenseStore'
-import { formatMoney, roundMoney, safeSum } from '@/utils/currency'
-import { formatDate, nowIso, toIsoDate } from '@/utils/dates'
+import { useExpenseExchangeRate } from '@/features/expenses/hooks/useExpenseExchangeRate'
+import { useExpensePreview } from '@/features/expenses/hooks/useExpensePreview'
 import {
-  autoDistributePaidBy,
-  autoFillExactRemainder,
-  buildParticipants,
-  computeEqualShares,
-  computeNetBalances,
-  resolveOwedPerUser,
-  validateSplit,
-} from '@/utils/split'
-import { getExchangeRate } from '@/api/rates'
-
-const schema = z.object({
-  type: z.union([z.enum(EXPENSE_TYPES), z.literal('')]),
-  title: z
-    .string()
-    .min(2, 'Title must be at least 2 characters')
-    .max(100, 'Title must be at most 100 characters'),
-  description: z
-    .string()
-    .max(500, 'Description must be at most 500 characters')
-    .optional(),
-  expenseDate: z.string().min(1, 'Date is required'),
-  originalCurrency: z.string().min(3, 'Currency is required').max(3),
-  originalAmount: z.coerce
-    .number({ invalid_type_error: 'Enter a number' })
-    .positive('Amount must be positive')
-    .finite('Amount must be a valid number')
-    .max(999999999, 'Amount is too large'),
-  splitType: z.enum(['equal', 'exact', 'percentage', 'shares']),
-  participantIds: z.array(z.string()).min(1, 'Select at least one participant'),
-  participantValues: z.record(z.string(), z.coerce.number()),
-  paidBy: z
-    .array(
-      z.object({
-        userId: z.string().min(1),
-        amount: z.coerce.number().finite().gte(0),
-      }),
-    )
-    .min(1, 'At least one person must pay'),
-})
-
-type FormValues = z.infer<typeof schema>
-
-interface RateState {
-  key: string
-  loading: boolean
-  rate: number | null
-  date: string | null
-  source: string | null
-  error: string | null
-}
+  buildExpenseDefaults,
+  expenseSchema,
+  type ExpenseFormValues,
+} from '@/features/expenses/expenseForm'
+import { useExpenseSubmit } from '@/features/expenses/hooks/useExpenseSubmit'
+import { useExpenseParticipants } from '@/features/expenses/hooks/useExpenseParticipants'
+import { ExpenseDetailsSection } from './ExpenseDetailsSection'
+import { ExpensePayersSection } from './ExpensePayersSection'
+import { ExpenseReviewSection } from './ExpenseReviewSection'
+import { ExpenseSplitSection } from './ExpenseSplitSection'
 
 export default function AddExpenseDialog({
   open,
@@ -95,12 +39,9 @@ export default function AddExpenseDialog({
   editingExpense?: Expense | null
   preview?: boolean
 }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const isEdit = Boolean(editingExpense)
   const me = useCurrentUser()
-  const { enqueueSnackbar } = useNotify()
-  const addExpense = useExpenseStore((s) => s.addExpense)
-  const updateExpense = useExpenseStore((s) => s.updateExpense)
 
   const defaultCurrency = group.baseCurrency || DEFAULT_BASE_CURRENCY
   const defaultPayerId = me?.id || members[0]?.id || ''
@@ -114,46 +55,16 @@ export default function AddExpenseDialog({
     return m
   }, [members])
 
-  const makeDefaults = useCallback((): FormValues => {
-    if (editingExpense) {
-      const participantValues: Record<string, number> = {}
-      editingExpense.participants.forEach((p) => {
-        participantValues[p.userId] = p.value
-      })
-      return {
-        title: editingExpense.title,
-        type: editingExpense.type && EXPENSE_TYPES.includes(editingExpense.type) ? editingExpense.type : '',
-        description: editingExpense.description ?? '',
-        expenseDate: editingExpense.expenseDate.slice(0, 10),
-        originalCurrency: editingExpense.originalCurrency,
-        originalAmount: editingExpense.originalAmount as unknown as number,
-        splitType: editingExpense.splitType,
-        participantIds: editingExpense.participants.map((p) => p.userId),
-        participantValues,
-        paidBy: editingExpense.paidBy.map((p) => ({
-          userId: p.userId,
-          amount: p.amount as unknown as number,
-        })),
-      }
-    }
-    return {
-      title: '',
-      description: '',
-      type: '',
-      expenseDate: nowIso().slice(0, 10),
-      originalCurrency: defaultCurrency,
-      originalAmount: 0 as unknown as number,
-      splitType: 'equal',
-      participantIds: defaultParticipantIds,
-      participantValues: {},
-      paidBy: [
-        {
-          userId: defaultPayerId,
-          amount: 0 as unknown as number,
-        },
-      ],
-    }
-  }, [editingExpense, defaultCurrency, defaultParticipantIds, defaultPayerId])
+  const makeDefaults = useCallback(
+    () =>
+      buildExpenseDefaults({
+        currency: defaultCurrency,
+        editingExpense,
+        participantIds: defaultParticipantIds,
+        payerId: defaultPayerId,
+      }),
+    [defaultCurrency, defaultParticipantIds, defaultPayerId, editingExpense],
+  )
 
   const {
     register,
@@ -165,8 +76,8 @@ export default function AddExpenseDialog({
     formState: { errors, isSubmitting },
     clearErrors,
     setError,
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  } = useForm<ExpenseFormValues>({
+    resolver: zodResolver(expenseSchema),
     defaultValues: makeDefaults(),
     mode: 'onChange',
   })
@@ -182,47 +93,13 @@ export default function AddExpenseDialog({
   const participantValues = useWatch({ control, name: 'participantValues' })
   const expenseDate = useWatch({ control, name: 'expenseDate' })
 
-  const currencyMismatch =
-    originalCurrency.toUpperCase() !== group.baseCurrency.toUpperCase()
-
-  const rateRequestKey = `${originalCurrency.toUpperCase()}:${group.baseCurrency.toUpperCase()}:${expenseDate}`
-  const [storedRateState, setRateState] = useState<RateState>({
-    key: '',
-    loading: false,
-    rate: null,
-    date: null,
-    source: null,
-    error: null,
+  const { currencyMismatch, rateState } = useExpenseExchangeRate({
+    enabled: open,
+    expenseDate,
+    groupCurrency: group.baseCurrency,
+    originalCurrency,
+    editingExpense,
   })
-
-  const savedSnapshot =
-    editingExpense &&
-    editingExpense.originalCurrency === originalCurrency.toUpperCase() &&
-    editingExpense.groupCurrency === group.baseCurrency.toUpperCase() &&
-    editingExpense.expenseDate.slice(0, 10) === expenseDate.slice(0, 10)
-      ? editingExpense.rateSnapshot
-      : undefined
-  const rateState: RateState = !currencyMismatch
-    ? {
-        key: rateRequestKey,
-        loading: false,
-        rate: 1,
-        date: expenseDate,
-        source: 'identity',
-        error: null,
-      }
-    : savedSnapshot
-      ? { key: rateRequestKey, loading: false, error: null, ...savedSnapshot }
-      : storedRateState.key === rateRequestKey
-        ? storedRateState
-        : {
-            key: rateRequestKey,
-            loading: true,
-            rate: null,
-            date: null,
-            source: null,
-            error: null,
-          }
 
   useEffect(() => {
     if (!open) return
@@ -230,172 +107,65 @@ export default function AddExpenseDialog({
     clearErrors()
   }, [open, makeDefaults, clearErrors, reset])
 
-  useEffect(() => {
-    if (!open) return
-    if (!currencyMismatch || savedSnapshot) return
-    let cancelled = false
-    void (async () => {
-      try {
-        const result = await getExchangeRate(
-          originalCurrency.toUpperCase(),
-          group.baseCurrency.toUpperCase(),
-          expenseDate,
-        )
-        if (cancelled) return
-        setRateState({
-          key: rateRequestKey,
-          loading: false,
-          rate: result.rate,
-          date: result.date,
-          source: result.source,
-          error: null,
-        })
-      } catch (err) {
-        if (cancelled) return
-        const msg =
-          err instanceof Error ? err.message : 'Failed to fetch FX rate'
-        setRateState({
-          key: rateRequestKey,
-          loading: false,
-          rate: null,
-          date: null,
-          source: null,
-          error: msg,
-        })
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [
-    open,
-    currencyMismatch,
-    originalCurrency,
-    group.baseCurrency,
+  const {
+    convertedAmount,
+    owedPreview,
+    participants,
+    previewNetBalances,
+    validationErrors: liveValidationErrors,
+  } = useExpensePreview({
     expenseDate,
-    savedSnapshot,
-    rateRequestKey,
-  ])
+    groupCurrency: group.baseCurrency,
+    groupId: group.id,
+    originalAmount,
+    originalCurrency,
+    paidBy,
+    participantIds,
+    participantValues,
+    rateState,
+    splitType,
+    userId: me?.id,
+  })
 
-  useEffect(() => {
-    if (!open) return
-    const memberIds = new Set(members.map((m) => m.id))
-    const currentPaidBy = getValues('paidBy')
-    const pruned = currentPaidBy.filter((p) => memberIds.has(p.userId))
-    if (pruned.length !== currentPaidBy.length || pruned.length === 0) {
-      const next = pruned.length
-        ? pruned
-        : [
-            {
-              userId: defaultPayerId,
-              amount: getValues('originalAmount') as unknown as number,
-            },
-          ]
-      setValue('paidBy', next, { shouldValidate: true })
-    }
-    const currentIds = getValues('participantIds')
-    const kept = currentIds.filter((uid) => memberIds.has(uid))
-    if (kept.length !== currentIds.length) {
-      setValue('participantIds', kept.length ? kept : defaultParticipantIds, {
-        shouldValidate: true,
-      })
-    }
-  }, [
+  const { submitExpense } = useExpenseSubmit({
+    editingExpense,
+    group,
+    onClose,
+    preview,
+    rateState,
+    setError,
+    user: me,
+  })
+
+  const {
+    addPayer,
+    allSelected: allIn,
+    applyEvenPaidBy,
+    applySinglePayer,
+    changeSplit,
+    fillExactRemainder,
+    paidRemaining,
+    paidSum,
+    payerIds: payerSet,
+    removePayer,
+    setParticipantValue,
+    toggleAll,
+    toggleParticipant,
+    updatePayerAmount,
+  } = useExpenseParticipants({
+    defaultParticipantIds,
+    defaultPayerId,
+    getValues,
     members,
     open,
-    getValues,
-    setValue,
-    defaultPayerId,
-    defaultParticipantIds,
-  ])
-
-  useEffect(() => {
-    if (!open) return
-    if (paidBy.length === 0) return
-    const sum = safeSum(paidBy.map((p) => p.amount))
-    if (originalAmount > 0 && sum === 0) {
-      setValue(
-        'paidBy',
-        paidBy.map((p, i) =>
-          i === 0 ? { ...p, amount: originalAmount as unknown as number } : p,
-        ),
-        { shouldValidate: true },
-      )
-    }
-  }, [originalAmount, paidBy, open, setValue])
-
-  const convertedAmount = rateState.rate
-    ? roundMoney(originalAmount * rateState.rate)
-    : 0
-
-  const participants: ParticipantShare[] = useMemo(
-    () => buildParticipants(splitType, participantIds, participantValues),
-    [splitType, participantIds, participantValues],
-  )
-
-  const owedPreview = useMemo<Record<string, number>>(() => {
-    if (!rateState.rate || !participants.length) return {}
-    return resolveOwedPerUser(convertedAmount, participants, splitType)
-  }, [convertedAmount, participants, splitType, rateState.rate])
-
-  const previewNetBalances = useMemo<Record<string, number>>(() => {
-    if (!rateState.rate || !participants.length || !paidBy.length) return {}
-    const originalCur = originalCurrency.toUpperCase()
-    const groupCur = group.baseCurrency.toUpperCase()
-    const needRate = originalCur !== groupCur
-    const syntheticExpense: Expense = {
-      id: '__preview__',
-      groupId: group.id,
-      title: '',
-      originalAmount,
-      originalCurrency: originalCur,
-      convertedAmount,
-      groupCurrency: groupCur,
-      rateSnapshot:
-        needRate && rateState.rate
-          ? {
-              date: rateState.date || expenseDate,
-              rate: rateState.rate,
-              source: rateState.source || 'frankfurter',
-            }
-          : undefined,
-      paidBy,
-      participants,
-      splitType,
-      expenseDate: toIsoDate(expenseDate),
-      createdBy: me?.id || '',
-      updatedBy: me?.id || '',
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-    }
-    return computeNetBalances(syntheticExpense)
-  }, [
-    rateState.rate,
-    rateState.date,
-    rateState.source,
-    participants,
-    paidBy,
-    originalCurrency,
-    group.baseCurrency,
     originalAmount,
-    convertedAmount,
+    paidBy,
+    participantIds,
+    participantValues,
+    participants,
+    setValue,
     splitType,
-    expenseDate,
-    group.id,
-    me?.id,
-  ])
-
-  const liveValidationErrors = useMemo(() => {
-    return validateSplit({
-      originalAmount,
-      participants,
-      paidBy,
-      splitType,
-    })
-  }, [originalAmount, participants, paidBy, splitType])
-
-  const paidSum = safeSum(paidBy.map((p) => p.amount))
-  const paidRemaining = roundMoney(originalAmount - paidSum)
+  })
 
   const canSubmit =
     !isSubmitting &&
@@ -404,251 +174,6 @@ export default function AddExpenseDialog({
     !rateState.error &&
     liveValidationErrors.length === 0
 
-  const submitValidation = (values: FormValues) => {
-    const errs = validateSplit({
-      originalAmount: Number(values.originalAmount),
-      participants: buildParticipants(
-        values.splitType,
-        values.participantIds,
-        values.participantValues,
-      ),
-      paidBy: values.paidBy.map((p) => ({ ...p, amount: Number(p.amount) })),
-      splitType: values.splitType,
-    })
-    if (errs.length) {
-      errs.forEach((e) => {
-        if (e.field === 'originalAmount') {
-          setError('originalAmount', { message: e.message })
-        } else if (e.field === 'participants') {
-          setError('participantIds', { message: e.message })
-        } else if (e.field === 'paidBy') {
-          setError('paidBy', { message: e.message })
-        } else if (e.field === 'paidBy.sum') {
-          setError('paidBy', { message: e.message })
-        } else if (e.field.startsWith('split')) {
-          setError('splitType', { message: e.message })
-        }
-      })
-      return false
-    }
-    return true
-  }
-
-  const onSubmit = async (values: FormValues) => {
-    if (import.meta.env.DEV && preview) {
-      if (submitValidation(values))
-        enqueueSnackbar('Preview validated. No expense was saved.', {
-          variant: 'success',
-        })
-      return
-    }
-    if (!me) {
-      enqueueSnackbar('You must be signed in', { variant: 'error' })
-      return
-    }
-    if (editingExpense && editingExpense.createdBy !== me.id) {
-      enqueueSnackbar('Only the expense author can edit this expense.', {
-        variant: 'error',
-      })
-      return
-    }
-    if (rateState.loading || rateState.error || rateState.rate == null) {
-      enqueueSnackbar('A valid FX rate is required for currency conversion', {
-        variant: 'error',
-      })
-      return
-    }
-    if (!submitValidation(values)) return
-    const participantsFinal = buildParticipants(
-      values.splitType,
-      values.participantIds,
-      values.participantValues,
-    )
-    const paidByFinal: PayerContribution[] = values.paidBy.map((p) => ({
-      userId: p.userId,
-      amount: Number(p.amount),
-    }))
-    const originalCur = values.originalCurrency.toUpperCase()
-    const groupCur = group.baseCurrency.toUpperCase()
-    const sameCurrency = originalCur === groupCur
-    try {
-      if (isEdit && editingExpense) {
-        await updateExpense(group.id, editingExpense.id, {
-          title: values.title,
-          description: values.description,
-          type: values.type || undefined,
-          originalAmount: Number(values.originalAmount),
-          originalCurrency: originalCur,
-          convertedAmount: sameCurrency
-            ? Number(values.originalAmount)
-            : roundMoney(Number(values.originalAmount) * rateState.rate),
-          groupCurrency: groupCur,
-          rateSnapshot: sameCurrency
-            ? undefined
-            : {
-                date: rateState.date || values.expenseDate,
-                rate: rateState.rate,
-                source: rateState.source || 'frankfurter',
-              },
-          paidBy: paidByFinal,
-          participants: participantsFinal,
-          splitType: values.splitType,
-          expenseDate: toIsoDate(values.expenseDate),
-          updatedBy: me.id,
-        })
-        enqueueSnackbar('Expense updated', { variant: 'success' })
-      } else {
-        await addExpense(group.id, {
-          groupId: group.id,
-          title: values.title,
-          description: values.description,
-          type: values.type || undefined,
-          originalAmount: Number(values.originalAmount),
-          originalCurrency: originalCur,
-          convertedAmount: sameCurrency
-            ? Number(values.originalAmount)
-            : roundMoney(Number(values.originalAmount) * rateState.rate),
-          groupCurrency: groupCur,
-          rateSnapshot: sameCurrency
-            ? undefined
-            : {
-                date: rateState.date || values.expenseDate,
-                rate: rateState.rate,
-                source: rateState.source || 'frankfurter',
-              },
-          paidBy: paidByFinal,
-          participants: participantsFinal,
-          splitType: values.splitType,
-          expenseDate: toIsoDate(values.expenseDate),
-          createdBy: me.id,
-        })
-        enqueueSnackbar('Expense added', { variant: 'success' })
-      }
-      onClose()
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to save expense'
-      enqueueSnackbar(msg, { variant: 'error' })
-    }
-  }
-
-  const toggleParticipant = (userId: string) => {
-    const current = participantIds
-    const isIn = current.includes(userId)
-    const next = isIn
-      ? current.filter((id) => id !== userId)
-      : [...current, userId]
-    setValue('participantIds', next, { shouldValidate: true })
-    if (!isIn && splitType !== 'equal' && participantValues[userId] == null) {
-      if (splitType === 'percentage') {
-        const freshN = next.length
-        if (freshN) {
-          const freshValues = computeEqualShares(0, next).reduce<
-            Record<string, number>
-          >((acc, p) => {
-            acc[p.userId] = roundMoney(100 / freshN, 4)
-            return acc
-          }, {})
-          const sum = safeSum(Object.values(freshValues))
-          const diff = roundMoney(100 - sum, 4)
-          if (Math.abs(diff) > 0 && next.length) {
-            freshValues[next[next.length - 1]] = roundMoney(
-              (freshValues[next[next.length - 1]] ?? 0) + diff,
-              4,
-            )
-          }
-          setValue(
-            'participantValues',
-            { ...participantValues, ...freshValues },
-            {
-              shouldValidate: true,
-            },
-          )
-        }
-      }
-    }
-  }
-
-  const setParticipantValue = (userId: string, raw: string | number) => {
-    const next = { ...participantValues, [userId]: Number(raw) || 0 }
-    setValue('participantValues', next, { shouldValidate: true })
-  }
-
-  const allIn = participantIds.length === members.length && members.length > 0
-  const toggleAll = () => {
-    const next = allIn ? [] : members.map((m) => m.id)
-    setValue('participantIds', next, { shouldValidate: true })
-  }
-
-  const applySinglePayer = (userId: string) => {
-    setValue(
-      'paidBy',
-      [{ userId, amount: originalAmount as unknown as number }],
-      { shouldValidate: true },
-    )
-  }
-
-  const applyEvenPaidBy = () => {
-    if (!participantIds.length) return
-    setValue(
-      'paidBy',
-      autoDistributePaidBy(originalAmount, participantIds).map((p) => ({
-        ...p,
-        amount: p.amount as unknown as number,
-      })),
-      { shouldValidate: true },
-    )
-  }
-
-  const addPayer = (userId: string) => {
-    if (paidBy.some((p) => p.userId === userId)) return
-    setValue(
-      'paidBy',
-      [...paidBy, { userId, amount: 0 as unknown as number }],
-      { shouldValidate: true },
-    )
-  }
-
-  const removePayer = (userId: string) => {
-    if (paidBy.length <= 1) return
-    setValue(
-      'paidBy',
-      paidBy.filter((p) => p.userId !== userId),
-      { shouldValidate: true },
-    )
-  }
-
-  const updatePayerAmount = (userId: string, raw: string | number) => {
-    const next = paidBy.map((p) =>
-      p.userId === userId
-        ? { ...p, amount: (Number(raw) || 0) as unknown as number }
-        : p,
-    )
-    setValue('paidBy', next, { shouldValidate: true })
-  }
-
-  const payerSet = useMemo(() => new Set(paidBy.map((p) => p.userId)), [paidBy])
-
-  const changeSplit = (type: SplitType) => {
-    setValue('splitType', type, { shouldValidate: true })
-    const defaults = buildParticipants(type, participantIds, {})
-    setValue(
-      'participantValues',
-      Object.fromEntries(defaults.map((p) => [p.userId, p.value])),
-      { shouldValidate: true },
-    )
-  }
-  const fillExactRemainder = () => {
-    const adjusted = autoFillExactRemainder(
-      originalAmount,
-      participants,
-      participantIds,
-    )
-    setValue(
-      'participantValues',
-      Object.fromEntries(adjusted.map((p) => [p.userId, p.value])),
-      { shouldValidate: true },
-    )
-  }
   const nameOf = (id: string) =>
     memberById.get(id)?.displayName || id.slice(0, 6)
   return (
@@ -663,315 +188,16 @@ export default function AddExpenseDialog({
       })}
     >
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(submitExpense)}
         noValidate
         aria-busy={isSubmitting}
         className="space-y-5"
       >
         <fieldset disabled={isSubmitting} className="space-y-5">
-          <Section title={t('1. The details')}>
-            <Field
-              label={t('Title')}
-              placeholder={t('e.g. Dinner with friends')}
-              {...register('title')}
-              error={errors.title?.message}
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label={t('Amount')}
-                type="number"
-                min="0.01"
-                step="0.01"
-                inputMode="decimal"
-                {...register('originalAmount')}
-                error={errors.originalAmount?.message}
-              />
-              <Controller
-                control={control}
-                name="originalCurrency"
-                render={({ field }) => (
-                  <CurrencySelect
-                    value={field.value}
-                    name={field.name}
-                    onBlur={field.onBlur}
-                    onValueChange={field.onChange}
-                  />
-                )}
-              />
-            </div>
-            <Field
-              label={t('Date')}
-              type="date"
-              {...register('expenseDate')}
-              error={errors.expenseDate?.message}
-            />
-            <div className="space-y-2">
-              <Label htmlFor="expense-type">{t('Type (optional)')}</Label>
-              <NativeSelect id="expense-type" className="w-full" {...register('type')} aria-invalid={!!errors.type}>
-                <NativeSelectOption value="">{t('No type')}</NativeSelectOption>
-                {EXPENSE_TYPES.map((type) => (
-                  <NativeSelectOption key={type} value={type}>
-                    {t(EXPENSE_TYPE_DETAILS[type].label)}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="expense-notes">{t('Notes (optional)')}</Label>
-              <Textarea
-                id="expense-notes"
-                placeholder={t('Anything useful to remember')}
-                {...register('description')}
-                aria-invalid={!!errors.description}
-              />
-              {errors.description && (
-                <p className="text-xs text-destructive">
-                  {t(errors.description.message || '')}
-                </p>
-              )}
-            </div>
-            {currencyMismatch && (
-              <Message error={!!rateState.error}>
-                {rateState.loading
-                  ? t('Looking up the exchange rate...')
-                  : rateState.error ||
-                    t(
-                      '1 {{from}} = {{rate}} {{to}} · {{date}}. Converted total: {{amount}}',
-                      {
-                        from: originalCurrency,
-                        rate: new Intl.NumberFormat(i18n.resolvedLanguage, {
-                          maximumFractionDigits: 6,
-                        }).format(rateState.rate || 0),
-                        to: group.baseCurrency,
-                        date: rateState.date ? formatDate(rateState.date) : '',
-                        amount: formatMoney(
-                          convertedAmount,
-                          group.baseCurrency,
-                        ),
-                      },
-                    )}
-              </Message>
-            )}
-          </Section>
-          <Section
-            title={t('2. Who paid?')}
-            description={t('Enter contributions in {{currency}}.', {
-              currency: originalCurrency,
-            })}
-          >
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => applySinglePayer(defaultPayerId)}
-              >
-                {t('I paid')}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!participantIds.length}
-                onClick={applyEvenPaidBy}
-              >
-                {t('Split payments evenly')}
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {paidBy.map((payer) => (
-                <div key={payer.userId} className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <Field
-                      label={t('Paid by {{name}}', {
-                        name: nameOf(payer.userId),
-                      })}
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="0.01"
-                      value={payer.amount}
-                      onChange={(e) =>
-                        updatePayerAmount(payer.userId, e.target.value)
-                      }
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={paidBy.length <= 1}
-                    aria-label={t('Remove payer {{name}}', {
-                      name: nameOf(payer.userId),
-                    })}
-                    onClick={() => removePayer(payer.userId)}
-                  >
-                    <X />
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {members
-                .filter((m) => !payerSet.has(m.id))
-                .map((m) => (
-                  <Button
-                    type="button"
-                    key={m.id}
-                    variant="secondary"
-                    onClick={() => addPayer(m.id)}
-                  >
-                    <Plus />
-                    {m.displayName}
-                  </Button>
-                ))}
-            </div>
-            <p
-              className={`text-sm tabular-nums ${Math.abs(paidRemaining) < 0.005 ? 'text-positive' : 'text-destructive'}`}
-            >
-              {t('Paid {{paid}} · Remaining {{remaining}}', {
-                paid: formatMoney(paidSum, originalCurrency),
-                remaining: formatMoney(paidRemaining, originalCurrency),
-              })}
-            </p>
-          </Section>
-          <Section title={t('3. How is it split?')}>
-            <div
-              role="group"
-              aria-label={t('Split method')}
-              className="flex flex-wrap gap-2"
-            >
-              {(['equal', 'exact', 'percentage', 'shares'] as SplitType[]).map(
-                (type) => (
-                  <Button
-                    key={type}
-                    type="button"
-                    variant={type === splitType ? 'default' : 'outline'}
-                    aria-pressed={type === splitType}
-                    onClick={() => changeSplit(type)}
-                  >
-                    {t(type)}
-                  </Button>
-                ),
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="ghost" onClick={toggleAll}>
-                {allIn ? t('Clear selection') : t('Select everyone')}
-              </Button>
-              {splitType === 'exact' && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={!participantIds.length}
-                  onClick={fillExactRemainder}
-                >
-                  {t('Fill last share with remainder')}
-                </Button>
-              )}
-            </div>
-            <div className="divide-y">
-              {members.map((member) => {
-                const selected = participantIds.includes(member.id)
-                return (
-                  <div className="flex items-center gap-3 py-3" key={member.id}>
-                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-sm">
-                      <input
-                        type="checkbox"
-                        className="size-4 shrink-0 accent-primary"
-                        checked={selected}
-                        onChange={() => toggleParticipant(member.id)}
-                      />
-                      <span className="truncate">{member.displayName}</span>
-                    </label>
-                    {selected && splitType !== 'equal' ? (
-                      <div className="flex w-32 shrink-0 items-center gap-1">
-                        <Input
-                          aria-label={t('{{name}}: {{method}}', {
-                            name: member.displayName,
-                            method: t(splitType),
-                          })}
-                          type="number"
-                          inputMode="decimal"
-                          min={splitType === 'shares' ? 1 : 0}
-                          step={
-                            splitType === 'shares'
-                              ? 1
-                              : splitType === 'percentage'
-                                ? 0.0001
-                                : 0.01
-                          }
-                          value={
-                            participantValues[member.id] ??
-                            (splitType === 'shares' ? 1 : 0)
-                          }
-                          onChange={(e) =>
-                            setParticipantValue(member.id, e.target.value)
-                          }
-                        />
-                        {splitType === 'percentage' && <span>%</span>}
-                      </div>
-                    ) : (
-                      selected && (
-                        <span className="text-sm tabular-nums text-muted-foreground">
-                          {formatMoney(
-                            owedPreview[member.id] || 0,
-                            group.baseCurrency,
-                          )}
-                        </span>
-                      )
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-            {!!liveValidationErrors.length && originalAmount > 0 && (
-              <Message error>
-                {liveValidationErrors
-                  .map((e) => translateError(e.message))
-                  .join(' ')}
-              </Message>
-            )}
-            {errors.splitType && (
-              <Message error>{errors.splitType.message}</Message>
-            )}
-          </Section>
-          <Section
-            title={t('Review')}
-            description={t('Amounts below are in {{currency}}.', {
-              currency: group.baseCurrency,
-            })}
-          >
-            <div className="flex justify-between text-lg font-semibold tabular-nums">
-              <span>{t('Total')}</span>
-              <span>{formatMoney(convertedAmount, group.baseCurrency)}</span>
-            </div>
-            {!liveValidationErrors.length &&
-            rateState.rate &&
-            !rateState.error ? (
-              <div className="divide-y">
-                {Object.entries(previewNetBalances).map(([id, net]) => (
-                  <div
-                    key={id}
-                    className="flex justify-between gap-3 py-2 text-sm"
-                  >
-                    <span>{nameOf(id)}</span>
-                    <span
-                      className={`text-right tabular-nums ${net > 0 ? 'text-positive' : net < 0 ? 'text-destructive' : 'text-muted-foreground'}`}
-                    >
-                      {Math.abs(net) < 0.005
-                        ? t('No balance')
-                        : `${net > 0 ? t('Gets back') : t('Owes')} ${formatMoney(Math.abs(net), group.baseCurrency)}`}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {t(
-                  "Complete the amounts and split to preview each person's balance.",
-                )}
-              </p>
-            )}
-          </Section>
+          <ExpenseDetailsSection control={control} convertedAmount={convertedAmount} currencyMismatch={currencyMismatch} errors={errors} groupCurrency={group.baseCurrency} originalCurrency={originalCurrency} rateState={rateState} register={register} />
+          <ExpensePayersSection addPayer={addPayer} applyEvenPaidBy={applyEvenPaidBy} applySinglePayer={applySinglePayer} currency={originalCurrency} defaultPayerId={defaultPayerId} members={members} nameOf={nameOf} paidBy={paidBy} paidRemaining={paidRemaining} paidSum={paidSum} participantIds={participantIds} payerIds={payerSet} removePayer={removePayer} updatePayerAmount={updatePayerAmount} />
+          <ExpenseSplitSection allSelected={allIn} changeSplit={changeSplit} errors={errors} fillExactRemainder={fillExactRemainder} groupCurrency={group.baseCurrency} members={members} originalAmount={originalAmount} owedPreview={owedPreview} participantIds={participantIds} participantValues={participantValues} setParticipantValue={setParticipantValue} splitType={splitType} toggleAll={toggleAll} toggleParticipant={toggleParticipant} validationErrors={liveValidationErrors} />
+          <ExpenseReviewSection convertedAmount={convertedAmount} groupCurrency={group.baseCurrency} nameOf={nameOf} previewNetBalances={previewNetBalances} rateState={rateState} validationErrors={liveValidationErrors} />
         </fieldset>
         <div className="sticky -bottom-6 -mx-6 -mb-6 flex justify-end gap-2 border-t bg-popover p-4">
           <Button
