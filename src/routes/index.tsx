@@ -4,13 +4,22 @@ import { ProtectedRoute } from './ProtectedRoute'
 import LoginPage from '@/features/auth/pages/LoginPage'
 import SignupPage from '@/features/auth/pages/SignupPage'
 import DashboardPage from '@/features/dashboard/pages/DashboardPage'
+import BalancesPage from '@/features/balances/pages/BalancesPage'
 import GroupsPage from '@/features/groups/pages/GroupsPage'
 import GroupDetailPage from '@/features/groups/pages/GroupDetailPage'
 import UiPreviewPage from '@/features/design/UiPreviewPage'
 import SettingsPage from '@/features/settings/pages/SettingsPage'
 
 const router = createBrowserRouter([
-  ...(import.meta.env.DEV ? [{ path: '/ui-preview', element: <AppLayout />, children: [{ index: true, element: <UiPreviewPage /> }] }] : []),
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/ui-preview',
+          element: <AppLayout />,
+          children: [{ index: true, element: <UiPreviewPage /> }],
+        },
+      ]
+    : []),
   {
     path: '/login',
     element: <LoginPage />,
@@ -29,6 +38,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'balances', element: <BalancesPage /> },
       { path: 'groups', element: <GroupsPage /> },
       { path: 'groups/:id', element: <GroupDetailPage /> },
       { path: 'settings', element: <SettingsPage /> },

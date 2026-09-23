@@ -1,3 +1,4 @@
+import QuickSettleButton from '@/features/balances/components/QuickSettleButton'
 import { useTranslation } from 'react-i18next'
 import type { TransferSuggestion } from './RecordSettlementDialog'
 import { formatDate } from '@/utils/dates'
@@ -178,16 +179,12 @@ export function BalanceSummary({
                 </span>
                 {onRecord &&
                   (s.from === currentUserId || s.to === currentUserId) && (
-                    <Button
-                      variant="outline"
-                      onClick={() => onRecord(s)}
-                      aria-label={t('Record payment from {{from}} to {{to}}', {
-                        from: name(s.from),
-                        to: name(s.to),
-                      })}
-                    >
-                      {t('Record payment')}
-                    </Button>
+                    <QuickSettleButton
+                      groupId={group.id}
+                      currency={group.baseCurrency}
+                      transfer={s}
+                      userId={currentUserId!}
+                    />
                   )}
               </li>
             ))}

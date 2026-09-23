@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { MoreHorizontal, Pencil, Trash2, Receipt, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import SettlementRow from './SettlementRow'
+import { NativeSelect } from '@/components/ui/native-select'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Message } from '@/components/ui/field'
@@ -43,19 +45,40 @@ export default function ExpenseList({
     setExpenseToDelete: setToDelete,
     setQuery,
     visibleExpenses: visible,
+    filter,
+    setFilter,
+    retry,
   } = useExpenseList(group.id, members)
   return (
     <div className="space-y-4">
-      {error && <Message error>{error}</Message>}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-3 size-5 text-muted-foreground" />
-        <Input
-          className="bg-card pl-10"
-          aria-label={t('Search expenses')}
-          placeholder={t('Search expenses...')}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+      {error && (
+        <>
+          <Message error>{error}</Message>
+          <Button variant="outline" onClick={retry}>
+            {t('Retry')}
+          </Button>
+        </>
+      )}
+      <div className="flex flex-wrap gap-3">
+        <NativeSelect
+          aria-label={t('Entry type')}
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+        >
+          <option value="all">{t('All entries')}</option>
+          <option value="expense">{t('Expenses')}</option>
+          <option value="settlement">{t('Settlements')}</option>
+        </NativeSelect>
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-3 size-5 text-muted-foreground" />
+          <Input
+            className="bg-card pl-10"
+            aria-label={t('Search entries')}
+            placeholder={t('Search entries...')}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
       </div>
       {loading && !expenses.length ? (
         <Skeleton className="h-64 rounded-md" />
@@ -63,7 +86,9 @@ export default function ExpenseList({
         <div className="rounded-md border border-dashed bg-card p-10 text-center">
           <Receipt className="mx-auto mb-4 size-8 text-positive" />
           <h2 className="font-semibold">
-            {query ? t('No matching expenses') : t('No expenses yet')}
+            {query || filter !== 'all'
+              ? t('No matching entries')
+              : t('No entries yet')}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {query
@@ -73,15 +98,28 @@ export default function ExpenseList({
         </div>
       ) : (
         <div className="divide-y rounded-md border bg-card">
-          {visible.map((expense) => {
+          {visible.map((entry) => {
+            if (entry.kind === 'settlement')
+              return (
+                <SettlementRow
+                  key={`settlement:${entry.value.id}`}
+                  settlement={entry.value}
+                  userId={me?.id}
+                  name={getName}
+                />
+              )
+            const expense = entry.value
             const { Icon, label } = getExpenseTypeDetails(expense.type)
             const mine = me ? computeNetBalances(expense)[me.id] || 0 : 0
             return (
               <article
-                key={expense.id}
+                key={`expense:${expense.id}`}
                 className="flex gap-3 p-4 sm:gap-4 sm:p-5"
               >
-                <span title={t(label)} className="grid size-9 shrink-0 place-items-center rounded-md bg-secondary text-secondary-foreground sm:size-10">
+                <span
+                  title={t(label)}
+                  className="grid size-9 shrink-0 place-items-center rounded-md bg-secondary text-secondary-foreground sm:size-10"
+                >
                   <Icon className="size-4" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1">
