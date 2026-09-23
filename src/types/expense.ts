@@ -1,3 +1,6 @@
+export const EXPENSE_TYPES = ['food', 'housing', 'transport', 'shopping', 'entertainment', 'health', 'travel', 'other'] as const
+export type ExpenseType = (typeof EXPENSE_TYPES)[number]
+
 export type SplitType = 'equal' | 'exact' | 'percentage' | 'shares'
 
 export interface PayerContribution {
@@ -21,6 +24,7 @@ export interface Expense {
   groupId: string
   title: string
   description?: string
+  type?: ExpenseType
   originalAmount: number
   originalCurrency: string
   convertedAmount: number

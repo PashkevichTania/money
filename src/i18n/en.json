@@ -361,5 +361,16 @@
   "Add the Firebase configuration in your environment to enable sign-in and shared expenses.": "Add the Firebase configuration in your environment to enable sign-in and shared expenses.",
   "SplitSmart home": "SplitSmart home",
   "Sign-in is unavailable until this workspace is configured.": "Sign-in is unavailable until this workspace is configured.",
-  "Invalid settlement identifier.": "Invalid settlement identifier."
+  "Invalid settlement identifier.": "Invalid settlement identifier.",
+  "Type (optional)": "Type (optional)",
+  "No type": "No type",
+  "Food": "Food",
+  "Housing": "Housing",
+  "Transport": "Transport",
+  "Shopping": "Shopping",
+  "Entertainment": "Entertainment",
+  "Health": "Health",
+  "Travel": "Travel",
+  "Other": "Other",
+  "Unsupported expense type.": "Unsupported expense type."
 }

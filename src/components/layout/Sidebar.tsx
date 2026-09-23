@@ -1,22 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Settings, ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Brand } from './Brand'
-
-const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Overview', Icon: LayoutDashboard },
-  { to: '/groups', label: 'Your groups', Icon: Users },
-  { to: '/settings', label: 'Settings', Icon: Settings },
-]
+import { NAV_ITEMS } from './navigation'
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation()
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-20 shrink-0 items-center px-6">
-        <Brand onClick={onNavigate} />
-      </div>
       <nav aria-label={t('Main navigation')} className="px-3 pt-6">
         <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {t('Workspace')}

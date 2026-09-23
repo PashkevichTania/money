@@ -21,6 +21,7 @@ import type {
   PayerContribution,
   RateSnapshot,
 } from '@/types/expense'
+import { EXPENSE_TYPES } from '@/types/expense'
 import { validateSplit } from '@/utils/split'
 import { roundMoney } from '@/utils/currency'
 import { nowIso } from '@/utils/dates'
@@ -38,6 +39,7 @@ const expenseConverter: FirestoreDataConverter<Expense> = {
     groupId: expense.groupId,
     title: expense.title,
     description: expense.description ?? null,
+    type: expense.type ?? null,
     originalAmount: expense.originalAmount,
     originalCurrency: expense.originalCurrency,
     convertedAmount: expense.convertedAmount,
@@ -60,6 +62,7 @@ const expenseConverter: FirestoreDataConverter<Expense> = {
       groupId: data.groupId,
       title: data.title,
       description: data.description ?? undefined,
+      type: data.type ?? undefined,
       originalAmount: data.originalAmount,
       originalCurrency: data.originalCurrency,
       convertedAmount: data.convertedAmount,
@@ -111,6 +114,7 @@ export interface CreateExpenseInput {
   groupId: string
   title: string
   description?: string
+  type?: Expense['type']
   originalAmount: number
   originalCurrency: string
   convertedAmount: number
@@ -128,6 +132,9 @@ export type UpdateExpenseInput = Partial<
 > & { updatedBy: string }
 
 function validateExpense(expense: Expense) {
+  if (expense.type !== undefined && !EXPENSE_TYPES.includes(expense.type)) {
+    throw new Error('Unsupported expense type.')
+  }
   if (
     !expense.title.trim() ||
     !['equal', 'exact', 'percentage', 'shares'].includes(expense.splitType)
@@ -202,6 +209,7 @@ export async function createExpense(
     groupId: input.groupId,
     title: input.title.trim(),
     description: input.description?.trim() || undefined,
+    type: input.type,
     originalAmount: input.originalAmount,
     originalCurrency: input.originalCurrency.toUpperCase(),
     convertedAmount: input.convertedAmount,
@@ -275,6 +283,7 @@ export async function updateExpense(
   }
   const next: Expense = {
     ...existing,
+    ...('type' in patch ? { type: patch.type } : {}),
     ...(patch.title !== undefined ? { title: patch.title.trim() } : {}),
     ...(patch.description !== undefined
       ? { description: patch.description?.trim() || undefined }

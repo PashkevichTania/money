@@ -188,3 +188,15 @@
     background-image: radial-gradient(circle, #73737350 1px, transparent 1px);
   }
 }
+
+.toaster[data-sonner-toaster][data-sonner-theme='light'] {
+  --warning-bg: #fff7ed;
+  --warning-border: #fed7aa;
+  --warning-text: #9a3412;
+}
+
+.toaster[data-sonner-toaster][data-sonner-theme='dark'] {
+  --warning-bg: #431407;
+  --warning-border: #9a3412;
+  --warning-text: #fdba74;
+}

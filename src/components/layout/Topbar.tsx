@@ -6,8 +6,6 @@ import {
   LogOut,
   Menu,
   Plus,
-  Settings,
-  UserRound,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,6 +18,8 @@ import {
 import { useAuthStore } from '@/stores/authStore'
 import { useNotify } from '@/hooks/useNotify'
 import { ThemeToggle } from './ThemeToggle'
+import { Brand } from './Brand'
+import { NAV_ITEMS } from './navigation'
 
 export default function Topbar({
   onToggleSidebar,
@@ -88,7 +88,8 @@ export default function Topbar({
       >
         <Menu aria-hidden="true" />
       </Button>
-      <p className="text-sm font-medium text-muted-foreground">{t(title)}</p>
+      <Brand className="shrink-0 gap-2 [&>span:last-child]:text-lg sm:[&>span:last-child]:text-xl" />
+      <p className="ml-4 hidden text-sm font-medium text-muted-foreground xl:block">{t(title)}</p>
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
         <Button
           render={<Link to="/groups?new=1" />}
@@ -117,7 +118,7 @@ export default function Topbar({
               {profile?.displayName || t('Account')}
             </span>
             <ChevronDown
-              className="size-3 text-muted-foreground"
+              className="hidden size-3 text-muted-foreground sm:block"
               aria-hidden="true"
             />
           </DropdownMenuTrigger>
@@ -131,20 +132,17 @@ export default function Topbar({
               </p>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              render={<Link to="/dashboard" />}
-              className="min-h-10 px-3"
-            >
-              <UserRound aria-hidden="true" />
-              {t('Overview')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              render={<Link to="/settings" />}
-              className="min-h-10 px-3"
-            >
-              <Settings aria-hidden="true" />
-              {t('Settings')}
-            </DropdownMenuItem>
+            {NAV_ITEMS.map(({ to, label, Icon }) => (
+              <DropdownMenuItem
+                key={to}
+                render={<Link to={to} />}
+                aria-current={pathname === to || pathname.startsWith(`${to}/`) ? 'page' : undefined}
+                className="min-h-10 px-3 aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground"
+              >
+                <Icon aria-hidden="true" />
+                {t(label)}
+              </DropdownMenuItem>
+            ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"

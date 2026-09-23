@@ -363,5 +363,16 @@
   "Add the Firebase configuration in your environment to enable sign-in and shared expenses.": "Добавьте конфигурацию Firebase, чтобы включить вход и общие расходы.",
   "SplitSmart home": "Главная SplitSmart",
   "Sign-in is unavailable until this workspace is configured.": "Вход недоступен, пока приложение не настроено.",
-  "Invalid settlement identifier.": "Некорректный идентификатор платежа."
+  "Invalid settlement identifier.": "Некорректный идентификатор платежа.",
+  "Type (optional)": "Тип (необязательно)",
+  "No type": "Без типа",
+  "Food": "Еда",
+  "Housing": "Жильё",
+  "Transport": "Транспорт",
+  "Shopping": "Покупки",
+  "Entertainment": "Развлечения",
+  "Health": "Здоровье",
+  "Travel": "Путешествия",
+  "Other": "Другое",
+  "Unsupported expense type.": "Неподдерживаемый тип расхода."
 }

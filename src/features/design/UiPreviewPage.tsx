@@ -1,3 +1,7 @@
+import { useTranslation } from 'react-i18next'
+import { EXPENSE_TYPES } from '@/types/expense'
+import { getExpenseTypeDetails } from '@/config/expenseTypes'
+import { useNotify } from '@/hooks/useNotify'
 import SettingsPage from '@/features/settings/pages/SettingsPage'
 import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
 import { BalanceSummary } from '@/features/groups/components/BalancesTab'
@@ -8,7 +12,7 @@ import RecordSettlementDialog, {
 import type { Group } from '@/types/group'
 import type { UserProfile } from '@/types/user'
 import { useState } from 'react'
-import { Check, ArrowUpRight, Plus, Info, LoaderCircle } from 'lucide-react'
+import { Check, ArrowUpRight, Plus, Info, LoaderCircle, CircleCheck, OctagonX, TriangleAlert, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -53,6 +57,8 @@ const previewMembers: UserProfile[] = previewGroup.memberIds.map((id) => ({
 }))
 
 export default function UiPreviewPage() {
+  const { t } = useTranslation()
+  const { enqueueSnackbar } = useNotify()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [previewPayments, setPreviewPayments] = useState<Settlement[]>([])
   const [recordPayment, setRecordPayment] = useState<{
@@ -187,6 +193,53 @@ export default function UiPreviewPage() {
           </div>
         ))}
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Expense types</CardTitle>
+          <CardDescription>
+            Every available type, using the same icons as the expense list.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[undefined, ...EXPENSE_TYPES].map((type) => {
+            const { Icon, label } = getExpenseTypeDetails(type)
+            return (
+              <div key={type ?? 'none'} className="flex items-center gap-3 rounded-md border p-4">
+                <span className="grid size-10 shrink-0 place-items-center rounded-md bg-secondary text-secondary-foreground">
+                  <Icon className="size-4" aria-hidden="true" />
+                </span>
+                <span className="text-sm font-medium">{t(label)}</span>
+              </div>
+            )
+          })}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Sonner notifications</CardTitle>
+          <CardDescription>
+            Click to preview each notification. Use the theme switch to compare light and dark colors.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          {([
+            { variant: 'success', label: 'Success', message: 'Expense added', Icon: CircleCheck, color: 'text-green-600 dark:text-green-400' },
+            { variant: 'error', label: 'Error', message: 'Failed to save expense', Icon: OctagonX, color: 'text-red-600 dark:text-red-400' },
+            { variant: 'warning', label: 'Warning', message: 'A valid FX rate is required for currency conversion', Icon: TriangleAlert, color: 'text-orange-600 dark:text-orange-400' },
+            { variant: 'info', label: 'Info', message: 'Preview confirmed. No data changed.', Icon: Info, color: 'text-blue-600 dark:text-blue-400' },
+            { variant: 'default', label: 'Default', message: 'Preview notification', Icon: Bell, color: 'text-muted-foreground' },
+          ] as const).map(({ variant, label, message, Icon, color }) => (
+            <Button
+              key={variant}
+              variant="outline"
+              onClick={() => enqueueSnackbar(message, { variant })}
+            >
+              <Icon className={color} aria-hidden="true" />
+              {label}
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>

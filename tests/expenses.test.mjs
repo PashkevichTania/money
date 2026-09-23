@@ -31,7 +31,7 @@ const firestore = compile(Object.keys(api).map(key => `export const ${key} = (..
 const currency = compile(read('../src/utils/currency.ts'))
 const split = compile(read('../src/utils/split.ts').replace("'./currency'", JSON.stringify(currency)))
 let source = read('../src/api/expenses.ts')
-for (const [key, value] of [['firebase/firestore', firestore], ['@/config/firebase', compile('export const db = {}; export const isFirebaseConfigured = true; export const auth = globalThis.__expenseAuth')], ['@/utils/currency', currency], ['@/utils/split', split], ['@/utils/dates', compile("export const nowIso = () => '2026-09-20T00:00:00.000Z'")]]) source = source.replace(`'${key}'`, JSON.stringify(value))
+for (const [key, value] of [['firebase/firestore', firestore], ['@/config/firebase', compile('export const db = {}; export const isFirebaseConfigured = true; export const auth = globalThis.__expenseAuth')], ['@/types/expense', compile(read('../src/types/expense.ts'))], ['@/utils/currency', currency], ['@/utils/split', split], ['@/utils/dates', compile("export const nowIso = () => '2026-09-20T00:00:00.000Z'")]]) source = source.replaceAll(`'${key}'`, JSON.stringify(value))
 const { createExpense, updateExpense, listExpenses, deleteExpense } = await import(compile(source))
 const input = () => ({ groupId: 'g', title: ' Dinner ', originalAmount: 100, originalCurrency: 'EUR', convertedAmount: 100, groupCurrency: 'EUR', paidBy: [{ userId: 'a', amount: 100 }], participants: [{ userId: 'a', value: 60 }, { userId: 'b', value: 40 }], splitType: 'exact', expenseDate: '2026-09-20', createdBy: 'a' })
 const reset = () => { docs = new Map([['groups/g', { baseCurrency: 'EUR', memberIds: ['a', 'b'], hasExpenseHistory: false }]]); concurrentChange = undefined }
@@ -86,4 +86,16 @@ test('non-authors and signed-out users cannot edit or delete expenses, even with
       assert.equal(docs.get(`groups/g/expenses/${expense.id}`).title, 'Dinner')
     }
   } finally { globalThis.__expenseAuth.currentUser = { uid: 'a' } }
+})
+
+test('expense type is optional, retained on unrelated edits, changeable and removable', async () => {
+  reset()
+  const untyped = await createExpense(input())
+  assert.equal(untyped.type, undefined)
+  const expense = await createExpense({ ...input(), type: 'food' })
+  assert.equal(expense.type, 'food')
+  assert.equal((await updateExpense('g', expense.id, { title: 'Lunch', updatedBy: 'a' })).type, 'food')
+  assert.equal((await updateExpense('g', expense.id, { type: 'housing', updatedBy: 'a' })).type, 'housing')
+  assert.equal((await updateExpense('g', expense.id, { type: undefined, updatedBy: 'a' })).type, undefined)
+  await assert.rejects(createExpense({ ...input(), type: 'invalid' }), /Unsupported expense type/)
 })

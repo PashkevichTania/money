@@ -20,6 +20,7 @@ import { useCurrentUser } from '@/hooks/useGroups'
 import { useNotify } from '@/hooks/useNotify'
 import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/dates'
+import { getExpenseTypeDetails } from '@/config/expenseTypes'
 import { computeNetBalances } from '@/utils/split'
 const EMPTY: Expense[] = []
 export default function ExpenseList({
@@ -98,14 +99,15 @@ export default function ExpenseList({
       ) : (
         <div className="divide-y rounded-md border bg-card">
           {visible.map((expense) => {
+            const { Icon, label } = getExpenseTypeDetails(expense.type)
             const mine = me ? computeNetBalances(expense)[me.id] || 0 : 0
             return (
               <article
                 key={expense.id}
                 className="flex gap-3 p-4 sm:gap-4 sm:p-5"
               >
-                <span className="hidden size-10 shrink-0 place-items-center rounded-md bg-secondary text-secondary-foreground sm:grid">
-                  <Receipt className="size-4" />
+                <span title={t(label)} className="grid size-9 shrink-0 place-items-center rounded-md bg-secondary text-secondary-foreground sm:size-10">
+                  <Icon className="size-4" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -114,6 +116,7 @@ export default function ExpenseList({
                         {expense.title}
                       </h3>
                       <p className="mt-1 text-xs text-muted-foreground">
+                        {expense.type && <>{t(label)} · </>}
                         {formatDate(expense.expenseDate)} ·{' '}
                         {t(expense.splitType)} ·{' '}
                         {t('members', { count: expense.participants.length })}

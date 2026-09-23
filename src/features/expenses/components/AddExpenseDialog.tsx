@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { EXPENSE_TYPES } from '@/types/expense'
+import { EXPENSE_TYPE_DETAILS } from '@/config/expenseTypes'
 import { Modal } from '@/components/ui/modal'
 import { Field, CurrencySelect, Section, Message } from '@/components/ui/field'
 import { z } from 'zod'
@@ -37,6 +40,7 @@ import {
 import { getExchangeRate } from '@/api/rates'
 
 const schema = z.object({
+  type: z.union([z.enum(EXPENSE_TYPES), z.literal('')]),
   title: z
     .string()
     .min(2, 'Title must be at least 2 characters')
@@ -118,6 +122,7 @@ export default function AddExpenseDialog({
       })
       return {
         title: editingExpense.title,
+        type: editingExpense.type && EXPENSE_TYPES.includes(editingExpense.type) ? editingExpense.type : '',
         description: editingExpense.description ?? '',
         expenseDate: editingExpense.expenseDate.slice(0, 10),
         originalCurrency: editingExpense.originalCurrency,
@@ -134,6 +139,7 @@ export default function AddExpenseDialog({
     return {
       title: '',
       description: '',
+      type: '',
       expenseDate: nowIso().slice(0, 10),
       originalCurrency: defaultCurrency,
       originalAmount: 0 as unknown as number,
@@ -470,6 +476,7 @@ export default function AddExpenseDialog({
         await updateExpense(group.id, editingExpense.id, {
           title: values.title,
           description: values.description,
+          type: values.type || undefined,
           originalAmount: Number(values.originalAmount),
           originalCurrency: originalCur,
           convertedAmount: sameCurrency
@@ -495,6 +502,7 @@ export default function AddExpenseDialog({
           groupId: group.id,
           title: values.title,
           description: values.description,
+          type: values.type || undefined,
           originalAmount: Number(values.originalAmount),
           originalCurrency: originalCur,
           convertedAmount: sameCurrency
@@ -697,6 +705,17 @@ export default function AddExpenseDialog({
               {...register('expenseDate')}
               error={errors.expenseDate?.message}
             />
+            <div className="space-y-2">
+              <Label htmlFor="expense-type">{t('Type (optional)')}</Label>
+              <NativeSelect id="expense-type" className="w-full" {...register('type')} aria-invalid={!!errors.type}>
+                <NativeSelectOption value="">{t('No type')}</NativeSelectOption>
+                {EXPENSE_TYPES.map((type) => (
+                  <NativeSelectOption key={type} value={type}>
+                    {t(EXPENSE_TYPE_DETAILS[type].label)}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="expense-notes">{t('Notes (optional)')}</Label>
               <Textarea
