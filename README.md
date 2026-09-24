@@ -54,3 +54,7 @@ Login and signup both offer Google sign-in through Firebase Auth (`signInWithPop
 In Firebase Console, enable **Authentication > Sign-in method > Google**, select the support email, and save. Under **Authentication > Settings > Authorized domains**, add the actual app hostname (including `localhost` or `127.0.0.1` when used for local development). No Google client secret belongs in the frontend environment. Allow browser pop-ups for the app.
 
 The repository cannot establish whether the provider is enabled in the remote Firebase project. A successful Google popup/account flow must be verified with that project's configuration.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
