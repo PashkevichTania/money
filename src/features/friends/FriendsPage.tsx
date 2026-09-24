@@ -29,7 +29,7 @@ export default function FriendsPage() {
         event.preventDefault()
         void perform(async () => { await sendFriendRequest(email); setEmail('') }, t('Friend request sent'))
       }}>
-        <Field label={t('Email')} type="email" required value={email} disabled={busy} onChange={event => setEmail(event.target.value)} placeholder="friend@example.com" />
+        <Field wrapperClassName={'max-w-[350px] w-full'} label={t('Email')} type="email" required value={email} disabled={busy} onChange={event => setEmail(event.target.value)} placeholder="friend@example.com" />
         <Button disabled={busy || !email.trim()} type="submit">{t('Send friend request')}</Button>
       </form>
       {(error || loadError) && <Message error>{t(error || loadError)}</Message>}

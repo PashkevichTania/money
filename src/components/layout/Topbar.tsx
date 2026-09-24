@@ -5,7 +5,6 @@ import {
   ChevronDown,
   LogOut,
   Menu,
-  Plus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -91,14 +90,6 @@ export default function Topbar({
       <Brand className="shrink-0 gap-2 [&>span:last-child]:text-lg sm:[&>span:last-child]:text-xl" />
       <p className="ml-4 hidden text-sm font-medium text-muted-foreground xl:block">{t(title)}</p>
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
-        <Button
-          render={<Link to="/groups?new=1" />}
-          nativeButton={false}
-          className="hidden sm:inline-flex"
-        >
-          <Plus aria-hidden="true" />
-          {t('New group')}
-        </Button>
         <ThemeToggle />
         <div className="mx-1 hidden h-6 border-l sm:block" />
         <DropdownMenu>

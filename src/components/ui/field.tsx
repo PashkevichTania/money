@@ -6,17 +6,20 @@ import { Label } from './label'
 import { Combobox } from '@base-ui/react/combobox'
 import { ChevronDown, Check } from 'lucide-react'
 import { CURRENCIES } from '@/config/currencies'
+import {cn} from "@/lib/utils.ts";
+
 export function Field({
   label,
   error,
   id: suppliedId,
+    wrapperClassName,
   ...props
-}: ComponentProps<'input'> & { label: string; error?: string }) {
+}: ComponentProps<'input'> & { label: string; error?: string, wrapperClassName?: string }) {
   useTranslation()
   const generated = useId()
   const id = suppliedId || generated
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2", wrapperClassName)}>
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
