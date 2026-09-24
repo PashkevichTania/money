@@ -453,5 +453,8 @@
   "Remove {{currency}} from favorites": "Убрать {{currency}} из любимых",
   "Saved to your account.": "Сохраняется в вашем аккаунте.",
   "Preferences saved": "Настройки сохранены",
-  "Choose up to five different currencies.": "Выберите до пяти разных валют."
+  "Choose up to five different currencies.": "Выберите до пяти разных валют.",
+  "One person": "Один человек",
+  "Multiple people": "Несколько человек",
+  "Payer": "Кто оплатил"
 }

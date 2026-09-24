@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Field, Section } from '@/components/ui/field';
+import { Label } from '@/components/ui/label';
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from '@/components/ui/native-select';
 import type { PayerContribution } from '@/types/expense';
 import type { UserProfile } from '@/types/user';
 import { formatMoney } from '@/utils/currency';
@@ -42,11 +47,12 @@ export function ExpensePayersSection({
   updatePayerAmount,
 }: ExpensePayersSectionProps) {
   const { t } = useTranslation();
-  const isSelfPaid =
-    paidBy.length === 1 &&
-    paidBy[0].userId === defaultPayerId &&
-    paidRemaining === 0;
-  const [splitPayments, setSplitPayments] = useState(!isSelfPaid);
+  const [splitPayments, setSplitPayments] = useState(paidBy.length > 1);
+  const [lastSinglePayerId, setLastSinglePayerId] = useState(
+    paidBy.length === 1 ? paidBy[0].userId : defaultPayerId
+  );
+  const singlePayerId =
+    paidBy.length === 1 ? paidBy[0].userId : lastSinglePayerId;
   return (
     <Section
       compact
@@ -61,29 +67,50 @@ export function ExpensePayersSection({
         <Button
           type="button"
           variant={!splitPayments ? 'default' : 'ghost'}
-          className="h-auto min-h-10 min-w-0 whitespace-normal px-2"
+          className="h-auto min-h-9 sm:min-h-10 min-w-0 whitespace-normal px-2"
           aria-pressed={!splitPayments}
           onClick={() => {
             setSplitPayments(false);
-            applySinglePayer(defaultPayerId);
+            applySinglePayer(
+              members.some(({ id }) => id === singlePayerId)
+                ? singlePayerId
+                : defaultPayerId
+            );
           }}
         >
           {!splitPayments && <Check />}
-          {t('I paid (Full)')}
+          {t('One person')}
         </Button>
         <Button
           type="button"
           variant={splitPayments ? 'default' : 'ghost'}
-          className="h-auto min-h-10 min-w-0 whitespace-normal px-2"
+          className="h-auto min-h-9 sm:min-h-10 min-w-0 whitespace-normal px-2"
           aria-pressed={splitPayments}
           onClick={() => setSplitPayments(true)}
         >
-          {t('Split payments')}
+          {t('Multiple people')}
         </Button>
       </div>
       {!splitPayments ? (
         <div className="flex items-center justify-between gap-3 py-1 text-sm">
-          <span className="truncate">{nameOf(defaultPayerId)}</span>
+          <div className="min-w-0 flex-1 space-y-1">
+            <Label htmlFor="expense-single-payer">{t('Payer')}</Label>
+            <NativeSelect
+              id="expense-single-payer"
+              className="w-full"
+              value={singlePayerId}
+              onChange={(event) => {
+                setLastSinglePayerId(event.target.value);
+                applySinglePayer(event.target.value);
+              }}
+            >
+              {members.map(({ id, displayName }) => (
+                <NativeSelectOption key={id} value={id}>
+                  {displayName}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </div>
           <span className="shrink-0 font-medium tabular-nums">
             {formatMoney(paidSum, currency)}
           </span>

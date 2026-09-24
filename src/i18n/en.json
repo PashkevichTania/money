@@ -451,5 +451,8 @@
   "Remove {{currency}} from favorites": "Remove {{currency}} from favorites",
   "Saved to your account.": "Saved to your account.",
   "Preferences saved": "Preferences saved",
-  "Choose up to five different currencies.": "Choose up to five different currencies."
+  "Choose up to five different currencies.": "Choose up to five different currencies.",
+  "One person": "One person",
+  "Multiple people": "Multiple people",
+  "Payer": "Payer"
 }

@@ -58,7 +58,7 @@ export function ExpenseSplitSection({
         {SPLIT_TYPES.map((type) => (
           <Button
             key={type}
-            className="h-auto min-h-10 min-w-0 whitespace-normal px-1 text-xs sm:text-sm"
+            className="h-auto min-h-9 sm:min-h-10 min-w-0 whitespace-normal px-1 text-xs sm:text-sm"
             type="button"
             variant={type === splitType ? 'default' : 'ghost'}
             aria-label={t(type)}

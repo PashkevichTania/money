@@ -184,6 +184,7 @@ export default function AddExpenseDialog({
       onClose={onClose}
       busy={isSubmitting}
       wide
+      mobileFullscreen
       title={isEdit ? t('Edit expense') : t('Add expense')}
       description={t('Record a shared expense in {{group}}.', {
         group: group.name,
@@ -193,7 +194,7 @@ export default function AddExpenseDialog({
         onSubmit={handleSubmit(submitExpense)}
         noValidate
         aria-busy={isSubmitting}
-        className="space-y-3"
+        className="space-y-3 max-sm:[&_section]:p-2.5 max-sm:[&_button[data-slot=button]]:px-2 max-sm:[&_button[data-slot=button]]:text-xs"
       >
         <fieldset disabled={isSubmitting} className="space-y-3">
           <ExpenseDetailsSection
@@ -249,16 +250,17 @@ export default function AddExpenseDialog({
             validationErrors={liveValidationErrors}
           />
         </fieldset>
-        <div className="sticky -bottom-6 -mx-6 -mb-6 flex justify-end gap-2 border-t bg-popover p-4">
+        <div className="sticky -bottom-3 -mx-3 -mb-3 flex justify-end gap-2 border-t bg-popover p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:-bottom-6 sm:-mx-6 sm:-mb-6 sm:p-4">
           <Button
             type="button"
             variant="outline"
             disabled={isSubmitting}
             onClick={onClose}
+            className="max-sm:h-9"
           >
             {t('Cancel')}
           </Button>
-          <Button type="submit" disabled={!canSubmit}>
+          <Button type="submit" disabled={!canSubmit} className="max-sm:h-9">
             {isSubmitting ? (
               <LoaderCircle className="animate-spin" />
             ) : (
