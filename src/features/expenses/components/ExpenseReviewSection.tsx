@@ -25,6 +25,7 @@ export function ExpenseReviewSection({
   const { t } = useTranslation();
   return (
     <Section
+      compact
       title={t('Review')}
       description={t('Amounts below are in {{currency}}.', {
         currency: groupCurrency,
@@ -35,20 +36,20 @@ export function ExpenseReviewSection({
         <span>{formatMoney(convertedAmount, groupCurrency)}</span>
       </div>
       {!validationErrors.length && rateState.rate && !rateState.error ? (
-        <div className="divide-y">
-          {Object.entries(previewNetBalances).map(([id, net]) => (
-            <div key={id} className="flex justify-between gap-3 py-2 text-sm">
-              <span>{nameOf(id)}</span>
-              <span
-                className={`text-right tabular-nums ${net > 0 ? 'text-positive' : net < 0 ? 'text-destructive' : 'text-muted-foreground'}`}
-              >
-                {Math.abs(net) < 0.005
-                  ? t('No balance')
-                  : `${net > 0 ? t('Gets back') : t('Owes')} ${formatMoney(Math.abs(net), groupCurrency)}`}
-              </span>
-            </div>
-          ))}
-        </div>
+          <div className="mt-2 divide-y">
+            {Object.entries(previewNetBalances).map(([id, net]) => (
+                <div key={id} className="flex justify-between gap-3 py-2 text-sm">
+                  <span>{nameOf(id)}</span>
+                  <span
+                      className={`text-right tabular-nums ${net > 0 ? 'text-positive' : net < 0 ? 'text-destructive' : 'text-muted-foreground'}`}
+                  >
+                  {Math.abs(net) < 0.005
+                      ? t('No balance')
+                      : `${net > 0 ? t('Gets back') : t('Owes')} ${formatMoney(Math.abs(net), groupCurrency)}`}
+                </span>
+                </div>
+            ))}
+          </div>
       ) : (
         <p className="text-sm text-muted-foreground">
           {t(

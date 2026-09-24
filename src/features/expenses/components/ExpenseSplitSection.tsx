@@ -49,21 +49,23 @@ export function ExpenseSplitSection({
 }: ExpenseSplitSectionProps) {
   const { t } = useTranslation();
   return (
-    <Section title={t('3. How is it split?')}>
+    <Section compact title={t('3. How is it split?')}>
       <div
         role="group"
         aria-label={t('Split method')}
-        className="flex flex-wrap gap-2"
+        className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1"
       >
         {SPLIT_TYPES.map((type) => (
           <Button
             key={type}
+            className="h-auto min-h-10 min-w-0 whitespace-normal px-1 text-xs sm:text-sm"
             type="button"
-            variant={type === splitType ? 'default' : 'outline'}
+            variant={type === splitType ? 'default' : 'ghost'}
+            aria-label={t(type)}
             aria-pressed={type === splitType}
             onClick={() => changeSplit(type)}
           >
-            {t(type)}
+            {type === 'percentage' ? '%' : t(type)}
           </Button>
         ))}
       </div>
@@ -86,7 +88,7 @@ export function ExpenseSplitSection({
         {members.map(({ id, displayName }) => {
           const selected = participantIds.includes(id);
           return (
-            <div className="flex items-center gap-3 py-3" key={id}>
+            <div className="flex items-center gap-3 py-2" key={id}>
               <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-sm">
                 <input
                   type="checkbox"

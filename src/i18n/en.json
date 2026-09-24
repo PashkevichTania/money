@@ -440,5 +440,10 @@
   "Choose friends now or add them later. You are included automatically.": "Choose friends now or add them later. You are included automatically.",
   "Selected friends: {{count}}": "Selected friends: {{count}}",
   "No friends yet. You can add members after creating the group.": "No friends yet. You can add members after creating the group.",
-  "Group created, but these friends could not be added: {{names}}. Try again in Members.": "Group created, but these friends could not be added: {{names}}. Try again in Members."
+  "Group created, but these friends could not be added: {{names}}. Try again in Members.": "Group created, but these friends could not be added: {{names}}. Try again in Members.",
+  "More details": "More details",
+  "Date and notes": "Date and notes",
+  "I paid (Full)": "I paid (Full)",
+  "Split payments": "Split payments",
+  "View balances": "View balances"
 }

@@ -122,23 +122,32 @@ export function CurrencySelect({
   );
 }
 export function Section({
+  compact = false,
   title,
   description,
   children,
 }: {
+  compact?: boolean;
   title: string;
   description?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-md border bg-card p-5 sm:p-6">
+    <section
+      className={cn(
+        'rounded-md border bg-card',
+        compact ? 'p-3 sm:p-4' : 'p-5 sm:p-6'
+      )}
+    >
       <h2 className="font-semibold">{title}</h2>
       {description && (
         <p className="mt-1 text-sm leading-6 text-muted-foreground">
           {description}
         </p>
       )}
-      <div className="mt-5 space-y-4">{children}</div>
+      <div className={compact ? 'mt-3 space-y-3' : 'mt-5 space-y-4'}>
+        {children}
+      </div>
     </section>
   );
 }

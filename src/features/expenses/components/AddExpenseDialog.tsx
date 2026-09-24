@@ -193,9 +193,9 @@ export default function AddExpenseDialog({
         onSubmit={handleSubmit(submitExpense)}
         noValidate
         aria-busy={isSubmitting}
-        className="space-y-5"
+        className="space-y-3"
       >
-        <fieldset disabled={isSubmitting} className="space-y-5">
+        <fieldset disabled={isSubmitting} className="space-y-3">
           <ExpenseDetailsSection
             control={control}
             convertedAmount={convertedAmount}
@@ -207,6 +207,7 @@ export default function AddExpenseDialog({
             register={register}
           />
           <ExpensePayersSection
+            key={`${editingExpense?.id || 'new'}:${open}`}
             addPayer={addPayer}
             applyEvenPaidBy={applyEvenPaidBy}
             applySinglePayer={applySinglePayer}

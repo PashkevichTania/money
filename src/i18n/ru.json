@@ -442,5 +442,10 @@
   "Choose friends now or add them later. You are included automatically.": "Выберите друзей сейчас или добавьте их позже. Вы уже включены в группу.",
   "Selected friends: {{count}}": "Выбрано друзей: {{count}}",
   "No friends yet. You can add members after creating the group.": "Пока нет друзей. Вы сможете добавить участников после создания группы.",
-  "Group created, but these friends could not be added: {{names}}. Try again in Members.": "Группа создана, но не удалось добавить: {{names}}. Попробуйте ещё раз на вкладке «Участники»."
+  "Group created, but these friends could not be added: {{names}}. Try again in Members.": "Группа создана, но не удалось добавить: {{names}}. Попробуйте ещё раз на вкладке «Участники».",
+  "More details": "Дополнительные поля",
+  "Date and notes": "Дата и заметки",
+  "I paid (Full)": "Я оплатил всё",
+  "Split payments": "Несколько плательщиков",
+  "View balances": "Показать балансы"
 }

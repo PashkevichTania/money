@@ -1,4 +1,5 @@
-import { Plus, X } from 'lucide-react';
+import { Check, Plus, X } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -45,75 +46,108 @@ export function ExpensePayersSection({
     paidBy.length === 1 &&
     paidBy[0].userId === defaultPayerId &&
     paidRemaining === 0;
+  const [splitPayments, setSplitPayments] = useState(!isSelfPaid);
   return (
     <Section
+      compact
       title={t('2. Who paid?')}
       description={t('Enter contributions in {{currency}}.', { currency })}
     >
-      <div className="flex flex-wrap gap-2">
+      <div
+        role="group"
+        aria-label={t('2. Who paid?')}
+        className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
+      >
         <Button
           type="button"
-          variant={isSelfPaid ? 'default' : 'outline'}
-          aria-pressed={isSelfPaid}
-          onClick={() => applySinglePayer(defaultPayerId)}
+          variant={!splitPayments ? 'default' : 'ghost'}
+          className="h-auto min-h-10 min-w-0 whitespace-normal px-2"
+          aria-pressed={!splitPayments}
+          onClick={() => {
+            setSplitPayments(false);
+            applySinglePayer(defaultPayerId);
+          }}
         >
-          {t('I paid')}
+          {!splitPayments && <Check />}
+          {t('I paid (Full)')}
         </Button>
         <Button
           type="button"
-          variant="outline"
-          disabled={!participantIds.length}
-          onClick={applyEvenPaidBy}
+          variant={splitPayments ? 'default' : 'ghost'}
+          className="h-auto min-h-10 min-w-0 whitespace-normal px-2"
+          aria-pressed={splitPayments}
+          onClick={() => setSplitPayments(true)}
         >
-          {t('Split payments evenly')}
+          {t('Split payments')}
         </Button>
       </div>
-      <div className="space-y-3">
-        {paidBy.map(({ userId, amount }) => (
-          <div key={userId} className="flex items-end gap-2">
-            <div className="flex-1">
-              <Field
-                label={t('Paid by {{name}}', { name: nameOf(userId) })}
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                value={amount}
-                onChange={(event) =>
-                  updatePayerAmount(userId, event.target.value)
-                }
-              />
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled={paidBy.length <= 1}
-              aria-label={t('Remove payer {{name}}', {
-                name: nameOf(userId),
-              })}
-              onClick={() => removePayer(userId)}
-            >
-              <X />
-            </Button>
+      {!splitPayments ? (
+        <div className="flex items-center justify-between gap-3 py-1 text-sm">
+          <span className="truncate">{nameOf(defaultPayerId)}</span>
+          <span className="shrink-0 font-medium tabular-nums">
+            {formatMoney(paidSum, currency)}
+          </span>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {paidBy.map(({ userId, amount }) => (
+              <div key={userId} className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Field
+                    label={t('Paid by {{name}}', { name: nameOf(userId) })}
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    value={amount}
+                    onChange={(event) =>
+                      updatePayerAmount(userId, event.target.value)
+                    }
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={paidBy.length <= 1}
+                  aria-label={t('Remove payer {{name}}', {
+                    name: nameOf(userId),
+                  })}
+                  onClick={() => removePayer(userId)}
+                >
+                  <X />
+                </Button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {members
-          .filter(({ id }) => !payerIds.has(id))
-          .map(({ id, displayName }) => (
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              key={id}
-              variant="secondary"
-              onClick={() => addPayer(id)}
+              size="sm"
+              variant="ghost"
+              disabled={!participantIds.length}
+              onClick={applyEvenPaidBy}
             >
-              <Plus />
-              {displayName}
+              {t('Split payments evenly')}
             </Button>
-          ))}
-      </div>
+            {members
+              .filter(({ id }) => !payerIds.has(id))
+              .map(({ id, displayName }) => (
+                <Button
+                  type="button"
+                  key={id}
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => addPayer(id)}
+                >
+                  <Plus />
+                  {displayName}
+                </Button>
+              ))}
+          </div>
+        </>
+      )}
       <p
         className={`text-sm tabular-nums ${Math.abs(paidRemaining) < 0.005 ? 'text-positive' : 'text-destructive'}`}
       >
