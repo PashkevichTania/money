@@ -41,6 +41,10 @@ export function ExpensePayersSection({
   updatePayerAmount,
 }: ExpensePayersSectionProps) {
   const { t } = useTranslation();
+  const isSelfPaid =
+    paidBy.length === 1 &&
+    paidBy[0].userId === defaultPayerId &&
+    paidRemaining === 0;
   return (
     <Section
       title={t('2. Who paid?')}
@@ -49,7 +53,8 @@ export function ExpensePayersSection({
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant={isSelfPaid ? 'default' : 'outline'}
+          aria-pressed={isSelfPaid}
           onClick={() => applySinglePayer(defaultPayerId)}
         >
           {t('I paid')}

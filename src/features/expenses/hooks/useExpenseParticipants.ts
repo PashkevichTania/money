@@ -89,20 +89,17 @@ export function useExpenseParticipants({
   ]);
 
   useEffect(() => {
-    if (!open || paidBy.length === 0) return;
+    if (!open) return;
+    const currentPaidBy = getValues('paidBy');
     if (
-      originalAmount > 0 &&
-      safeSum(paidBy.map(({ amount }) => amount)) === 0
+      currentPaidBy.length === 1 &&
+      currentPaidBy[0].amount !== originalAmount
     ) {
-      setValue(
-        'paidBy',
-        paidBy.map((payer, index) =>
-          index === 0 ? { ...payer, amount: originalAmount } : payer
-        ),
-        { shouldValidate: true }
-      );
+      setValue('paidBy', [{ ...currentPaidBy[0], amount: originalAmount }], {
+        shouldValidate: true,
+      });
     }
-  }, [open, originalAmount, paidBy, setValue]);
+  }, [open, originalAmount, getValues, setValue]);
 
   const payerIds = useMemo(
     () => new Set(paidBy.map(({ userId }) => userId)),

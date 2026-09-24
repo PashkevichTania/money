@@ -95,9 +95,10 @@ export function AuthLayout({
             {footer}
           </div>
         </div>
-        <p className="py-7 text-center text-xs text-muted-foreground">
-          {t('Made for the things you share.')}
-        </p>
+        <div className="py-7 text-center text-xs leading-5 text-muted-foreground">
+          <p>{t('Made for the things you share.')}</p>
+          <p>{t('A free, non-commercial open-source project.')}</p>
+        </div>
       </section>
     </div>
   );

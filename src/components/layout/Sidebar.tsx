@@ -65,6 +65,9 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             {t('Start a group')}{' '}
             <ArrowUpRight className="size-3.5" aria-hidden="true" />
           </NavLink>
+          <p className="mt-5 border-t pt-4 text-[11px] leading-4 text-muted-foreground">
+            {t('A free, non-commercial open-source project.')}
+          </p>
         </div>
       </div>
     </div>
