@@ -1,18 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Group } from '@/types/group'
 import type { UserProfile } from '@/types/user'
 import { useGroupStore } from '@/stores/groupStore'
 import { useNotify } from '@/hooks/useNotify'
-import { USER_SEARCH_DEBOUNCE_MS } from '@/features/groups/constants'
+import { useFriends } from '@/hooks/useFriends'
 
 export function useMemberManagement(group: Group) {
   const { t } = useTranslation()
   const { enqueueSnackbar } = useNotify()
-  const searchUsers = useGroupStore((state) => state.searchUsers)
-  const clearSearch = useGroupStore((state) => state.clearSearch)
-  const searchResults = useGroupStore((state) => state.searchResults)
-  const searchingUsers = useGroupStore((state) => state.searchingUsers)
+  const { friends, loading: searchingUsers, error: friendsError } = useFriends()
   const addMemberByEmail = useGroupStore((state) => state.addMemberByEmail)
   const removeMember = useGroupStore((state) => state.removeMember)
   const errors = useGroupStore((state) => state.errors)
@@ -22,19 +19,7 @@ export function useMemberManagement(group: Group) {
 
   const { id: groupId, memberIds } = group
 
-  useEffect(() => {
-    const handle = window.setTimeout(() => {
-      void searchUsers(query, memberIds)
-    }, USER_SEARCH_DEBOUNCE_MS)
-    return () => window.clearTimeout(handle)
-  }, [memberIds, query, searchUsers])
-
-  useEffect(() => () => clearSearch(), [clearSearch])
-
-  const options = useMemo(
-    () => searchResults.filter(({ alreadyMember }) => !alreadyMember),
-    [searchResults],
-  )
+  const options = friends.filter(user => !memberIds.includes(user.id) && (user.email + ' ' + user.displayName).toLowerCase().includes(query.trim().toLowerCase())).map(user => ({ user }))
 
   const addMember = async (email: string) => {
     const trimmedEmail = email.trim()
@@ -44,7 +29,6 @@ export function useMemberManagement(group: Group) {
       await addMemberByEmail(groupId, trimmedEmail)
       enqueueSnackbar('Member added', { variant: 'success' })
       setQuery('')
-      clearSearch()
     } catch (error) {
       enqueueSnackbar(
         error instanceof Error ? error.message : 'Could not add member',
@@ -75,7 +59,7 @@ export function useMemberManagement(group: Group) {
   }
 
   return {
-    addError: errors[`addMember:${groupId}`],
+    addError: friendsError || errors[`addMember:${groupId}`],
     addMember,
     busy,
     canRemove: memberIds.length > 1,

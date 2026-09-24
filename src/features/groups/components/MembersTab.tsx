@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { UserPlus, UserMinus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -38,39 +39,26 @@ export default function MembersTab({
   return (
     <Section
       title={t('Members')}
-      description={t('Add people who already have a SplitSmart account.')}
+      description={t('Choose friends to add to this group.')}
     >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          void addMember(query)
-        }}
-        className="flex flex-col gap-3 sm:flex-row sm:items-end"
-      >
-        <div className="flex-1">
-          <Field
-            label={t('Add by email')}
-            type="email"
-            placeholder="friend@example.com"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            disabled={busy}
-          />
-        </div>
-        <Button type="submit" disabled={busy || !query.trim()}>
-          <UserPlus />
-          {busy ? t('Working...') : t('Add member')}
-        </Button>
-      </form>
+      <Field
+        label={t('Find a friend')}
+        placeholder={t('Name or email')}
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        disabled={busy}
+      />
+      <Link className="text-sm text-primary underline" to={'/friends?email=' + encodeURIComponent(query.includes('@') ? query.trim() : '')}>{t('Invite someone to become friends')}</Link>
+      {!searchingUsers && !options.length && <p className="text-sm text-muted-foreground">{t('No available friends')}</p>}
       {addError && <Message error>{addError}</Message>}
       {searchingUsers && (
         <p role="status" className="text-xs text-muted-foreground">
           {t('Searching...')}
         </p>
       )}
-      {query.trim() && options.length > 0 && (
+      {options.length > 0 && (
         <ul
-          aria-label={t('Matching accounts')}
+          aria-label={t('Friends')}
           className="divide-y rounded-md border"
         >
           {options.map(({ user }) => (

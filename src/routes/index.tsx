@@ -8,6 +8,7 @@ import BalancesPage from '@/features/balances/pages/BalancesPage'
 import GroupsPage from '@/features/groups/pages/GroupsPage'
 import GroupDetailPage from '@/features/groups/pages/GroupDetailPage'
 import UiPreviewPage from '@/features/design/UiPreviewPage'
+import FriendsPage from '@/features/friends/FriendsPage'
 import SettingsPage from '@/features/settings/pages/SettingsPage'
 
 const router = createBrowserRouter([
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
       { path: 'balances', element: <BalancesPage /> },
       { path: 'groups', element: <GroupsPage /> },
       { path: 'groups/:id', element: <GroupDetailPage /> },
+      { path: 'friends', element: <FriendsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: '*', element: <Navigate to="/dashboard" replace /> },
     ],

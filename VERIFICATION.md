@@ -40,3 +40,14 @@ Balance scope is all time. Suggestions do not send money. Settlement entry recor
 - Share weights reject fractions and zero instead of silently rounding or replacing them. Money step 0.01 was checked with ArrowUp; browser rejects 1.5 shares and disables save.
 - Searchable currency dropdown checked inside the expense dialog in dark mode: search by currency name and selection using ArrowDown/Enter succeed. No browser console warnings/errors.
 - Frankfurter v2 historical EUR/USD request succeeded; live GBP/EUR conversion also succeeded through the expense form. New tests cover array responses, requested pair matching, invalid dates/rates, timeouts and missing results. Saved FX snapshots are unchanged.
+
+
+## Friends and group consent
+
+- Friends are stored in `friendships`, one sorted UID pair per document.
+- Requests start pending; only the recipient can accept. Either participant can cancel, decline, or remove the relationship.
+- Group creation includes only its creator. Each subsequent addition requires an accepted friendship with the acting group member. Existing group memberships remain unchanged.
+- Apply the updated `firestore.rules` to the same Firebase project before using the new client. Old rules deny friendship access and do not enforce friendship for group additions.
+- Automated API tests cover missing/self/duplicate/crossed requests, recipient-only acceptance, cancellation/removal, and group consent. They use an in-memory Firestore adapter, not the rules engine.
+- Before production rollout, run security-rule tests in the Firebase emulator (Java and Firebase CLI required): unauthenticated/unrelated reads and writes must fail; pending invitations must not grant group access; sender acceptance and forged accepted records must fail; recipient acceptance must succeed; only friends of the acting member can be added; direct group creation with other users and multi-user additions must fail; removing friendship must preserve existing group access but prevent subsequent additions.
+- Manual UI check with two accounts: send a request by email, observe the incoming badge, accept it, add the friend to a group, then remove the friendship and verify existing membership/history remain.

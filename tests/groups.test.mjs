@@ -10,6 +10,7 @@ const ref = path => ({ path, id: path.split('/').at(-1), withConverter() { retur
 const snapshot = reference => ({ ref: reference, exists: () => docs.has(reference.path),
   data: () => docs.get(reference.path), get: key => docs.get(reference.path)?.[key] })
 const api = {
+  runTransaction: async (_, work) => work({ get: async reference => snapshot(reference), update: async (reference, patch) => api.updateDoc(reference, patch) }),
   collection: (_, ...parts) => ref(parts.join('/')),
   doc: (parent, ...parts) => ref(parent.path ? `${parent.path}/${parts.join('/') || 'new-group'}` : parts.join('/')),
   getDoc: async reference => snapshot(reference),
@@ -65,6 +66,7 @@ test('create, read, rename and add member preserve currency and deduplicate memb
   assert.equal((await getGroup(group.id)).name, 'Trip')
   assert.deepEqual(group.memberIds, ['a'])
   await updateGroup(group.id, { name: ' Holiday ' })
+  docs.set('friendships/a:b', { status: 'accepted', memberIds: ['a', 'b'] })
   await addMemberToGroup(group.id, 'b')
   await addMemberToGroup(group.id, 'b')
   const updated = await getGroup(group.id)
@@ -117,4 +119,23 @@ test('only group author may initiate deletion; creator membership is retained', 
       assert.equal(events.length, 0)
     }
   } finally { globalThis.__groupAuth.currentUser = { uid: 'a' } }
+})
+
+test('group additions require accepted friendship with the acting member', async () => {
+  reset()
+  await assert.rejects(addMemberToGroup('g', 'c'), /Only confirmed friends/)
+  docs.set('friendships/a:c', { status: 'pending', memberIds: ['a', 'c'] })
+  await assert.rejects(addMemberToGroup('g', 'c'), /Only confirmed friends/)
+  await assert.rejects(updateGroup('g', { memberIds: ['a', 'b', 'c'] }), /Only confirmed friends/)
+  docs.set('friendships/b:c', { status: 'accepted', memberIds: ['b', 'c'] })
+  await assert.rejects(addMemberToGroup('g', 'c'), /Only confirmed friends/)
+  docs.set('friendships/a:c', { status: 'accepted', memberIds: ['a', 'c'] })
+  await addMemberToGroup('g', 'c')
+  docs.delete('friendships/a:c')
+  assert.deepEqual(docs.get('groups/g').memberIds, ['a', 'b', 'c'])
+})
+
+test('group creation cannot bypass friendship consent', async () => {
+  reset()
+  await assert.rejects(createGroup({ name: 'Trip', baseCurrency: 'EUR', memberIds: ['a', 'c'], createdBy: 'a' }), /confirmed friends/)
 })

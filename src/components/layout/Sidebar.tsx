@@ -2,10 +2,15 @@ import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { ArrowUpRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFriends } from '@/hooks/useFriends'
+import { useCurrentUser } from '@/hooks/useGroups'
 import { NAV_ITEMS } from './navigation'
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation()
+  const me = useCurrentUser()
+  const { items } = useFriends()
+  const incoming = items.filter(item => item.status === 'pending' && item.recipientId === me?.id).length
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
       <nav aria-label={t('Main navigation')} className="px-3 pt-6">
@@ -29,6 +34,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             >
               <Icon className="size-[18px]" aria-hidden="true" />
               {t(label)}
+              {to === '/friends' && incoming > 0 && <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">{incoming}</span>}
             </NavLink>
           ))}
         </div>

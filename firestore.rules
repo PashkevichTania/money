@@ -13,19 +13,54 @@ service cloud.firestore {
       return request.auth != null && group.createdBy == request.auth.uid
         && group.get('deleting', false) == true;
     }
+    function confirmedFriend(uid) {
+      let first = request.auth.uid < uid ? request.auth.uid : uid;
+      let second = request.auth.uid < uid ? uid : request.auth.uid;
+      let friendship = get(/databases/$(database)/documents/friendships/$(first + ':' + second)).data;
+      return friendship.status == 'accepted'
+        && request.auth.uid in friendship.memberIds && uid in friendship.memberIds;
+    }
+    function validMemberChange() {
+      let added = request.resource.data.memberIds.removeAll(resource.data.memberIds);
+      return added.size() == 0 || (added.size() == 1 && confirmedFriend(added[0]));
+    }
+    match /friendships/{fid} {
+      allow get: if request.auth != null && (resource == null || request.auth.uid in resource.data.memberIds);
+      allow list: if request.auth != null && request.auth.uid in resource.data.memberIds;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['memberIds', 'senderId', 'recipientId', 'status', 'createdAt'])
+        && request.resource.data.memberIds is list && request.resource.data.memberIds.size() == 2
+        && request.resource.data.memberIds[0] is string && request.resource.data.memberIds[1] is string
+        && request.resource.data.memberIds[0] < request.resource.data.memberIds[1]
+        && fid == request.resource.data.memberIds[0] + ':' + request.resource.data.memberIds[1]
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.recipientId != request.auth.uid
+        && request.resource.data.memberIds.hasAll([request.auth.uid, request.resource.data.recipientId])
+        && exists(/databases/$(database)/documents/users/$(request.resource.data.recipientId))
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+      allow update: if request.auth != null && resource.data.recipientId == request.auth.uid
+        && resource.data.status == 'pending' && request.resource.data.status == 'accepted'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if request.auth != null && request.auth.uid in resource.data.memberIds;
+    }
     match /users/{uid} {
       allow read: if request.auth != null;
       allow create, update, delete: if request.auth != null && request.auth.uid == uid;
     }
     match /groups/{gid} {
-      allow read: if member(gid);
+      // Queries must prove membership from the queried document itself.
+      allow read: if request.auth != null && request.auth.uid in resource.data.memberIds;
       allow create: if request.auth != null
-        && request.auth.uid in request.resource.data.memberIds
+        && request.resource.data.memberIds == [request.auth.uid]
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.baseCurrency is string
         && request.resource.data.get('hasExpenseHistory', false) == false
         && request.resource.data.get('deleting', false) == false;
       allow update: if member(gid)
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() == request.resource.data.memberIds.toSet().size()
+        && validMemberChange()
         && request.resource.data.baseCurrency == resource.data.baseCurrency
         && request.resource.data.createdBy == resource.data.createdBy
         && request.resource.data.createdAt == resource.data.createdAt

@@ -1,5 +1,6 @@
 import {
   collection,
+  runTransaction,
   writeBatch,
   limit,
   deleteDoc,
@@ -75,13 +76,14 @@ function groupsColl() {
 
 export async function createGroup(input: CreateGroupInput): Promise<Group> {
   assertFirebase()
+  if (input.memberIds.some(id => id !== input.createdBy)) throw new Error('Create the group first, then add confirmed friends.')
   const id = doc(groupsColl()).id
   const now = nowIso()
   const group: Group = {
     id,
     name: input.name.trim(),
     baseCurrency: input.baseCurrency,
-    memberIds: Array.from(new Set(input.memberIds)),
+    memberIds: [input.createdBy],
     createdBy: input.createdBy,
     createdAt: now,
     updatedAt: now,
@@ -113,6 +115,17 @@ export async function updateGroup(
   assertFirebase()
   const existing = await getGroup(groupId)
   if (!existing) throw new Error('Group not found')
+  const added = [...new Set(patch.memberIds?.filter(id => !existing.memberIds.includes(id)) ?? [])]
+  if (added.length > 1) throw new Error('Add one friend at a time.')
+  if (added.length) {
+    const me = auth.currentUser?.uid
+    if (!me || !existing.memberIds.includes(me)) throw new Error('Permission denied')
+    const friendship = await getDoc(doc(db, 'friendships', [me, added[0]].sort().join(':')))
+    if (!friendship.exists() || friendship.data().status !== 'accepted'
+      || !friendship.data().memberIds.includes(me) || !friendship.data().memberIds.includes(added[0])) {
+      throw new Error('Only confirmed friends can be added to a group.')
+    }
+  }
   if (patch.memberIds && !patch.memberIds.includes(existing.createdBy)) {
     throw new Error('The group author must remain a member.')
   }
@@ -196,10 +209,24 @@ export async function addMemberToGroup(
   groupId: string,
   userId: string,
 ): Promise<Group> {
-  const current = await getGroup(groupId)
-  if (!current) throw new Error('Group not found')
-  if (current.memberIds.includes(userId)) return current
-  return updateGroup(groupId, { memberIds: [...current.memberIds, userId] })
+  assertFirebase()
+  const me = auth.currentUser?.uid
+  if (!me) throw new Error('Permission denied')
+  return runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(groupRef(groupId))
+    if (!snapshot.exists()) throw new Error('Group not found')
+    const current = snapshot.data()
+    if (!current.memberIds.includes(me)) throw new Error('Permission denied')
+    if (current.memberIds.includes(userId)) return current
+    const friendship = await transaction.get(doc(db, 'friendships', [me, userId].sort().join(':')))
+    if (!friendship.exists() || friendship.data().status !== 'accepted'
+      || !friendship.data().memberIds.includes(me) || !friendship.data().memberIds.includes(userId)) {
+      throw new Error('Only confirmed friends can be added to a group.')
+    }
+    const next = { ...current, memberIds: [...current.memberIds, userId], updatedAt: nowIso() }
+    transaction.update(groupRef(groupId), { memberIds: next.memberIds, updatedAt: next.updatedAt })
+    return next
+  })
 }
 
 export async function removeMemberFromGroup(
