@@ -1,39 +1,41 @@
-import { useTranslation } from 'react-i18next'
-import { GoogleSignInButton } from '../components/GoogleSignInButton'
-import { ArrowRight, LoaderCircle, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AuthLayout } from '../components/AuthLayout'
-import { AuthField } from '../components/AuthField'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect } from 'react'
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@/stores/authStore'
-import { useNotify } from '@/hooks/useNotify'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowRight, LoaderCircle, X } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { useNotify } from '@/hooks/useNotify';
+import { useAuthStore } from '@/stores/authStore';
+
+import { AuthField } from '../components/AuthField';
+import { AuthLayout } from '../components/AuthLayout';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-})
+});
 
-type FormValues = z.infer<typeof schema>
+type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const login = useAuthStore((s) => s.login)
-  const error = useAuthStore((s) => s.error)
-  const clearError = useAuthStore((s) => s.clearError)
-  const status = useAuthStore((s) => s.status)
-  const profile = useAuthStore((s) => s.profile)
-  const { enqueueSnackbar } = useNotify()
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const login = useAuthStore((s) => s.login);
+  const error = useAuthStore((s) => s.error);
+  const clearError = useAuthStore((s) => s.clearError);
+  const status = useAuthStore((s) => s.status);
+  const profile = useAuthStore((s) => s.profile);
+  const { enqueueSnackbar } = useNotify();
 
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from
-      ?.pathname || '/dashboard'
+      ?.pathname || '/dashboard';
 
   const {
     register,
@@ -42,27 +44,27 @@ export default function LoginPage() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
-  })
+  });
 
   useEffect(() => {
     if (profile) {
-      navigate(from, { replace: true })
+      navigate(from, { replace: true });
     }
-  }, [profile, navigate, from])
+  }, [profile, navigate, from]);
 
   const onSubmit = async (values: FormValues) => {
-    clearError()
+    clearError();
     try {
-      await login(values.email, values.password)
-      enqueueSnackbar('Welcome back!', { variant: 'success' })
-      navigate(from, { replace: true })
+      await login(values.email, values.password);
+      enqueueSnackbar('Welcome back!', { variant: 'success' });
+      navigate(from, { replace: true });
     } catch (error) {
       // error already set in store
-      console.error(error)
+      console.error(error);
     }
-  }
+  };
 
-  const busy = isSubmitting || status === 'loading'
+  const busy = isSubmitting || status === 'loading';
   return (
     <AuthLayout
       title={t('Welcome back.')}
@@ -140,5 +142,5 @@ export default function LoginPage() {
         </fieldset>
       </form>
     </AuthLayout>
-  )
+  );
 }

@@ -41,7 +41,6 @@ Balance scope is all time. Suggestions do not send money. Settlement entry recor
 - Searchable currency dropdown checked inside the expense dialog in dark mode: search by currency name and selection using ArrowDown/Enter succeed. No browser console warnings/errors.
 - Frankfurter v2 historical EUR/USD request succeeded; live GBP/EUR conversion also succeeded through the expense form. New tests cover array responses, requested pair matching, invalid dates/rates, timeouts and missing results. Saved FX snapshots are unchanged.
 
-
 ## Friends and group consent
 
 - Friends are stored in `friendships`, one sorted UID pair per document.

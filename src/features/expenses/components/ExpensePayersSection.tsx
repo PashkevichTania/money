@@ -1,26 +1,27 @@
-import { useTranslation } from 'react-i18next'
-import { Plus, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Field, Section } from '@/components/ui/field'
-import type { PayerContribution } from '@/types/expense'
-import type { UserProfile } from '@/types/user'
-import { formatMoney } from '@/utils/currency'
+import { Plus, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
+import { Field, Section } from '@/components/ui/field';
+import type { PayerContribution } from '@/types/expense';
+import type { UserProfile } from '@/types/user';
+import { formatMoney } from '@/utils/currency';
 
 interface ExpensePayersSectionProps {
-  addPayer: (userId: string) => void
-  applyEvenPaidBy: () => void
-  applySinglePayer: (userId: string) => void
-  currency: string
-  defaultPayerId: string
-  members: UserProfile[]
-  nameOf: (id: string) => string
-  paidBy: PayerContribution[]
-  paidRemaining: number
-  paidSum: number
-  participantIds: string[]
-  payerIds: Set<string>
-  removePayer: (userId: string) => void
-  updatePayerAmount: (userId: string, raw: string | number) => void
+  addPayer: (userId: string) => void;
+  applyEvenPaidBy: () => void;
+  applySinglePayer: (userId: string) => void;
+  currency: string;
+  defaultPayerId: string;
+  members: UserProfile[];
+  nameOf: (id: string) => string;
+  paidBy: PayerContribution[];
+  paidRemaining: number;
+  paidSum: number;
+  participantIds: string[];
+  payerIds: Set<string>;
+  removePayer: (userId: string) => void;
+  updatePayerAmount: (userId: string, raw: string | number) => void;
 }
 
 export function ExpensePayersSection({
@@ -39,7 +40,7 @@ export function ExpensePayersSection({
   removePayer,
   updatePayerAmount,
 }: ExpensePayersSectionProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   return (
     <Section
       title={t('2. Who paid?')}
@@ -117,5 +118,5 @@ export function ExpensePayersSection({
         })}
       </p>
     </Section>
-  )
+  );
 }

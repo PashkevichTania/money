@@ -1,25 +1,31 @@
-import { useTranslation } from 'react-i18next'
-import { translateError } from '@/i18n/errors'
-import { useMemo, useId, type ComponentProps, type ReactNode } from 'react'
-import { Input } from './input'
-import { Label } from './label'
-import { Combobox } from '@base-ui/react/combobox'
-import { ChevronDown, Check } from 'lucide-react'
-import { CURRENCIES } from '@/config/currencies'
-import {cn} from "@/lib/utils.ts";
+import { Combobox } from '@base-ui/react/combobox';
+import { Check, ChevronDown } from 'lucide-react';
+import { type ComponentProps, type ReactNode, useId, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { CURRENCIES } from '@/config/currencies';
+import { translateError } from '@/i18n/errors';
+import { cn } from '@/lib/utils.ts';
+
+import { Input } from './input';
+import { Label } from './label';
 
 export function Field({
   label,
   error,
   id: suppliedId,
-    wrapperClassName,
+  wrapperClassName,
   ...props
-}: ComponentProps<'input'> & { label: string; error?: string, wrapperClassName?: string }) {
-  useTranslation()
-  const generated = useId()
-  const id = suppliedId || generated
+}: ComponentProps<'input'> & {
+  label: string;
+  error?: string;
+  wrapperClassName?: string;
+}) {
+  useTranslation();
+  const generated = useId();
+  const id = suppliedId || generated;
   return (
-    <div className={cn("space-y-2", wrapperClassName)}>
+    <div className={cn('space-y-2', wrapperClassName)}>
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
@@ -33,7 +39,7 @@ export function Field({
         </p>
       )}
     </div>
-  )
+  );
 }
 export function CurrencySelect({
   label,
@@ -43,24 +49,24 @@ export function CurrencySelect({
   name,
   onBlur,
 }: {
-  label?: string
-  value: string
-  onValueChange: (value: string) => void
-  disabled?: boolean
-  name?: string
-  onBlur?: () => void
+  label?: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  disabled?: boolean;
+  name?: string;
+  onBlur?: () => void;
 }) {
-  const { t, i18n } = useTranslation()
+  const { t, i18n } = useTranslation();
   const currencies = useMemo(() => {
     const names = new Intl.DisplayNames([i18n.resolvedLanguage || 'en'], {
       type: 'currency',
-    })
+    });
     return CURRENCIES.map((currency) => ({
       ...currency,
       label: names.of(currency.code) || currency.label,
-    }))
-  }, [i18n.resolvedLanguage])
-  const id = useId()
+    }));
+  }, [i18n.resolvedLanguage]);
+  const id = useId();
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label ?? t('Currency')}</Label>
@@ -68,7 +74,7 @@ export function CurrencySelect({
         items={currencies}
         value={currencies.find((c) => c.code === value) ?? null}
         onValueChange={(currency) => {
-          if (currency) onValueChange(currency.code)
+          if (currency) onValueChange(currency.code);
         }}
         itemToStringLabel={(c) => `${c.code} · ${c.label}`}
         itemToStringValue={(c) => c.code}
@@ -113,16 +119,16 @@ export function CurrencySelect({
         </Combobox.Portal>
       </Combobox.Root>
     </div>
-  )
+  );
 }
 export function Section({
   title,
   description,
   children,
 }: {
-  title: string
-  description?: string
-  children: ReactNode
+  title: string;
+  description?: string;
+  children: ReactNode;
 }) {
   return (
     <section className="rounded-md border bg-card p-5 sm:p-6">
@@ -134,16 +140,16 @@ export function Section({
       )}
       <div className="mt-5 space-y-4">{children}</div>
     </section>
-  )
+  );
 }
 export function Message({
   children,
   error = false,
 }: {
-  children: ReactNode
-  error?: boolean
+  children: ReactNode;
+  error?: boolean;
 }) {
-  useTranslation()
+  useTranslation();
   return (
     <p
       role={error ? 'alert' : 'status'}
@@ -153,5 +159,5 @@ export function Message({
         ? translateError(children)
         : children}
     </p>
-  )
+  );
 }

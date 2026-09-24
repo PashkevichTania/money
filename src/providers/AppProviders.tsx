@@ -1,12 +1,13 @@
-import type { ReactNode } from 'react'
-import { AppContext } from '@/hooks/useApp'
-import { useUIStore } from '@/stores/uiStore'
-import { useThemeModeListener } from '@/hooks/useThemeModeListener'
-import { Toaster } from '@/components/ui/sonner'
+import type { ReactNode } from 'react';
+
+import { Toaster } from '@/components/ui/sonner';
+import { AppContext } from '@/hooks/useApp';
+import { useThemeModeListener } from '@/hooks/useThemeModeListener';
+import { useUIStore } from '@/stores/uiStore';
 export function AppProviders({ children }: { children: ReactNode }) {
-  useThemeModeListener()
-  const themeMode = useUIStore((s) => s.themeMode)
-  const setThemeMode = useUIStore((s) => s.setThemeMode)
+  useThemeModeListener();
+  const themeMode = useUIStore((s) => s.themeMode);
+  const setThemeMode = useUIStore((s) => s.setThemeMode);
   return (
     <AppContext.Provider
       value={{
@@ -18,5 +19,5 @@ export function AppProviders({ children }: { children: ReactNode }) {
       {children}
       <Toaster theme={themeMode} position="top-right" closeButton />
     </AppContext.Provider>
-  )
+  );
 }

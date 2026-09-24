@@ -1,10 +1,11 @@
-import { useTranslation } from 'react-i18next'
-import { LanguageSelect } from '@/components/LanguageSelect'
-import { formatMoney } from '@/utils/currency'
-import type { ReactNode } from 'react'
-import { ArrowUpRight, Check, Users } from 'lucide-react'
-import { Brand } from '@/components/layout/Brand'
-import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { ArrowUpRight, Check, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { LanguageSelect } from '@/components/LanguageSelect';
+import { Brand } from '@/components/layout/Brand';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { formatMoney } from '@/utils/currency';
 
 export function AuthLayout({
   title,
@@ -12,12 +13,12 @@ export function AuthLayout({
   children,
   footer,
 }: {
-  title: string
-  description: string
-  children: ReactNode
-  footer: ReactNode
+  title: string;
+  description: string;
+  children: ReactNode;
+  footer: ReactNode;
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-2">
       <aside className="bg-workspace relative hidden flex-col overflow-hidden bg-[#0c4137] dark:bg-[#101012] p-12 text-white lg:flex xl:p-16">
@@ -38,7 +39,7 @@ export function AuthLayout({
           </h2>
           <p className="mt-6 max-w-sm text-base leading-7 text-[#c0d8cf]">
             {t(
-              'From a weekend away to everyday things. Keep your shared expenses together, and the math out of the way.',
+              'From a weekend away to everyday things. Keep your shared expenses together, and the math out of the way.'
             )}
           </p>
           <div className="mt-10 max-w-sm rounded-md border border-white/15 bg-white/[0.06] p-6">
@@ -99,5 +100,5 @@ export function AuthLayout({
         </p>
       </section>
     </div>
-  )
+  );
 }

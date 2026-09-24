@@ -1,30 +1,32 @@
-import { useTranslation } from 'react-i18next'
-import { useEffect, useRef, useState } from 'react'
-import { Outlet } from 'react-router-dom'
-import Topbar from './Topbar'
-import Sidebar from './Sidebar'
-import { useUIStore } from '@/stores/uiStore'
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Outlet } from 'react-router-dom';
+
 import {
   Sheet,
   SheetContent,
-  SheetTitle,
   SheetDescription,
-} from '@/components/ui/sheet'
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { useUIStore } from '@/stores/uiStore';
+
+import Sidebar from './Sidebar';
+import Topbar from './Topbar';
 
 export default function AppLayout() {
-  const { t } = useTranslation()
-  const sidebarOpen = useUIStore((s) => s.sidebarOpen)
-  const toggleSidebar = useUIStore((s) => s.toggleSidebar)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const toggleElement = useRef<HTMLElement | null>(null)
+  const { t } = useTranslation();
+  const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+  const toggleSidebar = useUIStore((s) => s.toggleSidebar);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const toggleElement = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    const query = window.matchMedia('(min-width: 1024px)')
+    const query = window.matchMedia('(min-width: 1024px)');
     const onResize = () => {
-      if (query.matches) setMobileOpen(false)
-    }
-    query.addEventListener('change', onResize)
-    return () => query.removeEventListener('change', onResize)
-  }, [])
+      if (query.matches) setMobileOpen(false);
+    };
+    query.addEventListener('change', onResize);
+    return () => query.removeEventListener('change', onResize);
+  }, []);
   return (
     <div className="bg-workspace min-h-dvh">
       <a
@@ -37,11 +39,10 @@ export default function AppLayout() {
         sidebarExpanded={sidebarOpen}
         mobileExpanded={mobileOpen}
         onToggleSidebar={() => {
-          if (window.matchMedia('(min-width: 1024px)').matches)
-            toggleSidebar()
+          if (window.matchMedia('(min-width: 1024px)').matches) toggleSidebar();
           else {
-            toggleElement.current = document.activeElement as HTMLElement
-            setMobileOpen((v) => !v)
+            toggleElement.current = document.activeElement as HTMLElement;
+            setMobileOpen((v) => !v);
           }
         }}
       />
@@ -81,5 +82,5 @@ export default function AppLayout() {
         </div>
       </div>
     </div>
-  )
+  );
 }

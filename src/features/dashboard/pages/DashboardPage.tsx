@@ -1,30 +1,39 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
-import { ArrowUpRight, Plus, Users, Handshake, Sun, Wallet } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Message } from '@/components/ui/field'
-import { useAuthStore } from '@/stores/authStore'
-import { useGroupStore } from '@/stores/groupStore'
-import { useGroups } from '@/hooks/useGroups'
-import { useBalanceOverview } from '@/features/balances/hooks/useBalanceOverview'
-import SettleUpDialog from '@/features/balances/components/SettleUpDialog'
-import BalanceList from '@/features/balances/components/BalanceList'
-import DashboardBalances from '../components/DashboardBalances'
+import {
+  ArrowUpRight,
+  Handshake,
+  Plus,
+  Sun,
+  Users,
+  Wallet,
+} from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
+import { Message } from '@/components/ui/field';
+import { Skeleton } from '@/components/ui/skeleton';
+import BalanceList from '@/features/balances/components/BalanceList';
+import SettleUpDialog from '@/features/balances/components/SettleUpDialog';
+import { useBalanceOverview } from '@/features/balances/hooks/useBalanceOverview';
+import { useGroups } from '@/hooks/useGroups';
+import { useAuthStore } from '@/stores/authStore';
+import { useGroupStore } from '@/stores/groupStore';
+
+import DashboardBalances from '../components/DashboardBalances';
 
 export default function DashboardPage() {
-  const { t } = useTranslation()
-  const profile = useAuthStore((s) => s.profile)
-  const { groups, loading } = useGroups()
-  const groupError = useGroupStore((s) => s.errors.groups)
-  const overview = useBalanceOverview(groups, profile?.id ?? '')
-  const [settle, setSettle] = useState<{ groupId?: string } | null>(null)
-  const ready = !loading && !groupError && overview.ready && !overview.error
+  const { t } = useTranslation();
+  const profile = useAuthStore((s) => s.profile);
+  const { groups, loading } = useGroups();
+  const groupError = useGroupStore((s) => s.errors.groups);
+  const overview = useBalanceOverview(groups, profile?.id ?? '');
+  const [settle, setSettle] = useState<{ groupId?: string } | null>(null);
+  const ready = !loading && !groupError && overview.ready && !overview.error;
   const count = overview.balances.reduce(
     (sum, b) => sum + b.transfers.length,
-    0,
-  )
+    0
+  );
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -166,5 +175,5 @@ export default function DashboardPage() {
         />
       )}
     </div>
-  )
+  );
 }

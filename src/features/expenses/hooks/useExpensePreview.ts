@@ -1,28 +1,33 @@
-import { useMemo } from 'react'
-import type { Expense, PayerContribution, SplitType } from '@/types/expense'
-import { nowIso, toIsoDate } from '@/utils/dates'
-import { roundMoney } from '@/utils/currency'
+import { useMemo } from 'react';
+
+import {
+  DEFAULT_RATE_SOURCE,
+  EXPENSE_PREVIEW_ID,
+} from '@/features/expenses/constants';
+import type { Expense, PayerContribution, SplitType } from '@/types/expense';
+import { roundMoney } from '@/utils/currency';
+import { nowIso, toIsoDate } from '@/utils/dates';
 import {
   buildParticipants,
   computeNetBalances,
   resolveOwedPerUser,
   validateSplit,
-} from '@/utils/split'
-import { DEFAULT_RATE_SOURCE, EXPENSE_PREVIEW_ID } from '@/features/expenses/constants'
-import type { ExpenseRateState } from './useExpenseExchangeRate'
+} from '@/utils/split';
+
+import type { ExpenseRateState } from './useExpenseExchangeRate';
 
 interface UseExpensePreviewOptions {
-  expenseDate: string
-  groupCurrency: string
-  groupId: string
-  originalAmount: number
-  originalCurrency: string
-  paidBy: PayerContribution[]
-  participantIds: string[]
-  participantValues: Record<string, number>
-  rateState: ExpenseRateState
-  splitType: SplitType
-  userId?: string
+  expenseDate: string;
+  groupCurrency: string;
+  groupId: string;
+  originalAmount: number;
+  originalCurrency: string;
+  paidBy: PayerContribution[];
+  participantIds: string[];
+  participantValues: Record<string, number>;
+  rateState: ExpenseRateState;
+  splitType: SplitType;
+  userId?: string;
 }
 
 export function useExpensePreview({
@@ -40,23 +45,23 @@ export function useExpensePreview({
 }: UseExpensePreviewOptions) {
   const convertedAmount = rateState.rate
     ? roundMoney(originalAmount * rateState.rate)
-    : 0
+    : 0;
 
   const participants = useMemo(
     () => buildParticipants(splitType, participantIds, participantValues),
-    [participantIds, participantValues, splitType],
-  )
+    [participantIds, participantValues, splitType]
+  );
 
   const owedPreview = useMemo<Record<string, number>>(() => {
-    if (!rateState.rate || !participants.length) return {}
-    return resolveOwedPerUser(convertedAmount, participants, splitType)
-  }, [convertedAmount, participants, rateState.rate, splitType])
+    if (!rateState.rate || !participants.length) return {};
+    return resolveOwedPerUser(convertedAmount, participants, splitType);
+  }, [convertedAmount, participants, rateState.rate, splitType]);
 
   const previewNetBalances = useMemo<Record<string, number>>(() => {
-    if (!rateState.rate || !participants.length || !paidBy.length) return {}
+    if (!rateState.rate || !participants.length || !paidBy.length) return {};
 
-    const originalCur = originalCurrency.toUpperCase()
-    const groupCur = groupCurrency.toUpperCase()
+    const originalCur = originalCurrency.toUpperCase();
+    const groupCur = groupCurrency.toUpperCase();
     const syntheticExpense: Expense = {
       id: EXPENSE_PREVIEW_ID,
       groupId,
@@ -81,8 +86,8 @@ export function useExpensePreview({
       updatedBy: userId || '',
       createdAt: nowIso(),
       updatedAt: nowIso(),
-    }
-    return computeNetBalances(syntheticExpense)
+    };
+    return computeNetBalances(syntheticExpense);
   }, [
     convertedAmount,
     expenseDate,
@@ -97,12 +102,12 @@ export function useExpensePreview({
     rateState.source,
     splitType,
     userId,
-  ])
+  ]);
 
   const validationErrors = useMemo(
     () => validateSplit({ originalAmount, participants, paidBy, splitType }),
-    [originalAmount, paidBy, participants, splitType],
-  )
+    [originalAmount, paidBy, participants, splitType]
+  );
 
   return {
     convertedAmount,
@@ -110,5 +115,5 @@ export function useExpensePreview({
     participants,
     previewNetBalances,
     validationErrors,
-  }
+  };
 }

@@ -1,46 +1,48 @@
-import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
-import { Section, Field } from '@/components/ui/field'
-import { useState } from 'react'
-import { useNotify } from '@/hooks/useNotify'
-import type { Group } from '@/types/group'
-import { useGroupStore } from '@/stores/groupStore'
-import DeleteGroupDialog from './DeleteGroupDialog'
-import { useCurrentUser } from '@/hooks/useGroups'
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
+import { Field, Section } from '@/components/ui/field';
+import { useCurrentUser } from '@/hooks/useGroups';
+import { useNotify } from '@/hooks/useNotify';
+import { useGroupStore } from '@/stores/groupStore';
+import type { Group } from '@/types/group';
+
+import DeleteGroupDialog from './DeleteGroupDialog';
 
 export default function GroupSettingsTab({ group }: { group: Group }) {
-  const { t } = useTranslation()
-  const me = useCurrentUser()
-  const { enqueueSnackbar } = useNotify()
-  const renameGroup = useGroupStore((s) => s.renameGroup)
+  const { t } = useTranslation();
+  const me = useCurrentUser();
+  const { enqueueSnackbar } = useNotify();
+  const renameGroup = useGroupStore((s) => s.renameGroup);
   const [draft, setDraft] = useState({
     id: group.id,
     original: group.name,
     name: group.name,
-  })
+  });
   const name =
     draft.id === group.id && draft.original === group.name
       ? draft.name
-      : group.name
+      : group.name;
   const setName = (name: string) =>
-    setDraft({ id: group.id, original: group.name, name })
-  const [savingName, setSavingName] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+    setDraft({ id: group.id, original: group.name, name });
+  const [savingName, setSavingName] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const nameDirty = name.trim() !== group.name && name.trim().length >= 2
+  const nameDirty = name.trim() !== group.name && name.trim().length >= 2;
 
   const onSaveName = async () => {
-    setSavingName(true)
+    setSavingName(true);
     try {
-      await renameGroup(group.id, name.trim())
-      enqueueSnackbar('Group renamed', { variant: 'success' })
+      await renameGroup(group.id, name.trim());
+      enqueueSnackbar('Group renamed', { variant: 'success' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not rename group'
-      enqueueSnackbar(msg, { variant: 'error' })
+      const msg = err instanceof Error ? err.message : 'Could not rename group';
+      enqueueSnackbar(msg, { variant: 'error' });
     } finally {
-      setSavingName(false)
+      setSavingName(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -66,7 +68,7 @@ export default function GroupSettingsTab({ group }: { group: Group }) {
         <Section
           title={t('Delete this group')}
           description={t(
-            'Permanently remove the group and its expense history.',
+            'Permanently remove the group and its expense history.'
           )}
         >
           <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
@@ -82,5 +84,5 @@ export default function GroupSettingsTab({ group }: { group: Group }) {
         />
       )}
     </div>
-  )
+  );
 }

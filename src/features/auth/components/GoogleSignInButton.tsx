@@ -1,25 +1,26 @@
-import { useTranslation } from 'react-i18next'
-import { useState } from 'react'
-import { LoaderCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useAuthStore } from '@/stores/authStore'
+import { LoaderCircle } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/stores/authStore';
 
 export function GoogleSignInButton({ disabled }: { disabled?: boolean }) {
-  const { t } = useTranslation()
-  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle)
-  const [pending, setPending] = useState(false)
+  const { t } = useTranslation();
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
+  const [pending, setPending] = useState(false);
   const onClick = async () => {
-    setPending(true)
+    setPending(true);
     try {
-      await loginWithGoogle()
+      await loginWithGoogle();
       // The page's existing profile observer handles navigation for both methods.
     } catch (error) {
       // Actionable errors are displayed by the page; closing the popup is silent.
-        console.error(error)
+      console.error(error);
     } finally {
-      setPending(false)
+      setPending(false);
     }
-  }
+  };
   return (
     <div className="mb-6">
       <Button
@@ -61,5 +62,5 @@ export function GoogleSignInButton({ disabled }: { disabled?: boolean }) {
         <span className="h-px flex-1 bg-border" />
       </div>
     </div>
-  )
+  );
 }

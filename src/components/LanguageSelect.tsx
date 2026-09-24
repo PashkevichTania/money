@@ -1,11 +1,12 @@
-import { useId } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Label } from '@/components/ui/label'
-import { NativeSelect } from '@/components/ui/native-select'
+import { useId } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 
 export function LanguageSelect({ compact = false }: { compact?: boolean }) {
-  const { t, i18n } = useTranslation()
-  const id = useId()
+  const { t, i18n } = useTranslation();
+  const id = useId();
   return (
     <div className={compact ? '' : 'space-y-2'}>
       <Label htmlFor={id} className={compact ? 'sr-only' : undefined}>
@@ -29,5 +30,5 @@ export function LanguageSelect({ compact = false }: { compact?: boolean }) {
         </p>
       )}
     </div>
-  )
+  );
 }

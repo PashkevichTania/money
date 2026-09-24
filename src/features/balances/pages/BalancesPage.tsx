@@ -1,32 +1,34 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Wallet, Handshake } from 'lucide-react'
-import { useGroups } from '@/hooks/useGroups'
-import { useAuthStore } from '@/stores/authStore'
-import { useGroupStore } from '@/stores/groupStore'
-import { Button } from '@/components/ui/button'
-import { Message } from '@/components/ui/field'
-import { NativeSelect } from '@/components/ui/native-select'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useBalanceOverview } from '../hooks/useBalanceOverview'
-import BalanceList from '../components/BalanceList'
-import SettleUpDialog from '../components/SettleUpDialog'
+import { Handshake, Wallet } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
+import { Message } from '@/components/ui/field';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useGroups } from '@/hooks/useGroups';
+import { useAuthStore } from '@/stores/authStore';
+import { useGroupStore } from '@/stores/groupStore';
+
+import BalanceList from '../components/BalanceList';
+import SettleUpDialog from '../components/SettleUpDialog';
+import { useBalanceOverview } from '../hooks/useBalanceOverview';
 
 export default function BalancesPage() {
-  const { t } = useTranslation()
-  const { groups, loading } = useGroups()
-  const profile = useAuthStore((s) => s.profile)
-  const groupError = useGroupStore((s) => s.errors.groups)
-  const overview = useBalanceOverview(groups, profile?.id ?? '')
-  const [groupId, setGroupId] = useState('')
-  const [direction, setDirection] = useState('all')
-  const [settle, setSettle] = useState(false)
-  const ready = !loading && !groupError && overview.ready && !overview.error
+  const { t } = useTranslation();
+  const { groups, loading } = useGroups();
+  const profile = useAuthStore((s) => s.profile);
+  const groupError = useGroupStore((s) => s.errors.groups);
+  const overview = useBalanceOverview(groups, profile?.id ?? '');
+  const [groupId, setGroupId] = useState('');
+  const [direction, setDirection] = useState('all');
+  const [settle, setSettle] = useState(false);
+  const ready = !loading && !groupError && overview.ready && !overview.error;
   const filtered = overview.balances.filter(
     (b) =>
       (!groupId || b.group.id === groupId) &&
-      (direction === 'all' || (direction === 'owed' ? b.net > 0 : b.net < 0)),
-  )
+      (direction === 'all' || (direction === 'owed' ? b.net > 0 : b.net < 0))
+  );
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -93,5 +95,5 @@ export default function BalancesPage() {
         />
       )}
     </div>
-  )
+  );
 }

@@ -1,27 +1,28 @@
-import { Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { UserPlus, UserMinus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Field, Section, Message } from '@/components/ui/field'
-import type { Group } from '@/types/group'
-import type { UserProfile } from '@/types/user'
-import { useCurrentUser } from '@/hooks/useGroups'
-import { useMemberManagement } from '@/features/groups/hooks/useMemberManagement'
-import { getInitials } from '@/utils/user'
+import { UserMinus, UserPlus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
+import { Field, Message, Section } from '@/components/ui/field';
+import { Modal } from '@/components/ui/modal';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useMemberManagement } from '@/features/groups/hooks/useMemberManagement';
+import { useCurrentUser } from '@/hooks/useGroups';
+import type { Group } from '@/types/group';
+import type { UserProfile } from '@/types/user';
+import { getInitials } from '@/utils/user';
 
 export default function MembersTab({
   group,
   members,
   loadingMembers,
 }: {
-  group: Group
-  members: UserProfile[]
-  loadingMembers: boolean
+  group: Group;
+  members: UserProfile[];
+  loadingMembers: boolean;
 }) {
-  const { t } = useTranslation()
-  const me = useCurrentUser()
+  const { t } = useTranslation();
+  const me = useCurrentUser();
   const {
     addError,
     addMember,
@@ -34,7 +35,7 @@ export default function MembersTab({
     searchingUsers,
     setMemberToRemove,
     setQuery,
-  } = useMemberManagement(group)
+  } = useMemberManagement(group);
 
   return (
     <Section
@@ -45,11 +46,23 @@ export default function MembersTab({
         label={t('Find a friend')}
         placeholder={t('Name or email')}
         value={query}
-        onChange={e => setQuery(e.target.value)}
+        onChange={(e) => setQuery(e.target.value)}
         disabled={busy}
       />
-      <Link className="text-sm text-primary underline" to={'/friends?email=' + encodeURIComponent(query.includes('@') ? query.trim() : '')}>{t('Invite someone to become friends')}</Link>
-      {!searchingUsers && !options.length && <p className="text-sm text-muted-foreground">{t('No available friends')}</p>}
+      <Link
+        className="text-sm text-primary underline"
+        to={
+          '/friends?email=' +
+          encodeURIComponent(query.includes('@') ? query.trim() : '')
+        }
+      >
+        {t('Invite someone to become friends')}
+      </Link>
+      {!searchingUsers && !options.length && (
+        <p className="text-sm text-muted-foreground">
+          {t('No available friends')}
+        </p>
+      )}
       {addError && <Message error>{addError}</Message>}
       {searchingUsers && (
         <p role="status" className="text-xs text-muted-foreground">
@@ -57,10 +70,7 @@ export default function MembersTab({
         </p>
       )}
       {options.length > 0 && (
-        <ul
-          aria-label={t('Friends')}
-          className="divide-y rounded-md border"
-        >
+        <ul aria-label={t('Friends')} className="divide-y rounded-md border">
           {options.map(({ user }) => (
             <li key={user.id}>
               <button
@@ -88,7 +98,7 @@ export default function MembersTab({
           <Skeleton className="h-32" />
         ) : (
           group.memberIds.map((id) => {
-            const member = members.find((m) => m.id === id)
+            const member = members.find((m) => m.id === id);
             return (
               <div key={id} className="flex items-center gap-3 py-4">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
@@ -124,7 +134,7 @@ export default function MembersTab({
                   <UserMinus className="text-destructive" />
                 </Button>
               </div>
-            )
+            );
           })
         )}
       </div>
@@ -143,7 +153,7 @@ export default function MembersTab({
       >
         <p className="text-sm text-muted-foreground">
           {t(
-            'They will lose access to the group. Removal is blocked if the group has expense history.',
+            'They will lose access to the group. Removal is blocked if the group has expense history.'
           )}
         </p>
         <div className="flex justify-end gap-2">
@@ -164,5 +174,5 @@ export default function MembersTab({
         </div>
       </Modal>
     </Section>
-  )
+  );
 }

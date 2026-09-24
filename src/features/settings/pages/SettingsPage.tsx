@@ -1,37 +1,38 @@
-import { useTranslation } from 'react-i18next'
-import { LanguageSelect } from '@/components/LanguageSelect'
-import { useState } from 'react'
-import { useAuthStore } from '@/stores/authStore'
-import { useApp } from '@/hooks/useApp'
-import { updateProfile } from '@/api/users'
-import { Section, Field, CurrencySelect } from '@/components/ui/field'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { useNotify } from '@/hooks/useNotify'
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { updateProfile } from '@/api/users';
+import { LanguageSelect } from '@/components/LanguageSelect';
+import { CurrencySelect, Field, Section } from '@/components/ui/field';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { useApp } from '@/hooks/useApp';
+import { useNotify } from '@/hooks/useNotify';
+import { useAuthStore } from '@/stores/authStore';
 export default function SettingsPage() {
-  const { t } = useTranslation()
-  const profile = useAuthStore((s) => s.profile)
-  const { themeMode, toggleTheme } = useApp()
-  const { enqueueSnackbar } = useNotify()
-  const [busy, setBusy] = useState(false)
+  const { t } = useTranslation();
+  const profile = useAuthStore((s) => s.profile);
+  const { themeMode, toggleTheme } = useApp();
+  const { enqueueSnackbar } = useNotify();
+  const [busy, setBusy] = useState(false);
   const saveCurrency = async (currency: string) => {
-    if (!profile) return
-    setBusy(true)
+    if (!profile) return;
+    setBusy(true);
     try {
       const next = await updateProfile(profile.id, {
         defaultCurrency: currency,
-      })
-      useAuthStore.setState({ profile: next })
-      enqueueSnackbar('Default currency saved', { variant: 'success' })
+      });
+      useAuthStore.setState({ profile: next });
+      enqueueSnackbar('Default currency saved', { variant: 'success' });
     } catch (error) {
       enqueueSnackbar(
         error instanceof Error ? error.message : 'Could not save preference',
-        { variant: 'error' },
-      )
+        { variant: 'error' }
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
   return (
     <div className="w-full flex flex-col justify-center items-center">
       <div className="w-full max-w-3xl space-y-7">
@@ -48,19 +49,19 @@ export default function SettingsPage() {
         </header>
         <Section title={t('Profile')} description={t('Your account details.')}>
           <Field
-              label={t('Display name')}
-              value={profile?.displayName || ''}
-              readOnly
+            label={t('Display name')}
+            value={profile?.displayName || ''}
+            readOnly
           />
           <Field label={t('Email')} value={profile?.email || ''} readOnly />
         </Section>
         <Section title={t('Preferences')}>
           <LanguageSelect />
           <CurrencySelect
-              label={t('Default currency for new groups')}
-              value={profile?.defaultCurrency || 'USD'}
-              disabled={busy || !profile}
-              onValueChange={(value) => void saveCurrency(value)}
+            label={t('Default currency for new groups')}
+            value={profile?.defaultCurrency || 'USD'}
+            disabled={busy || !profile}
+            onValueChange={(value) => void saveCurrency(value)}
           />
           <p className="text-xs text-muted-foreground">
             {t('Existing groups keep the currency they were created with.')}
@@ -73,13 +74,13 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch
-                id="dark-mode"
-                checked={themeMode === 'dark'}
-                onCheckedChange={toggleTheme}
+              id="dark-mode"
+              checked={themeMode === 'dark'}
+              onCheckedChange={toggleTheme}
             />
           </div>
         </Section>
       </div>
     </div>
-  )
+  );
 }

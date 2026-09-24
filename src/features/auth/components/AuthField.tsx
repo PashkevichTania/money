@@ -1,9 +1,10 @@
-import { useTranslation } from 'react-i18next'
-import { useState, type ComponentProps } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { Eye, EyeOff } from 'lucide-react';
+import { type ComponentProps, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export function AuthField({
   label,
@@ -12,9 +13,9 @@ export function AuthField({
   type,
   ...props
 }: ComponentProps<'input'> & { label: string; error?: string; id: string }) {
-  const { t } = useTranslation()
-  const [visible, setVisible] = useState(false)
-  const password = type === 'password'
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
+  const password = type === 'password';
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
@@ -51,5 +52,5 @@ export function AuthField({
         </p>
       )}
     </div>
-  )
+  );
 }

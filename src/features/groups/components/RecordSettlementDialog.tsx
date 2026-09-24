@@ -1,16 +1,17 @@
-import { useTranslation } from 'react-i18next'
-import { useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
-import { Field, Message } from '@/components/ui/field'
-import { NativeSelect } from '@/components/ui/native-select'
-import { Label } from '@/components/ui/label'
-import type { Group } from '@/types/group'
-import type { UserProfile } from '@/types/user'
-import type { CreateSettlementInput } from '@/api/settlements'
-import { formatMoney } from '@/utils/currency'
+import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
-export type TransferSuggestion = { from: string; to: string; amount: number }
+import type { CreateSettlementInput } from '@/api/settlements';
+import { Button } from '@/components/ui/button';
+import { Field, Message } from '@/components/ui/field';
+import { Label } from '@/components/ui/label';
+import { Modal } from '@/components/ui/modal';
+import { NativeSelect } from '@/components/ui/native-select';
+import type { Group } from '@/types/group';
+import type { UserProfile } from '@/types/user';
+import { formatMoney } from '@/utils/currency';
+
+export type TransferSuggestion = { from: string; to: string; amount: number };
 
 export default function RecordSettlementDialog({
   group,
@@ -20,29 +21,29 @@ export default function RecordSettlementDialog({
   onClose,
   onSave,
 }: {
-  group: Group
-  members: UserProfile[]
-  currentUserId: string
-  suggestion?: TransferSuggestion
-  onClose: () => void
-  onSave: (id: string, input: CreateSettlementInput) => Promise<unknown>
+  group: Group;
+  members: UserProfile[];
+  currentUserId: string;
+  suggestion?: TransferSuggestion;
+  onClose: () => void;
+  onSave: (id: string, input: CreateSettlementInput) => Promise<unknown>;
 }) {
-  const { t } = useTranslation()
-  const [id] = useState(() => crypto.randomUUID())
-  const [from, setFrom] = useState(suggestion?.from ?? currentUserId)
+  const { t } = useTranslation();
+  const [id] = useState(() => crypto.randomUUID());
+  const [from, setFrom] = useState(suggestion?.from ?? currentUserId);
   const [to, setTo] = useState(
-    suggestion?.to ?? group.memberIds.find((id) => id !== currentUserId) ?? '',
-  )
-  const [amount, setAmount] = useState(suggestion?.amount.toFixed(2) ?? '')
-  const [note, setNote] = useState('')
-  const [confirmed, setConfirmed] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const saving = useRef(false)
-  const [error, setError] = useState('')
+    suggestion?.to ?? group.memberIds.find((id) => id !== currentUserId) ?? ''
+  );
+  const [amount, setAmount] = useState(suggestion?.amount.toFixed(2) ?? '');
+  const [note, setNote] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const saving = useRef(false);
+  const [error, setError] = useState('');
   const name = (id: string) =>
     members.find((member) => member.id === id)?.displayName ||
-    t('Member {{id}}', { id: id.slice(0, 6) })
-  const validPeople = from !== to && [from, to].includes(currentUserId)
+    t('Member {{id}}', { id: id.slice(0, 6) });
+  const validPeople = from !== to && [from, to].includes(currentUserId);
   return (
     <Modal
       open
@@ -54,11 +55,11 @@ export default function RecordSettlementDialog({
       <form
         className="space-y-5"
         onSubmit={async (event) => {
-          event.preventDefault()
-          if (saving.current || !confirmed || !validPeople) return
-          saving.current = true
-          setBusy(true)
-          setError('')
+          event.preventDefault();
+          if (saving.current || !confirmed || !validPeople) return;
+          saving.current = true;
+          setBusy(true);
+          setError('');
           try {
             await onSave(id, {
               groupId: group.id,
@@ -67,17 +68,17 @@ export default function RecordSettlementDialog({
               amount: Number(amount),
               currency: group.baseCurrency,
               note,
-            })
-            onClose()
+            });
+            onClose();
           } catch (cause) {
             setError(
               cause instanceof Error
                 ? cause.message
-                : 'Unable to record payment. Try again.',
-            )
+                : 'Unable to record payment. Try again.'
+            );
           } finally {
-            saving.current = false
-            setBusy(false)
+            saving.current = false;
+            setBusy(false);
           }
         }}
       >
@@ -90,8 +91,8 @@ export default function RecordSettlementDialog({
                 className="w-full"
                 value={from}
                 onChange={(event) => {
-                  setFrom(event.target.value)
-                  setConfirmed(false)
+                  setFrom(event.target.value);
+                  setConfirmed(false);
                 }}
               >
                 {group.memberIds.map((id) => (
@@ -109,8 +110,8 @@ export default function RecordSettlementDialog({
                 className="w-full"
                 value={to}
                 onChange={(event) => {
-                  setTo(event.target.value)
-                  setConfirmed(false)
+                  setTo(event.target.value);
+                  setConfirmed(false);
                 }}
               >
                 {group.memberIds.map((id) => (
@@ -125,7 +126,7 @@ export default function RecordSettlementDialog({
           {!validPeople && (
             <Message error>
               {t(
-                'Choose two different members. You must be the sender or recipient.',
+                'Choose two different members. You must be the sender or recipient.'
               )}
             </Message>
           )}
@@ -139,8 +140,8 @@ export default function RecordSettlementDialog({
             step="0.01"
             value={amount}
             onChange={(event) => {
-              setAmount(event.target.value)
-              setConfirmed(false)
+              setAmount(event.target.value);
+              setConfirmed(false);
             }}
           />
           <Field
@@ -156,7 +157,7 @@ export default function RecordSettlementDialog({
                 from: name(from),
                 to: name(to),
                 amount: formatMoney(Number(amount) || 0, group.baseCurrency),
-              },
+              }
             )}
           </Message>
           <label className="flex items-start gap-3 text-sm">
@@ -189,5 +190,5 @@ export default function RecordSettlementDialog({
         </div>
       </form>
     </Modal>
-  )
+  );
 }

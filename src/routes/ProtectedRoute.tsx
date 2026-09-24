@@ -1,14 +1,15 @@
-import { useTranslation } from 'react-i18next'
-import { LoaderCircle } from 'lucide-react'
-import { Navigate, useLocation } from 'react-router-dom'
-import type { ReactNode } from 'react'
-import { useAuthStore } from '@/stores/authStore'
+import { LoaderCircle } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Navigate, useLocation } from 'react-router-dom';
+
+import { useAuthStore } from '@/stores/authStore';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { t } = useTranslation()
-  const initialized = useAuthStore((s) => s.initialized)
-  const status = useAuthStore((s) => s.status)
-  const location = useLocation()
+  const { t } = useTranslation();
+  const initialized = useAuthStore((s) => s.initialized);
+  const status = useAuthStore((s) => s.status);
+  const location = useLocation();
 
   if (!initialized || status === 'loading') {
     return (
@@ -22,12 +23,12 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
         />
         {t('Loading SplitSmart...')}
       </div>
-    )
+    );
   }
 
   if (status !== 'authenticated') {
-    return <Navigate to="/login" replace state={{ from: location }} />
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }

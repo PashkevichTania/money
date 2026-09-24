@@ -1,14 +1,16 @@
-import QuickSettleButton from '@/features/balances/components/QuickSettleButton'
-import { useTranslation } from 'react-i18next'
-import type { TransferSuggestion } from './RecordSettlementDialog'
-import { formatDate } from '@/utils/dates'
-import { Button } from '@/components/ui/button'
-import { Section, Message } from '@/components/ui/field'
-import type { Group } from '@/types/group'
-import type { UserProfile } from '@/types/user'
-import type { Expense, Settlement } from '@/types/expense'
-import { calculateBalances, simplifyDebts } from '@/utils/balances'
-import { formatMoney } from '@/utils/currency'
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
+import { Message, Section } from '@/components/ui/field';
+import QuickSettleButton from '@/features/balances/components/QuickSettleButton';
+import type { Expense, Settlement } from '@/types/expense';
+import type { Group } from '@/types/group';
+import type { UserProfile } from '@/types/user';
+import { calculateBalances, simplifyDebts } from '@/utils/balances';
+import { formatMoney } from '@/utils/currency';
+import { formatDate } from '@/utils/dates';
+
+import type { TransferSuggestion } from './RecordSettlementDialog';
 
 export function BalanceSummary({
   group,
@@ -19,24 +21,24 @@ export function BalanceSummary({
   onRecord,
   onDelete,
 }: {
-  group: Group
-  members: UserProfile[]
-  expenses: Expense[]
-  settlements: Settlement[]
-  currentUserId?: string
-  onRecord?: (suggestion?: TransferSuggestion) => void
-  onDelete?: (settlement: Settlement) => void
+  group: Group;
+  members: UserProfile[];
+  expenses: Expense[];
+  settlements: Settlement[];
+  currentUserId?: string;
+  onRecord?: (suggestion?: TransferSuggestion) => void;
+  onDelete?: (settlement: Settlement) => void;
 }) {
-  const { t } = useTranslation()
-  let rows, suggestions
+  const { t } = useTranslation();
+  let rows, suggestions;
   try {
     rows = calculateBalances(
       expenses,
       settlements,
       group.baseCurrency,
-      group.memberIds,
-    )
-    suggestions = simplifyDebts(new Map(rows.map((r) => [r.userId, r.net])))
+      group.memberIds
+    );
+    suggestions = simplifyDebts(new Map(rows.map((r) => [r.userId, r.net])));
   } catch (error) {
     return (
       <Message error>
@@ -44,13 +46,13 @@ export function BalanceSummary({
           ? error.message
           : t('Unable to calculate balances.')}
       </Message>
-    )
+    );
   }
-  const money = (value: number) => formatMoney(value, group.baseCurrency)
+  const money = (value: number) => formatMoney(value, group.baseCurrency);
   const name = (id: string) =>
     members.find((m) => m.id === id)?.displayName ||
-    t('Member {{id}}', { id: id.slice(0, 6) })
-  const mine = rows.find((r) => r.userId === currentUserId)?.net ?? 0
+    t('Member {{id}}', { id: id.slice(0, 6) });
+  const mine = rows.find((r) => r.userId === currentUserId)?.net ?? 0;
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -62,7 +64,7 @@ export function BalanceSummary({
         >
           <p className="text-3xl font-semibold tabular-nums">
             {money(
-              rows.reduce((sum, r) => sum + Math.round(r.paid * 100), 0) / 100,
+              rows.reduce((sum, r) => sum + Math.round(r.paid * 100), 0) / 100
             )}
           </p>
         </Section>
@@ -86,7 +88,7 @@ export function BalanceSummary({
       {!expenses.length && !settlements.length && (
         <Message>
           {t(
-            'No expenses yet. Add the first expense to start tracking balances.',
+            'No expenses yet. Add the first expense to start tracking balances.'
           )}
         </Message>
       )}
@@ -94,7 +96,7 @@ export function BalanceSummary({
         title={t('Member balances')}
         description={t(
           'All amounts in {{currency}}. Positive balances are money to receive.',
-          { currency: group.baseCurrency },
+          { currency: group.baseCurrency }
         )}
       >
         <div className="overflow-x-auto">
@@ -149,7 +151,7 @@ export function BalanceSummary({
       <Section
         title={t('Suggested transfers')}
         description={t(
-          'These suggestions simplify group debts. Record a payment after transferring the money.',
+          'These suggestions simplify group debts. Record a payment after transferring the money.'
         )}
       >
         {onRecord && group.memberIds.length > 1 && (
@@ -195,7 +197,7 @@ export function BalanceSummary({
         <Section
           title={t('Recorded payments')}
           description={t(
-            'Deleting an incorrect record reverses its effect on balances.',
+            'Deleting an incorrect record reverses its effect on balances.'
           )}
         >
           <ul className="divide-y">
@@ -246,5 +248,5 @@ export function BalanceSummary({
         </Section>
       )}
     </div>
-  )
+  );
 }

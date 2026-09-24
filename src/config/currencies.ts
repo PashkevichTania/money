@@ -1,9 +1,10 @@
-export const DEFAULT_BASE_CURRENCY = import.meta.env.VITE_APP_BASE_CURRENCY || 'USD'
+export const DEFAULT_BASE_CURRENCY =
+  import.meta.env.VITE_APP_BASE_CURRENCY || 'USD';
 
 export interface CurrencyOption {
-  code: string
-  label: string
-  symbol: string
+  code: string;
+  label: string;
+  symbol: string;
 }
 
 export const CURRENCIES: CurrencyOption[] = [
@@ -69,8 +70,8 @@ export const CURRENCIES: CurrencyOption[] = [
   { code: 'KES', label: 'Kenyan Shilling', symbol: 'KSh' },
   { code: 'GHS', label: 'Ghanaian Cedi', symbol: '₵' },
   { code: 'MAD', label: 'Moroccan Dirham', symbol: 'DH' },
-]
+];
 
 export function getCurrencySymbol(code: string): string {
-  return CURRENCIES.find((c) => c.code === code)?.symbol || code
+  return CURRENCIES.find((c) => c.code === code)?.symbol || code;
 }

@@ -1,6 +1,6 @@
-import { initializeApp, type FirebaseApp } from 'firebase/app'
-import { getAuth, type Auth } from 'firebase/auth'
-import { getFirestore, type Firestore } from 'firebase/firestore'
+import { type FirebaseApp, initializeApp } from 'firebase/app';
+import { type Auth, getAuth } from 'firebase/auth';
+import { type Firestore, getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -9,22 +9,20 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-}
+};
 
 export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId,
-)
+  firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId
+);
 
 export const firebaseApp: FirebaseApp = isFirebaseConfigured
   ? initializeApp(firebaseConfig)
-  : (null as unknown as FirebaseApp)
+  : (null as unknown as FirebaseApp);
 
 export const auth: Auth = isFirebaseConfigured
   ? getAuth(firebaseApp)
-  : (null as unknown as Auth)
+  : (null as unknown as Auth);
 
 export const db: Firestore = isFirebaseConfigured
   ? getFirestore(firebaseApp)
-  : (null as unknown as Firestore)
+  : (null as unknown as Firestore);

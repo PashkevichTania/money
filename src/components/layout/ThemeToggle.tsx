@@ -1,13 +1,14 @@
-import { useTranslation } from 'react-i18next'
-import { Moon, Sun } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useApp } from '@/hooks/useApp'
+import { Moon, Sun } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
+import { useApp } from '@/hooks/useApp';
 
 export function ThemeToggle() {
-  const { t } = useTranslation()
-  const { themeMode, toggleTheme } = useApp()
+  const { t } = useTranslation();
+  const { themeMode, toggleTheme } = useApp();
   const label =
-    themeMode === 'light' ? 'Switch to dark theme' : 'Switch to light theme'
+    themeMode === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
   return (
     <Button
       variant="ghost"
@@ -22,5 +23,5 @@ export function ThemeToggle() {
         <Sun aria-hidden="true" />
       )}
     </Button>
-  )
+  );
 }

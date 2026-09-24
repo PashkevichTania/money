@@ -1,1 +1,1 @@
-export const USER_SEARCH_DEBOUNCE_MS = 250
+export const USER_SEARCH_DEBOUNCE_MS = 250;

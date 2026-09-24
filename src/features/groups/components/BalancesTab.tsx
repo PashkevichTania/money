@@ -1,26 +1,28 @@
-import { useTranslation } from 'react-i18next'
-import { RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Message, Section } from '@/components/ui/field'
-import { Modal } from '@/components/ui/modal'
-import { Skeleton } from '@/components/ui/skeleton'
-import type { Group } from '@/types/group'
-import type { UserProfile } from '@/types/user'
-import { useCurrentUser } from '@/hooks/useGroups'
-import { useGroupBalances } from '@/features/groups/hooks/useGroupBalances'
-import { formatMoney } from '@/utils/currency'
-import { BalanceSummary } from './BalanceSummary'
-import RecordSettlementDialog from './RecordSettlementDialog'
+import { RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
+import { Message, Section } from '@/components/ui/field';
+import { Modal } from '@/components/ui/modal';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useGroupBalances } from '@/features/groups/hooks/useGroupBalances';
+import { useCurrentUser } from '@/hooks/useGroups';
+import type { Group } from '@/types/group';
+import type { UserProfile } from '@/types/user';
+import { formatMoney } from '@/utils/currency';
+
+import { BalanceSummary } from './BalanceSummary';
+import RecordSettlementDialog from './RecordSettlementDialog';
 
 export default function BalancesTab({
   group,
   members,
 }: {
-  group: Group
-  members: UserProfile[]
+  group: Group;
+  members: UserProfile[];
 }) {
-  const { t } = useTranslation()
-  const me = useCurrentUser()
+  const { t } = useTranslation();
+  const me = useCurrentUser();
   const {
     closeRecord,
     confirmDelete,
@@ -33,7 +35,7 @@ export default function BalancesTab({
     saveSettlement,
     selectSettlementToDelete,
     settlementToDelete,
-  } = useGroupBalances(group.id)
+  } = useGroupBalances(group.id);
 
   if (data.groupId === group.id && data.error) {
     return (
@@ -44,7 +46,7 @@ export default function BalancesTab({
           {t('Retry')}
         </Button>
       </Section>
-    )
+    );
   }
 
   if (data.groupId !== group.id || !data.expenses || !data.settlements) {
@@ -52,7 +54,7 @@ export default function BalancesTab({
       <div role="status" aria-label={t('Loading balances')}>
         <Skeleton className="h-64" />
       </div>
-    )
+    );
   }
 
   return (
@@ -86,9 +88,9 @@ export default function BalancesTab({
             {
               amount: formatMoney(
                 settlementToDelete.amount,
-                group.baseCurrency,
+                group.baseCurrency
               ),
-            },
+            }
           )}
           busy={deleting}
         >
@@ -112,5 +114,5 @@ export default function BalancesTab({
         </Modal>
       )}
     </>
-  )
+  );
 }

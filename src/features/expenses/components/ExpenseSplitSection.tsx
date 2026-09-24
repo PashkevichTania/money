@@ -1,32 +1,33 @@
-import { useTranslation } from 'react-i18next'
-import type { FieldErrors } from 'react-hook-form'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Message, Section } from '@/components/ui/field'
-import type { SplitType } from '@/types/expense'
-import type { UserProfile } from '@/types/user'
-import { SPLIT_TYPES } from '@/features/expenses/constants'
-import type { ExpenseFormValues } from '@/features/expenses/expenseForm'
-import type { SplitValidationError } from '@/utils/split'
-import { formatMoney } from '@/utils/currency'
-import { translateError } from '@/i18n/errors'
+import type { FieldErrors } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
+import { Message, Section } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { SPLIT_TYPES } from '@/features/expenses/constants';
+import type { ExpenseFormValues } from '@/features/expenses/expenseForm';
+import { translateError } from '@/i18n/errors';
+import type { SplitType } from '@/types/expense';
+import type { UserProfile } from '@/types/user';
+import { formatMoney } from '@/utils/currency';
+import type { SplitValidationError } from '@/utils/split';
 
 interface ExpenseSplitSectionProps {
-  allSelected: boolean
-  changeSplit: (type: SplitType) => void
-  errors: FieldErrors<ExpenseFormValues>
-  fillExactRemainder: () => void
-  groupCurrency: string
-  members: UserProfile[]
-  originalAmount: number
-  owedPreview: Record<string, number>
-  participantIds: string[]
-  participantValues: Record<string, number>
-  setParticipantValue: (userId: string, raw: string | number) => void
-  splitType: SplitType
-  toggleAll: () => void
-  toggleParticipant: (userId: string) => void
-  validationErrors: SplitValidationError[]
+  allSelected: boolean;
+  changeSplit: (type: SplitType) => void;
+  errors: FieldErrors<ExpenseFormValues>;
+  fillExactRemainder: () => void;
+  groupCurrency: string;
+  members: UserProfile[];
+  originalAmount: number;
+  owedPreview: Record<string, number>;
+  participantIds: string[];
+  participantValues: Record<string, number>;
+  setParticipantValue: (userId: string, raw: string | number) => void;
+  splitType: SplitType;
+  toggleAll: () => void;
+  toggleParticipant: (userId: string) => void;
+  validationErrors: SplitValidationError[];
 }
 
 export function ExpenseSplitSection({
@@ -46,7 +47,7 @@ export function ExpenseSplitSection({
   toggleParticipant,
   validationErrors,
 }: ExpenseSplitSectionProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   return (
     <Section title={t('3. How is it split?')}>
       <div
@@ -83,7 +84,7 @@ export function ExpenseSplitSection({
       </div>
       <div className="divide-y">
         {members.map(({ id, displayName }) => {
-          const selected = participantIds.includes(id)
+          const selected = participantIds.includes(id);
           return (
             <div className="flex items-center gap-3 py-3" key={id}>
               <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-sm">
@@ -113,8 +114,7 @@ export function ExpenseSplitSection({
                           : 0.01
                     }
                     value={
-                      participantValues[id] ??
-                      (splitType === 'shares' ? 1 : 0)
+                      participantValues[id] ?? (splitType === 'shares' ? 1 : 0)
                     }
                     onChange={(event) =>
                       setParticipantValue(id, event.target.value)
@@ -128,7 +128,7 @@ export function ExpenseSplitSection({
                 </span>
               ) : null}
             </div>
-          )
+          );
         })}
       </div>
       {!!validationErrors.length && originalAmount > 0 && (
@@ -140,5 +140,5 @@ export function ExpenseSplitSection({
       )}
       {errors.splitType && <Message error>{errors.splitType.message}</Message>}
     </Section>
-  )
+  );
 }

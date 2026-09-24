@@ -1,17 +1,19 @@
-import { useTranslation } from 'react-i18next'
-import { GoogleSignInButton } from '../components/GoogleSignInButton'
-import { ArrowRight, LoaderCircle, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AuthLayout } from '../components/AuthLayout'
-import { AuthField } from '../components/AuthField'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect } from 'react'
-import { Link as RouterLink, useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@/stores/authStore'
-import { useNotify } from '@/hooks/useNotify'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowRight, LoaderCircle, X } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { useNotify } from '@/hooks/useNotify';
+import { useAuthStore } from '@/stores/authStore';
+
+import { AuthField } from '../components/AuthField';
+import { AuthLayout } from '../components/AuthLayout';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 const schema = z
   .object({
@@ -26,19 +28,19 @@ const schema = z
   .refine((v) => v.password === v.confirmPassword, {
     path: ['confirmPassword'],
     message: 'Passwords do not match',
-  })
+  });
 
-type FormValues = z.infer<typeof schema>
+type FormValues = z.infer<typeof schema>;
 
 export default function SignupPage() {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  const signup = useAuthStore((s) => s.signup)
-  const error = useAuthStore((s) => s.error)
-  const clearError = useAuthStore((s) => s.clearError)
-  const status = useAuthStore((s) => s.status)
-  const profile = useAuthStore((s) => s.profile)
-  const { enqueueSnackbar } = useNotify()
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const signup = useAuthStore((s) => s.signup);
+  const error = useAuthStore((s) => s.error);
+  const clearError = useAuthStore((s) => s.clearError);
+  const status = useAuthStore((s) => s.status);
+  const profile = useAuthStore((s) => s.profile);
+  const { enqueueSnackbar } = useNotify();
 
   const {
     register,
@@ -52,25 +54,25 @@ export default function SignupPage() {
       password: '',
       confirmPassword: '',
     },
-  })
+  });
 
   useEffect(() => {
     if (profile) {
-      navigate('/groups', { replace: true })
+      navigate('/groups', { replace: true });
     }
-  }, [profile, navigate])
+  }, [profile, navigate]);
 
   const onSubmit = async (values: FormValues) => {
-    clearError()
+    clearError();
     try {
-      await signup(values.email, values.password, values.displayName)
-      enqueueSnackbar('Account created', { variant: 'success' })
+      await signup(values.email, values.password, values.displayName);
+      enqueueSnackbar('Account created', { variant: 'success' });
     } catch {
       // error already set in store
     }
-  }
+  };
 
-  const busy = isSubmitting || status === 'loading'
+  const busy = isSubmitting || status === 'loading';
   return (
     <AuthLayout
       title={t('Make room for sharing.')}
@@ -166,5 +168,5 @@ export default function SignupPage() {
         </fieldset>
       </form>
     </AuthLayout>
-  )
+  );
 }

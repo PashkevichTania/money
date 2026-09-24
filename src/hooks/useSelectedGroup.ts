@@ -1,59 +1,65 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { useGroupStore } from '@/stores/groupStore'
+import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
+
+import { useGroupStore } from '@/stores/groupStore';
 
 export function useSelectedGroup() {
-  const { id } = useParams<{ id: string }>()
-  const groups = useGroupStore((s) => s.groups)
-  const groupsLoading = useGroupStore((s) => s.loading)
-  const setSelectedGroupId = useGroupStore((s) => s.setSelectedGroupId)
-  const selectedGroupId = useGroupStore((s) => s.selectedGroupId)
-  const refreshGroup = useGroupStore((s) => s.refreshGroup)
-  const loadMembersFor = useGroupStore((s) => s.loadMembersFor)
-  const loadingMembers = useGroupStore((s) => s.loadingMembers)
-  const membersMap = useGroupStore((s) => s.membersMap)
-  const errors = useGroupStore((s) => s.errors)
-  const [refreshedId, setRefreshedId] = useState<string | null>(null)
+  const { id } = useParams<{ id: string }>();
+  const groups = useGroupStore((s) => s.groups);
+  const groupsLoading = useGroupStore((s) => s.loading);
+  const setSelectedGroupId = useGroupStore((s) => s.setSelectedGroupId);
+  const selectedGroupId = useGroupStore((s) => s.selectedGroupId);
+  const refreshGroup = useGroupStore((s) => s.refreshGroup);
+  const loadMembersFor = useGroupStore((s) => s.loadMembersFor);
+  const loadingMembers = useGroupStore((s) => s.loadingMembers);
+  const membersMap = useGroupStore((s) => s.membersMap);
+  const errors = useGroupStore((s) => s.errors);
+  const [refreshedId, setRefreshedId] = useState<string | null>(null);
 
-  const groupId = id ?? selectedGroupId ?? null
+  const groupId = id ?? selectedGroupId ?? null;
 
   const group = useMemo(
-    () => (groupId ? groups.find((g) => g.id === groupId) ?? null : null),
-    [groupId, groups],
-  )
+    () => (groupId ? (groups.find((g) => g.id === groupId) ?? null) : null),
+    [groupId, groups]
+  );
 
   useEffect(() => {
     if (groupId && groupId !== selectedGroupId) {
-      setSelectedGroupId(groupId)
+      setSelectedGroupId(groupId);
     }
-  }, [groupId, selectedGroupId, setSelectedGroupId])
+  }, [groupId, selectedGroupId, setSelectedGroupId]);
 
   useEffect(() => {
-    if (!groupId) return
-    let cancelled = false
-    void refreshGroup(groupId).catch(() => undefined).finally(() => {
-      if (!cancelled) setRefreshedId(groupId)
-    })
-    return () => { cancelled = true }
-  }, [groupId, refreshGroup])
+    if (!groupId) return;
+    let cancelled = false;
+    void refreshGroup(groupId)
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setRefreshedId(groupId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [groupId, refreshGroup]);
 
   useEffect(() => {
-    if (!group) return
-    const missing = group.memberIds.filter((memberId) => !membersMap[memberId])
+    if (!group) return;
+    const missing = group.memberIds.filter((memberId) => !membersMap[memberId]);
     if (missing.length > 0) {
-      void loadMembersFor(missing)
+      void loadMembersFor(missing);
     }
-  }, [group, membersMap, loadMembersFor])
+  }, [group, membersMap, loadMembersFor]);
 
   const members = useMemo(() => {
-    if (!group) return []
+    if (!group) return [];
     return group.memberIds
       .map((uid) => membersMap[uid])
-      .filter((u): u is NonNullable<typeof u> => Boolean(u))
-  }, [group, membersMap])
+      .filter((u): u is NonNullable<typeof u> => Boolean(u));
+  }, [group, membersMap]);
 
-  const error = groupId ? errors[`group:${groupId}`] : undefined
-  const loading = Boolean(groupId) && (refreshedId !== groupId || groupsLoading) && !group
+  const error = groupId ? errors[`group:${groupId}`] : undefined;
+  const loading =
+    Boolean(groupId) && (refreshedId !== groupId || groupsLoading) && !group;
 
   return {
     groupId,
@@ -65,5 +71,5 @@ export function useSelectedGroup() {
     notFound: Boolean(groupId) && !loading && !group,
     error,
     setSelectedGroupId,
-  }
+  };
 }

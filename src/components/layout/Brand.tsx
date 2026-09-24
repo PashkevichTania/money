@@ -1,15 +1,16 @@
-import { Link } from 'react-router-dom'
-import { ArrowLeftRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { ArrowLeftRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+import { cn } from '@/lib/utils';
 
 export function Brand({
   className,
   to = '/dashboard',
   onClick,
 }: {
-  className?: string
-  to?: string
-  onClick?: () => void
+  className?: string;
+  to?: string;
+  onClick?: () => void;
 }) {
   return (
     <Link
@@ -17,7 +18,7 @@ export function Brand({
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-3 rounded-md font-semibold tracking-tight',
-        className,
+        className
       )}
       aria-label="SplitSmart"
     >
@@ -28,5 +29,5 @@ export function Brand({
         SplitSmart<span className="text-positive">.</span>
       </span>
     </Link>
-  )
+  );
 }

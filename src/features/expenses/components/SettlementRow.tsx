@@ -1,28 +1,29 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Handshake } from 'lucide-react'
-import { deleteSettlement } from '@/api/settlements'
-import type { Settlement } from '@/types/expense'
-import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
-import { Message } from '@/components/ui/field'
-import { formatMoney } from '@/utils/currency'
-import { formatDate } from '@/utils/dates'
+import { Handshake } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { deleteSettlement } from '@/api/settlements';
+import { Button } from '@/components/ui/button';
+import { Message } from '@/components/ui/field';
+import { Modal } from '@/components/ui/modal';
+import type { Settlement } from '@/types/expense';
+import { formatMoney } from '@/utils/currency';
+import { formatDate } from '@/utils/dates';
 
 export default function SettlementRow({
   settlement,
   userId,
   name,
 }: {
-  settlement: Settlement
-  userId?: string
-  name: (id: string) => string
+  settlement: Settlement;
+  userId?: string;
+  name: (id: string) => string;
 }) {
-  const { t } = useTranslation()
-  const [remove, setRemove] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const person = (id: string) => (id === userId ? t('You') : name(id))
+  const { t } = useTranslation();
+  const [remove, setRemove] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const person = (id: string) => (id === userId ? t('You') : name(id));
   return (
     <article className="flex gap-3 bg-positive/5 p-4 sm:gap-4 sm:p-5">
       <span className="grid size-9 shrink-0 place-items-center rounded-md bg-positive/10 text-positive">
@@ -59,8 +60,8 @@ export default function SettlementRow({
             variant="ghost"
             className="mt-2"
             onClick={() => {
-              setError('')
-              setRemove(true)
+              setError('');
+              setRemove(true);
             }}
           >
             {t('Delete record')}
@@ -74,7 +75,7 @@ export default function SettlementRow({
         title={t('Delete payment record?')}
         description={t(
           'Remove this {{amount}} payment record and restore the corresponding debt? This does not reverse the actual transfer.',
-          { amount: formatMoney(settlement.amount, settlement.currency) },
+          { amount: formatMoney(settlement.amount, settlement.currency) }
         )}
       >
         {error && <Message error>{error}</Message>}
@@ -90,19 +91,19 @@ export default function SettlementRow({
             variant="destructive"
             disabled={busy}
             onClick={async () => {
-              setBusy(true)
-              setError('')
+              setBusy(true);
+              setError('');
               try {
-                await deleteSettlement(settlement.groupId, settlement.id)
-                setRemove(false)
+                await deleteSettlement(settlement.groupId, settlement.id);
+                setRemove(false);
               } catch (cause) {
                 setError(
                   cause instanceof Error
                     ? cause.message
-                    : 'Unable to delete payment.',
-                )
+                    : 'Unable to delete payment.'
+                );
               } finally {
-                setBusy(false)
+                setBusy(false);
               }
             }}
           >
@@ -111,5 +112,5 @@ export default function SettlementRow({
         </div>
       </Modal>
     </article>
-  )
+  );
 }

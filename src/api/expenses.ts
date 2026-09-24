@@ -2,35 +2,36 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  onSnapshot,
-  query,
-  runTransaction,
-  limit,
   type DocumentReference,
   type FirestoreDataConverter,
+  getDoc,
+  getDocs,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
   type QueryDocumentSnapshot,
   type QuerySnapshot,
-} from 'firebase/firestore'
-import { auth, db, isFirebaseConfigured } from '@/config/firebase'
+  runTransaction,
+} from 'firebase/firestore';
+
+import { auth, db, isFirebaseConfigured } from '@/config/firebase';
 import type {
   Expense,
   ParticipantShare,
   PayerContribution,
   RateSnapshot,
-} from '@/types/expense'
-import { EXPENSE_TYPES } from '@/types/expense'
-import { validateSplit } from '@/utils/split'
-import { roundMoney } from '@/utils/currency'
-import { nowIso } from '@/utils/dates'
+} from '@/types/expense';
+import { EXPENSE_TYPES } from '@/types/expense';
+import { roundMoney } from '@/utils/currency';
+import { nowIso } from '@/utils/dates';
+import { validateSplit } from '@/utils/split';
 
 function assertFirebase() {
   if (!isFirebaseConfigured || !db) {
     throw new Error(
-      'Firebase is not configured. Add your VITE_FIREBASE_* variables in .env.local and reload.',
-    )
+      'Firebase is not configured. Add your VITE_FIREBASE_* variables in .env.local and reload.'
+    );
   }
 }
 
@@ -56,7 +57,7 @@ const expenseConverter: FirestoreDataConverter<Expense> = {
     isSettlement: expense.isSettlement ?? false,
   }),
   fromFirestore: (snap: QueryDocumentSnapshot): Expense => {
-    const data = snap.data()
+    const data = snap.data();
     return {
       id: snap.id,
       groupId: data.groupId,
@@ -77,78 +78,78 @@ const expenseConverter: FirestoreDataConverter<Expense> = {
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       isSettlement: data.isSettlement ?? undefined,
-    }
+    };
   },
-}
+};
 
 function expenseRef(
   groupId: string,
-  expenseId: string,
+  expenseId: string
 ): DocumentReference<Expense> {
-  assertFirebase()
+  assertFirebase();
   return doc(db, 'groups', groupId, 'expenses', expenseId).withConverter(
-    expenseConverter,
-  )
+    expenseConverter
+  );
 }
 
 function expensesColl(groupId: string) {
-  assertFirebase()
+  assertFirebase();
   return collection(db, 'groups', groupId, 'expenses').withConverter(
-    expenseConverter,
-  )
+    expenseConverter
+  );
 }
 
 export function subscribeExpenses(
   groupId: string,
   next: (expenses: Expense[]) => void,
-  error: (error: Error) => void,
+  error: (error: Error) => void
 ) {
   return onSnapshot(
     expensesColl(groupId),
     (snapshot) => next(snapshot.docs.map((doc) => doc.data())),
-    error,
-  )
+    error
+  );
 }
 
 export interface CreateExpenseInput {
-  groupId: string
-  title: string
-  description?: string
-  type?: Expense['type']
-  originalAmount: number
-  originalCurrency: string
-  convertedAmount: number
-  groupCurrency: string
-  rateSnapshot?: RateSnapshot
-  paidBy: PayerContribution[]
-  participants: ParticipantShare[]
-  splitType: Expense['splitType']
-  expenseDate: string
-  createdBy: string
+  groupId: string;
+  title: string;
+  description?: string;
+  type?: Expense['type'];
+  originalAmount: number;
+  originalCurrency: string;
+  convertedAmount: number;
+  groupCurrency: string;
+  rateSnapshot?: RateSnapshot;
+  paidBy: PayerContribution[];
+  participants: ParticipantShare[];
+  splitType: Expense['splitType'];
+  expenseDate: string;
+  createdBy: string;
 }
 
 export type UpdateExpenseInput = Partial<
   Omit<CreateExpenseInput, 'groupId' | 'createdBy'>
-> & { updatedBy: string }
+> & { updatedBy: string };
 
 function validateExpense(expense: Expense) {
   if (expense.type !== undefined && !EXPENSE_TYPES.includes(expense.type)) {
-    throw new Error('Unsupported expense type.')
+    throw new Error('Unsupported expense type.');
   }
   if (
     !expense.title.trim() ||
     !['equal', 'exact', 'percentage', 'shares'].includes(expense.splitType)
   ) {
     throw new Error(
-      'An expense title and a supported split method are required.',
-    )
+      'An expense title and a supported split method are required.'
+    );
   }
-  const errors = validateSplit(expense)
-  if (errors.length) throw new Error(errors[0].message)
+  const errors = validateSplit(expense);
+  if (errors.length) throw new Error(errors[0].message);
   const rate =
     expense.originalCurrency === expense.groupCurrency
       ? 1
-      : expense.rateSnapshot?.rate
+      : expense.rateSnapshot?.rate;
   if (
     !rate ||
     !Number.isFinite(rate) ||
@@ -158,52 +159,52 @@ function validateExpense(expense: Expense) {
     roundMoney(expense.originalAmount * rate) !== expense.convertedAmount
   ) {
     throw new Error(
-      'A valid exchange-rate snapshot and matching converted amount are required.',
-    )
+      'A valid exchange-rate snapshot and matching converted amount are required.'
+    );
   }
 }
 
 async function saveExpense(expense: Expense, expected?: Expense) {
-  validateExpense(expense)
-  const parent = doc(db, 'groups', expense.groupId)
+  validateExpense(expense);
+  const parent = doc(db, 'groups', expense.groupId);
   await runTransaction(db, async (transaction) => {
-    const group = await transaction.get(parent)
+    const group = await transaction.get(parent);
     if (expected) {
       const current = await transaction.get(
-        expenseRef(expense.groupId, expense.id),
-      )
+        expenseRef(expense.groupId, expense.id)
+      );
       if (
         !current.exists() ||
         current.data().updatedAt !== expected.updatedAt
       ) {
         throw new Error(
-          'This expense changed or was deleted. Reload before editing.',
-        )
+          'This expense changed or was deleted. Reload before editing.'
+        );
       }
     }
     if (!group.exists() || group.get('deleting'))
-      throw new Error('Group is unavailable or being deleted.')
+      throw new Error('Group is unavailable or being deleted.');
     if (group.get('baseCurrency') !== expense.groupCurrency)
-      throw new Error('Expense currency must match the group currency.')
-    const members = group.get('memberIds') as string[]
+      throw new Error('Expense currency must match the group currency.');
+    const members = group.get('memberIds') as string[];
     if (
       [...expense.paidBy, ...expense.participants].some(
-        (p) => !members.includes(p.userId),
+        (p) => !members.includes(p.userId)
       )
     ) {
-      throw new Error('Every payer and participant must belong to the group.')
+      throw new Error('Every payer and participant must belong to the group.');
     }
-    transaction.update(parent, { hasExpenseHistory: true })
-    transaction.set(expenseRef(expense.groupId, expense.id), expense)
-  })
+    transaction.update(parent, { hasExpenseHistory: true });
+    transaction.set(expenseRef(expense.groupId, expense.id), expense);
+  });
 }
 
 export async function createExpense(
-  input: CreateExpenseInput,
+  input: CreateExpenseInput
 ): Promise<Expense> {
-  assertFirebase()
-  const id = doc(expensesColl(input.groupId)).id
-  const now = nowIso()
+  assertFirebase();
+  const id = doc(expensesColl(input.groupId)).id;
+  const now = nowIso();
   const expense: Expense = {
     id,
     groupId: input.groupId,
@@ -227,59 +228,59 @@ export async function createExpense(
       input.paidBy.length === 1 && input.participants.length === 1
         ? undefined
         : false,
-  }
-  await saveExpense(expense)
-  return expense
+  };
+  await saveExpense(expense);
+  return expense;
 }
 
 export async function getExpense(
   groupId: string,
-  expenseId: string,
+  expenseId: string
 ): Promise<Expense | null> {
-  assertFirebase()
-  const snap = await getDoc(expenseRef(groupId, expenseId))
-  return snap.exists() ? snap.data()! : null
+  assertFirebase();
+  const snap = await getDoc(expenseRef(groupId, expenseId));
+  return snap.exists() ? snap.data()! : null;
 }
 
 export async function listExpenses(
   groupId: string,
-  opts: { limitCount?: number; includeSettlements?: boolean } = {},
+  opts: { limitCount?: number; includeSettlements?: boolean } = {}
 ): Promise<Expense[]> {
-  assertFirebase()
-  const { limitCount, includeSettlements = true } = opts
+  assertFirebase();
+  const { limitCount, includeSettlements = true } = opts;
   const constraints: ReturnType<typeof orderBy>[] = [
     orderBy('expenseDate', 'desc'),
-  ]
-  let q: ReturnType<typeof query>
+  ];
+  let q: ReturnType<typeof query>;
   if (limitCount) {
-    q = query(expensesColl(groupId), ...constraints, limit(limitCount))
+    q = query(expensesColl(groupId), ...constraints, limit(limitCount));
   } else {
-    q = query(expensesColl(groupId), ...constraints)
+    q = query(expensesColl(groupId), ...constraints);
   }
-  const snap = (await getDocs(q)) as QuerySnapshot<Expense>
-  const out: Expense[] = []
+  const snap = (await getDocs(q)) as QuerySnapshot<Expense>;
+  const out: Expense[] = [];
   snap.forEach((docSnap) => {
-    const expense: Expense = docSnap.data()
-    if (!includeSettlements && expense.isSettlement) return
-    out.push(expense)
-  })
-  return out
+    const expense: Expense = docSnap.data();
+    if (!includeSettlements && expense.isSettlement) return;
+    out.push(expense);
+  });
+  return out;
 }
 
 export async function updateExpense(
   groupId: string,
   expenseId: string,
-  patch: UpdateExpenseInput,
+  patch: UpdateExpenseInput
 ): Promise<Expense> {
-  assertFirebase()
-  const existing = await getExpense(groupId, expenseId)
-  if (!existing) throw new Error('Expense not found')
+  assertFirebase();
+  const existing = await getExpense(groupId, expenseId);
+  if (!existing) throw new Error('Expense not found');
   if (
     !auth.currentUser ||
     existing.createdBy !== auth.currentUser.uid ||
     patch.updatedBy !== auth.currentUser.uid
   ) {
-    throw new Error('Only the expense author can edit this expense.')
+    throw new Error('Only the expense author can edit this expense.');
   }
   const next: Expense = {
     ...existing,
@@ -311,20 +312,20 @@ export async function updateExpense(
       : {}),
     updatedBy: patch.updatedBy,
     updatedAt: nowIso(),
-  }
-  await saveExpense(next, existing)
-  return next
+  };
+  await saveExpense(next, existing);
+  return next;
 }
 
 export async function deleteExpense(
   groupId: string,
-  expenseId: string,
+  expenseId: string
 ): Promise<void> {
-  assertFirebase()
-  const existing = await getExpense(groupId, expenseId)
-  if (!existing) throw new Error('Expense not found')
+  assertFirebase();
+  const existing = await getExpense(groupId, expenseId);
+  if (!existing) throw new Error('Expense not found');
   if (!auth.currentUser || existing.createdBy !== auth.currentUser.uid) {
-    throw new Error('Only the expense author can delete this expense.')
+    throw new Error('Only the expense author can delete this expense.');
   }
-  await deleteDoc(expenseRef(groupId, expenseId))
+  await deleteDoc(expenseRef(groupId, expenseId));
 }

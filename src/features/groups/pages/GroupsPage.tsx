@@ -1,30 +1,32 @@
-import { useTranslation } from 'react-i18next'
-import { Link, useSearchParams } from 'react-router-dom'
-import { useState } from 'react'
-import { Plus, Users, ArrowUpRight, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Message } from '@/components/ui/field'
-import { useGroups } from '@/hooks/useGroups'
-import { useGroupStore } from '@/stores/groupStore'
-import CreateGroupDialog from '../components/CreateGroupDialog'
+import { ArrowUpRight, Plus, Search, Users } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useSearchParams } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
+import { Message } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useGroups } from '@/hooks/useGroups';
+import { useGroupStore } from '@/stores/groupStore';
+
+import CreateGroupDialog from '../components/CreateGroupDialog';
 export default function GroupsPage() {
-  const { t } = useTranslation()
-  const { groups, loading } = useGroups()
-  const error = useGroupStore((s) => s.errors.groups)
-  const [params, setParams] = useSearchParams()
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
+  const { t } = useTranslation();
+  const { groups, loading } = useGroups();
+  const error = useGroupStore((s) => s.errors.groups);
+  const [params, setParams] = useSearchParams();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const close = () => {
-    setOpen(false)
-    const next = new URLSearchParams(params)
-    next.delete('new')
-    setParams(next, { replace: true })
-  }
+    setOpen(false);
+    const next = new URLSearchParams(params);
+    next.delete('new');
+    setParams(next, { replace: true });
+  };
   const filtered = groups.filter((g) =>
-    g.name.toLowerCase().includes(query.toLowerCase()),
-  )
+    g.name.toLowerCase().includes(query.toLowerCase())
+  );
   return (
     <div className="space-y-7">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -100,7 +102,7 @@ export default function GroupsPage() {
             {query
               ? t('Try another name.')
               : t(
-                  'Create a group, add your people and start recording expenses.',
+                  'Create a group, add your people and start recording expenses.'
                 )}
           </p>
           {!query && (
@@ -115,5 +117,5 @@ export default function GroupsPage() {
         onClose={close}
       />
     </div>
-  )
+  );
 }

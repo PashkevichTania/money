@@ -1,15 +1,15 @@
-import { Toaster as Sonner, type ToasterProps } from 'sonner'
-import { useTranslation } from 'react-i18next'
 import {
   CircleCheckIcon,
   InfoIcon,
-  TriangleAlertIcon,
-  OctagonXIcon,
   Loader2Icon,
-} from 'lucide-react'
+  OctagonXIcon,
+  TriangleAlertIcon,
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   return (
     <Sonner
       className="toaster group"
@@ -38,7 +38,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       {...props}
     />
-  )
-}
+  );
+};
 
-export { Toaster }
+export { Toaster };

@@ -1,13 +1,15 @@
-import { useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Check, ArrowRight, Handshake } from 'lucide-react'
-import { Modal } from '@/components/ui/modal'
-import { Button } from '@/components/ui/button'
-import { Message } from '@/components/ui/field'
-import { formatDate } from '@/utils/dates'
-import { formatMoney } from '@/utils/currency'
-import { saveSettlementJobs, type SettlementJob } from '@/api/settlementJobs'
-import type { GroupBalance } from '../hooks/useBalanceOverview'
+import { ArrowRight, Check, Handshake } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { saveSettlementJobs, type SettlementJob } from '@/api/settlementJobs';
+import { Button } from '@/components/ui/button';
+import { Message } from '@/components/ui/field';
+import { Modal } from '@/components/ui/modal';
+import { formatMoney } from '@/utils/currency';
+import { formatDate } from '@/utils/dates';
+
+import type { GroupBalance } from '../hooks/useBalanceOverview';
 
 export default function SettleUpDialog({
   balances,
@@ -16,25 +18,25 @@ export default function SettleUpDialog({
   initialGroupId,
   onClose,
 }: {
-  balances: GroupBalance[]
-  userId: string
-  names: Record<string, string>
-  initialGroupId?: string
-  onClose: () => void
+  balances: GroupBalance[];
+  userId: string;
+  names: Record<string, string>;
+  initialGroupId?: string;
+  onClose: () => void;
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string[]>(
-    initialGroupId ? [initialGroupId] : [],
-  )
-  const [jobs, setJobs] = useState<SettlementJob[] | null>(null)
-  const [saved, setSaved] = useState<string[]>([])
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const saving = useRef(false)
+    initialGroupId ? [initialGroupId] : []
+  );
+  const [jobs, setJobs] = useState<SettlementJob[] | null>(null);
+  const [saved, setSaved] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const saving = useRef(false);
   const name = (id: string) =>
     id === userId
       ? t('You')
-      : names[id] || t('Member {{id}}', { id: id.slice(0, 6) })
+      : names[id] || t('Member {{id}}', { id: id.slice(0, 6) });
   const preview =
     jobs ??
     balances
@@ -45,16 +47,16 @@ export default function SettleUpDialog({
           groupId: b.group.id,
           currency: b.group.baseCurrency,
           id: `${b.group.id}:${transfer.from}:${transfer.to}`,
-        })),
-      )
-  const totals = new Map<string, { sent: number; received: number }>()
+        }))
+      );
+  const totals = new Map<string, { sent: number; received: number }>();
   for (const job of preview) {
-    const total = totals.get(job.currency) ?? { sent: 0, received: 0 }
-    if (job.from === userId) total.sent += Math.round(job.amount * 100)
-    else total.received += Math.round(job.amount * 100)
-    totals.set(job.currency, total)
+    const total = totals.get(job.currency) ?? { sent: 0, received: 0 };
+    if (job.from === userId) total.sent += Math.round(job.amount * 100);
+    else total.received += Math.round(job.amount * 100);
+    totals.set(job.currency, total);
   }
-  const complete = !!jobs?.length && saved.length === jobs.length
+  const complete = !!jobs?.length && saved.length === jobs.length;
   return (
     <Modal
       open
@@ -79,7 +81,7 @@ export default function SettleUpDialog({
                   setSelected((ids) =>
                     event.target.checked
                       ? [...ids, group.id]
-                      : ids.filter((id) => id !== group.id),
+                      : ids.filter((id) => id !== group.id)
                   )
                 }
               />
@@ -100,7 +102,7 @@ export default function SettleUpDialog({
                     ? 'You received'
                     : net < 0
                       ? 'You returned'
-                      : 'All settled up',
+                      : 'All settled up'
                 )}{' '}
                 {net !== 0 && formatMoney(Math.abs(net), group.baseCurrency)}
               </span>
@@ -175,27 +177,27 @@ export default function SettleUpDialog({
             <Button
               disabled={busy || !preview.length}
               onClick={async () => {
-                if (saving.current) return
-                saving.current = true
+                if (saving.current) return;
+                saving.current = true;
                 const next =
                   jobs ??
-                  preview.map((job) => ({ ...job, id: crypto.randomUUID() }))
-                setJobs(next)
-                setBusy(true)
-                setError('')
+                  preview.map((job) => ({ ...job, id: crypto.randomUUID() }));
+                setJobs(next);
+                setBusy(true);
+                setError('');
                 try {
                   await saveSettlementJobs(next, userId, (id) =>
-                    setSaved((ids) => (ids.includes(id) ? ids : [...ids, id])),
-                  )
+                    setSaved((ids) => (ids.includes(id) ? ids : [...ids, id]))
+                  );
                 } catch (cause) {
                   setError(
                     cause instanceof Error
                       ? cause.message
-                      : 'Unable to record payment. Try again.',
-                  )
+                      : 'Unable to record payment. Try again.'
+                  );
                 } finally {
-                  saving.current = false
-                  setBusy(false)
+                  saving.current = false;
+                  setBusy(false);
                 }
               }}
             >
@@ -205,5 +207,5 @@ export default function SettleUpDialog({
         </div>
       </div>
     </Modal>
-  )
+  );
 }

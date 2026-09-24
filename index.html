@@ -10,7 +10,9 @@
         const dark = localStorage.getItem('theme-mode') === 'dark';
         document.documentElement.classList.toggle('dark', dark);
         document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-      } catch { /* Use the default light theme if storage is unavailable. */ }
+      } catch {
+        /* Use the default light theme if storage is unavailable. */
+      }
     </script>
     <title>SplitSmart — Split Expenses with Friends</title>
   </head>

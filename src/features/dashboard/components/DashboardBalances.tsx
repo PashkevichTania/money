@@ -1,13 +1,14 @@
-import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
-import { Wallet, ArrowDownLeft, ArrowUpRight, Users } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Message } from '@/components/ui/field'
-import { formatMoney } from '@/utils/currency'
-import { convertTotals } from '@/utils/settlementPlan'
-import type { GroupBalance } from '@/features/balances/hooks/useBalanceOverview'
-import { useOverviewRates } from '@/features/balances/hooks/useOverviewRates'
-import QuickSettleButton from '@/features/balances/components/QuickSettleButton'
+import { ArrowDownLeft, ArrowUpRight, Users, Wallet } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
+import { Message } from '@/components/ui/field';
+import QuickSettleButton from '@/features/balances/components/QuickSettleButton';
+import type { GroupBalance } from '@/features/balances/hooks/useBalanceOverview';
+import { useOverviewRates } from '@/features/balances/hooks/useOverviewRates';
+import { formatMoney } from '@/utils/currency';
+import { convertTotals } from '@/utils/settlementPlan';
 
 export default function DashboardBalances({
   balances,
@@ -15,42 +16,42 @@ export default function DashboardBalances({
   currency,
   onSettleGroup,
 }: {
-  balances: GroupBalance[]
-  userId: string
-  currency: string
-  onSettleGroup: (id: string) => void
+  balances: GroupBalance[];
+  userId: string;
+  currency: string;
+  onSettleGroup: (id: string) => void;
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const fx = useOverviewRates(
     balances.filter((b) => b.net !== 0).map((b) => b.group.baseCurrency),
-    currency,
-  )
+    currency
+  );
   const totals = new Map<
     string,
     { currency: string; owed: number; owing: number; net: number }
-  >()
+  >();
   for (const { group, net } of balances) {
-    if (!net) continue
+    if (!net) continue;
     const total = totals.get(group.baseCurrency) ?? {
       currency: group.baseCurrency,
       owed: 0,
       owing: 0,
       net: 0,
-    }
-    total.owed += Math.max(0, Math.round(net * 100))
-    total.owing += Math.max(0, -Math.round(net * 100))
-    total.net += Math.round(net * 100)
-    totals.set(group.baseCurrency, total)
+    };
+    total.owed += Math.max(0, Math.round(net * 100));
+    total.owing += Math.max(0, -Math.round(net * 100));
+    total.net += Math.round(net * 100);
+    totals.set(group.baseCurrency, total);
   }
   const currencies = [...totals.values()].map((r) => ({
     currency: r.currency,
     owed: r.owed / 100,
     owing: r.owing / 100,
     net: r.net / 100,
-  }))
-  let converted: ReturnType<typeof convertTotals>
+  }));
+  let converted: ReturnType<typeof convertTotals>;
   try {
-    converted = convertTotals(currencies, fx.rates)
+    converted = convertTotals(currencies, fx.rates);
   } catch (error) {
     return (
       <Message error>
@@ -58,7 +59,7 @@ export default function DashboardBalances({
           ? error.message
           : 'Unable to calculate balances.'}
       </Message>
-    )
+    );
   }
   const cards = [
     {
@@ -87,15 +88,15 @@ export default function DashboardBalances({
       style: 'from-rose-500/15 via-card to-card',
       color: 'text-destructive',
     },
-  ]
+  ];
   const value = (balance: GroupBalance, key: 'net' | 'owed' | 'owing') =>
     key === 'net'
       ? balance.net
       : key === 'owed'
         ? Math.max(0, balance.net)
-        : Math.max(0, -balance.net)
+        : Math.max(0, -balance.net);
   const worth = (amount: number, code: string) =>
-    fx.rates[code] ? Math.abs(amount * fx.rates[code]) : -1
+    fx.rates[code] ? Math.abs(amount * fx.rates[code]) : -1;
   return (
     <section aria-label={t('Your balances')} className="space-y-3">
       <div className="grid gap-4 xl:grid-cols-3">
@@ -106,15 +107,15 @@ export default function DashboardBalances({
               (a, b) =>
                 worth(value(b, key), b.group.baseCurrency) -
                   worth(value(a, key), a.group.baseCurrency) ||
-                a.group.name.localeCompare(b.group.name),
-            )
+                a.group.name.localeCompare(b.group.name)
+            );
           const currencyRows = currencies
             .filter((r) => r[key] !== 0)
             .sort(
               (a, b) =>
                 worth(b[key], b.currency) - worth(a[key], a.currency) ||
-                a.currency.localeCompare(b.currency),
-            )
+                a.currency.localeCompare(b.currency)
+            );
           return (
             <article
               key={key}
@@ -170,7 +171,7 @@ export default function DashboardBalances({
                       <span className="shrink-0 tabular-nums">
                         {formatMoney(
                           value(balance, key),
-                          balance.group.baseCurrency,
+                          balance.group.baseCurrency
                         )}
                       </span>
                     </div>
@@ -208,14 +209,14 @@ export default function DashboardBalances({
                 </Link>
               )}
             </article>
-          )
+          );
         })}
       </div>
       {fx.ready && !!converted.missing.length && (
         <Message>
           {t(
             'Some exchange rates are unavailable: {{currencies}}. Totals are incomplete.',
-            { currencies: converted.missing.join(', ') },
+            { currencies: converted.missing.join(', ') }
           )}{' '}
           <Button variant="ghost" onClick={fx.retry}>
             {t('Retry')}
@@ -230,5 +231,5 @@ export default function DashboardBalances({
         </p>
       )}
     </section>
-  )
+  );
 }

@@ -1,48 +1,46 @@
-import { useTranslation } from 'react-i18next'
-import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import {
-  ChevronDown,
-  LogOut,
-  Menu,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ChevronDown, LogOut, Menu } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
-import { useAuthStore } from '@/stores/authStore'
-import { useNotify } from '@/hooks/useNotify'
-import { ThemeToggle } from './ThemeToggle'
-import { Brand } from './Brand'
-import { NAV_ITEMS } from './navigation'
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useNotify } from '@/hooks/useNotify';
+import { useAuthStore } from '@/stores/authStore';
+
+import { Brand } from './Brand';
+import { NAV_ITEMS } from './navigation';
+import { ThemeToggle } from './ThemeToggle';
 
 export default function Topbar({
   onToggleSidebar,
   sidebarExpanded,
   mobileExpanded,
 }: {
-  onToggleSidebar: () => void
-  sidebarExpanded: boolean
-  mobileExpanded: boolean
+  onToggleSidebar: () => void;
+  sidebarExpanded: boolean;
+  mobileExpanded: boolean;
 }) {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
-  const profile = useAuthStore((s) => s.profile)
-  const logout = useAuthStore((s) => s.logout)
-  const { enqueueSnackbar } = useNotify()
-  const [signingOut, setSigningOut] = useState(false)
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const profile = useAuthStore((s) => s.profile);
+  const logout = useAuthStore((s) => s.logout);
+  const { enqueueSnackbar } = useNotify();
+  const [signingOut, setSigningOut] = useState(false);
   const title = pathname.startsWith('/groups')
     ? 'Your groups'
     : pathname === '/settings'
       ? 'Settings'
       : pathname === '/ui-preview'
         ? 'UI reference'
-        : 'Overview'
+        : 'Overview';
   const initials =
     profile?.displayName
       ?.trim()
@@ -50,19 +48,19 @@ export default function Topbar({
       .slice(0, 2)
       .map((p) => p[0])
       .join('')
-      .toUpperCase() || 'U'
+      .toUpperCase() || 'U';
   const handleLogout = async () => {
-    setSigningOut(true)
+    setSigningOut(true);
     try {
-      await logout()
-      navigate('/login', { replace: true })
-      enqueueSnackbar('Signed out', { variant: 'success' })
+      await logout();
+      navigate('/login', { replace: true });
+      enqueueSnackbar('Signed out', { variant: 'success' });
     } catch {
-      enqueueSnackbar('Failed to sign out', { variant: 'error' })
+      enqueueSnackbar('Failed to sign out', { variant: 'error' });
     } finally {
-      setSigningOut(false)
+      setSigningOut(false);
     }
-  }
+  };
   return (
     <header className="sticky top-0 z-20 flex h-20 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-8">
       <Button
@@ -88,7 +86,9 @@ export default function Topbar({
         <Menu aria-hidden="true" />
       </Button>
       <Brand className="shrink-0 gap-2 [&>span:last-child]:text-lg sm:[&>span:last-child]:text-xl" />
-      <p className="ml-4 hidden text-sm font-medium text-muted-foreground xl:block">{t(title)}</p>
+      <p className="ml-4 hidden text-sm font-medium text-muted-foreground xl:block">
+        {t(title)}
+      </p>
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
         <ThemeToggle />
         <div className="mx-1 hidden h-6 border-l sm:block" />
@@ -127,7 +127,11 @@ export default function Topbar({
               <DropdownMenuItem
                 key={to}
                 render={<Link to={to} />}
-                aria-current={pathname === to || pathname.startsWith(`${to}/`) ? 'page' : undefined}
+                aria-current={
+                  pathname === to || pathname.startsWith(`${to}/`)
+                    ? 'page'
+                    : undefined
+                }
                 className="min-h-10 px-3 aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground"
               >
                 <Icon aria-hidden="true" />
@@ -148,5 +152,5 @@ export default function Topbar({
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }

@@ -1,16 +1,20 @@
-import { useTranslation } from 'react-i18next'
-import { NavLink } from 'react-router-dom'
-import { ArrowUpRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useFriends } from '@/hooks/useFriends'
-import { useCurrentUser } from '@/hooks/useGroups'
-import { NAV_ITEMS } from './navigation'
+import { ArrowUpRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { NavLink } from 'react-router-dom';
+
+import { useFriends } from '@/hooks/useFriends';
+import { useCurrentUser } from '@/hooks/useGroups';
+import { cn } from '@/lib/utils';
+
+import { NAV_ITEMS } from './navigation';
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { t } = useTranslation()
-  const me = useCurrentUser()
-  const { items } = useFriends()
-  const incoming = items.filter(item => item.status === 'pending' && item.recipientId === me?.id).length
+  const { t } = useTranslation();
+  const me = useCurrentUser();
+  const { items } = useFriends();
+  const incoming = items.filter(
+    (item) => item.status === 'pending' && item.recipientId === me?.id
+  ).length;
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
       <nav aria-label={t('Main navigation')} className="px-3 pt-6">
@@ -28,13 +32,17 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                   'flex min-h-11 items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted',
                   isActive
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-muted-foreground',
+                    : 'text-muted-foreground'
                 )
               }
             >
               <Icon className="size-[18px]" aria-hidden="true" />
               {t(label)}
-              {to === '/friends' && incoming > 0 && <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">{incoming}</span>}
+              {to === '/friends' && incoming > 0 && (
+                <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                  {incoming}
+                </span>
+              )}
             </NavLink>
           ))}
         </div>
@@ -60,5 +68,5 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,22 +1,23 @@
-import { useEffect, useState } from 'react'
-import { getExchangeRate } from '@/api/rates'
-import type { Expense } from '@/types/expense'
+import { useEffect, useState } from 'react';
+
+import { getExchangeRate } from '@/api/rates';
+import type { Expense } from '@/types/expense';
 
 export interface ExpenseRateState {
-  key: string
-  loading: boolean
-  rate: number | null
-  date: string | null
-  source: string | null
-  error: string | null
+  key: string;
+  loading: boolean;
+  rate: number | null;
+  date: string | null;
+  source: string | null;
+  error: string | null;
 }
 
 interface UseExpenseExchangeRateOptions {
-  enabled: boolean
-  expenseDate: string
-  groupCurrency: string
-  originalCurrency: string
-  editingExpense?: Expense | null
+  enabled: boolean;
+  expenseDate: string;
+  groupCurrency: string;
+  originalCurrency: string;
+  editingExpense?: Expense | null;
 }
 
 const pendingRate = (key: string): ExpenseRateState => ({
@@ -26,7 +27,7 @@ const pendingRate = (key: string): ExpenseRateState => ({
   date: null,
   source: null,
   error: null,
-})
+});
 
 export function useExpenseExchangeRate({
   enabled,
@@ -35,11 +36,14 @@ export function useExpenseExchangeRate({
   originalCurrency,
   editingExpense,
 }: UseExpenseExchangeRateOptions) {
-  const normalizedOriginalCurrency = originalCurrency.toUpperCase()
-  const normalizedGroupCurrency = groupCurrency.toUpperCase()
-  const currencyMismatch = normalizedOriginalCurrency !== normalizedGroupCurrency
-  const requestKey = `${normalizedOriginalCurrency}:${normalizedGroupCurrency}:${expenseDate}`
-  const [requestedRate, setRequestedRate] = useState<ExpenseRateState>(() => pendingRate(''))
+  const normalizedOriginalCurrency = originalCurrency.toUpperCase();
+  const normalizedGroupCurrency = groupCurrency.toUpperCase();
+  const currencyMismatch =
+    normalizedOriginalCurrency !== normalizedGroupCurrency;
+  const requestKey = `${normalizedOriginalCurrency}:${normalizedGroupCurrency}:${expenseDate}`;
+  const [requestedRate, setRequestedRate] = useState<ExpenseRateState>(() =>
+    pendingRate('')
+  );
 
   const savedSnapshot =
     editingExpense &&
@@ -47,7 +51,7 @@ export function useExpenseExchangeRate({
     editingExpense.groupCurrency === normalizedGroupCurrency &&
     editingExpense.expenseDate.slice(0, 10) === expenseDate.slice(0, 10)
       ? editingExpense.rateSnapshot
-      : undefined
+      : undefined;
 
   const rateState: ExpenseRateState = !currencyMismatch
     ? {
@@ -62,19 +66,19 @@ export function useExpenseExchangeRate({
       ? { key: requestKey, loading: false, error: null, ...savedSnapshot }
       : requestedRate.key === requestKey
         ? requestedRate
-        : pendingRate(requestKey)
+        : pendingRate(requestKey);
 
   useEffect(() => {
-    if (!enabled || !currencyMismatch || savedSnapshot) return
+    if (!enabled || !currencyMismatch || savedSnapshot) return;
 
-    let cancelled = false
+    let cancelled = false;
     void getExchangeRate(
       normalizedOriginalCurrency,
       normalizedGroupCurrency,
-      expenseDate,
+      expenseDate
     )
       .then((result) => {
-        if (cancelled) return
+        if (cancelled) return;
         setRequestedRate({
           key: requestKey,
           loading: false,
@@ -82,23 +86,24 @@ export function useExpenseExchangeRate({
           date: result.date,
           source: result.source,
           error: null,
-        })
+        });
       })
       .catch((error: unknown) => {
-        if (cancelled) return
+        if (cancelled) return;
         setRequestedRate({
           key: requestKey,
           loading: false,
           rate: null,
           date: null,
           source: null,
-          error: error instanceof Error ? error.message : 'Failed to fetch FX rate',
-        })
-      })
+          error:
+            error instanceof Error ? error.message : 'Failed to fetch FX rate',
+        });
+      });
 
     return () => {
-      cancelled = true
-    }
+      cancelled = true;
+    };
   }, [
     currencyMismatch,
     enabled,
@@ -107,7 +112,7 @@ export function useExpenseExchangeRate({
     normalizedOriginalCurrency,
     requestKey,
     savedSnapshot,
-  ])
+  ]);
 
-  return { currencyMismatch, rateState }
+  return { currencyMismatch, rateState };
 }

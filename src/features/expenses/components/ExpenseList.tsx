@@ -1,37 +1,39 @@
-import { useTranslation } from 'react-i18next'
-import { MoreHorizontal, Pencil, Trash2, Receipt, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import SettlementRow from './SettlementRow'
-import { NativeSelect } from '@/components/ui/native-select'
-import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Message } from '@/components/ui/field'
-import { Modal } from '@/components/ui/modal'
+import { MoreHorizontal, Pencil, Receipt, Search, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from '@/components/ui/dropdown-menu'
-import type { Group } from '@/types/group'
-import type { Expense } from '@/types/expense'
-import type { UserProfile } from '@/types/user'
-import { formatMoney } from '@/utils/currency'
-import { formatDate } from '@/utils/dates'
-import { getExpenseTypeDetails } from '@/config/expenseTypes'
-import { computeNetBalances } from '@/utils/split'
-import { useExpenseList } from '@/features/expenses/hooks/useExpenseList'
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Message } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Modal } from '@/components/ui/modal';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { getExpenseTypeDetails } from '@/config/expenseTypes';
+import { useExpenseList } from '@/features/expenses/hooks/useExpenseList';
+import type { Expense } from '@/types/expense';
+import type { Group } from '@/types/group';
+import type { UserProfile } from '@/types/user';
+import { formatMoney } from '@/utils/currency';
+import { formatDate } from '@/utils/dates';
+import { computeNetBalances } from '@/utils/split';
+
+import SettlementRow from './SettlementRow';
 
 export default function ExpenseList({
   group,
   members,
   onEditExpense,
 }: {
-  group: Group
-  members: UserProfile[]
-  onEditExpense: (expense: Expense) => void
+  group: Group;
+  members: UserProfile[];
+  onEditExpense: (expense: Expense) => void;
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const {
     confirmDelete,
     currentUser: me,
@@ -48,7 +50,7 @@ export default function ExpenseList({
     filter,
     setFilter,
     retry,
-  } = useExpenseList(group.id, members)
+  } = useExpenseList(group.id, members);
   return (
     <div className="space-y-4">
       {error && (
@@ -107,10 +109,10 @@ export default function ExpenseList({
                   userId={me?.id}
                   name={getName}
                 />
-              )
-            const expense = entry.value
-            const { Icon, label } = getExpenseTypeDetails(expense.type)
-            const mine = me ? computeNetBalances(expense)[me.id] || 0 : 0
+              );
+            const expense = entry.value;
+            const { Icon, label } = getExpenseTypeDetails(expense.type);
+            const mine = me ? computeNetBalances(expense)[me.id] || 0 : 0;
             return (
               <article
                 key={`expense:${expense.id}`}
@@ -139,14 +141,14 @@ export default function ExpenseList({
                       <p className="font-semibold tabular-nums">
                         {formatMoney(
                           expense.convertedAmount,
-                          expense.groupCurrency,
+                          expense.groupCurrency
                         )}
                       </p>
                       {expense.originalCurrency !== expense.groupCurrency && (
                         <p className="mt-1 text-xs tabular-nums text-muted-foreground">
                           {formatMoney(
                             expense.originalAmount,
-                            expense.originalCurrency,
+                            expense.originalCurrency
                           )}
                         </p>
                       )}
@@ -159,9 +161,9 @@ export default function ExpenseList({
                           name: getName(p.userId),
                           amount: formatMoney(
                             p.amount,
-                            expense.originalCurrency,
+                            expense.originalCurrency
                           ),
-                        }),
+                        })
                       )
                       .join(' · ')}
                   </p>
@@ -211,7 +213,7 @@ export default function ExpenseList({
                   </DropdownMenu>
                 )}
               </article>
-            )
+            );
           })}
         </div>
       )}
@@ -226,7 +228,7 @@ export default function ExpenseList({
       >
         <p className="text-sm text-muted-foreground">
           {t(
-            'This cannot be undone. Its effect on the balances will be removed.',
+            'This cannot be undone. Its effect on the balances will be removed.'
           )}
         </p>
         <div className="flex justify-end gap-2">
@@ -247,5 +249,5 @@ export default function ExpenseList({
         </div>
       </Modal>
     </div>
-  )
+  );
 }

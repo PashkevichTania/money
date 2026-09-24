@@ -7,6 +7,7 @@
 **Goal:** Build a free, self-hostable Splitwise clone with groups, multi-currency expenses, flexible split rules, and balances.
 
 **Final stack:**
+
 - `React 18 + Vite + TypeScript`
 - `MUI` (UI components + theme)
 - `Zustand` (state management)
@@ -18,6 +19,7 @@
 - `Frankfurter API` (free FX rates)
 
 **Delivery phases:**
+
 1. Bootstrap project + Firebase setup
 2. Auth shell & core layout
 3. Groups & members
@@ -32,11 +34,13 @@
 ## 1. Phase 1 — Bootstrap Project & Firebase Setup
 
 **1.1 Scaffold Vite + React + TS** ✅
+
 - [x] `npm create vite@latest money -- --template react-ts`
 - [x] `cd money`
 - [x] `npm install`
 
 **1.2 Install core dependencies** ✅
+
 - [x] `@mui/material @emotion/react @emotion/styled @mui/icons-material`
 - [x] `@fontsource/roboto`
 - [x] `zustand`
@@ -48,10 +52,12 @@
 - [x] `axios` (for FX API calls)
 
 **1.3 Install dev dependencies** ✅
+
 - [x] `eslint prettier eslint-config-prettier eslint-plugin-prettier @typescript-eslint/parser @typescript-eslint/eslint-plugin`
 - [ ] `vitest` optional; otherwise just TSC for safety
 
 **1.4 Base project structure** ✅
+
 ```
 src/
 ├─ api/             # ✅ network services (FX rates, thin Firestore wrappers)
@@ -75,6 +81,7 @@ src/
 ```
 
 **1.5 Firebase project** ✅
+
 - [x] Create a Firebase project in console
 - [x] Enable `Email/Password auth` (and optionally Google sign-in)
 - [x] Create Firestore DB in test-mode first, then lock down
@@ -89,6 +96,7 @@ src/
   - [x] `VITE_APP_BASE_CURRENCY=USD` (fallback default)
 
 **1.6 Validation gate** ✅
+
 - [x] Run `npm run dev`
 - [x] Verify MUI theme loaded
 - [x] Verify Firebase app initialized without errors
@@ -99,15 +107,18 @@ src/
 ## 2. Phase 2 — Auth Shell, Theme, Layout, Routing
 
 **2.1 Theme** ✅
+
 - [x] `theme/index.ts` with light/dark palettes, typography, spacing tokens
 - [x] Wrap app in `ThemeProvider`, `CssBaseline`, `SnackbarProvider`
 
 **2.2 Routing skeleton** ✅
+
 - [x] Public: `/login`, `/signup`
 - [x] Protected: `/`, `/groups`, `/groups/:id`, `/settings`
 - [x] Create `<ProtectedRoute />` redirecting unauthenticated users
 
 **2.3 Auth store (zustand)** ✅
+
 - [x] `stores/authStore.ts`
   - [x] `user` | `loading` | `initialized`
   - [x] `login(email, pass)`
@@ -116,12 +127,14 @@ src/
   - [x] persist session via `onAuthStateChanged` in a hook
 
 **2.4 Auth pages** ✅
+
 - [x] Login page: email + password form (react-hook-form + zod schema)
 - [x] Signup page: email + password + display name
 - [x] Basic error messages: invalid credentials, weak password, email in use
 - [x] Logout button in topbar
 
 **2.5 Layout / Shell** ✅
+
 - [x] `<AppLayout>` with:
   - [x] `<Topbar>`: logo, user avatar menu, logout
   - [x] `<Sidebar>`: Dashboard, Groups, Settings
@@ -129,11 +142,13 @@ src/
 - [x] Make it responsive (drawer on mobile)
 
 **2.6 User profile creation on signup** ✅
+
 - [x] On signup create Firestore doc `users/{uid}`:
   - [x] `id`, `displayName`, `email`, `photoURL`, `defaultCurrency: 'USD'`, `createdAt`
 - [x] Make login also ensure profile exists / update last seen if you want
 
 **2.7 Validation gate** ✅
+
 - [x] Signup → auto-login → redirect to `/groups`
 - [x] Logout returns to `/login`
 - [x] Direct visit to protected route redirects correctly
@@ -144,12 +159,14 @@ src/
 ## 3. Phase 3 — Groups & Members
 
 **3.1 Types** ✅
+
 - [x] `types/group.ts`
   - [x] `Group { id, name, baseCurrency, memberIds: string[], createdBy, createdAt, updatedAt }`
 - [x] `types/user.ts`
   - [x] `User { id, displayName, email, photoURL, defaultCurrency }`
 
 **3.2 Firestore wrappers** ✅
+
 - [x] `api/groups.ts`
   - [x] `createGroup(data)`
   - [x] `getGroupsForUser(userId)`
@@ -162,6 +179,7 @@ src/
   - [x] `updateProfile(id, patch)`
 
 **3.3 Zustand stores** ✅ (⚠️ duplicate in uiStore.ts to remove)
+
 - [x] `stores/groupStore.ts`
   - [x] `groups`, `selectedGroupId`, `membersMap`, `loading`
   - [x] `loadGroups()`, `selectGroup(id)`, `createGroup()`, `updateGroup()`, `deleteGroup()`
@@ -170,10 +188,12 @@ src/
   - [x] snackbar queue, open dialog flags, selected currency/filters
 
 **3.4 Custom hooks** ✅
+
 - [x] `hooks/useGroups()` wraps store actions
 - [x] `hooks/useSelectedGroup()` returns current group + members
 
 **3.5 Pages & Components** ✅ (⚠️ delete dialog pending)
+
 - [x] `/groups` — Group list (MUI `List` or `Card` grid with base currency, member count)
 - [x] `/groups/new` or modal — create group: name + base currency picker
 - [x] `/groups/:id` — group detail page with tabs: `Expenses | Balances | Members | Settings`
@@ -185,6 +205,7 @@ src/
 - [x] Settings tab: rename; read-only base currency chosen at creation
 
 **3.6 Firestore data & structure** ✅
+
 ```
 users/{uid}
 groups/{gid}
@@ -197,6 +218,7 @@ groups/{gid}
 ```
 
 **3.7 Minimal security rules v1** ✅
+
 ```rules
 rules_version = '2';
 service cloud.firestore {
@@ -213,6 +235,7 @@ service cloud.firestore {
 ```
 
 **3.8 Validation gate** ⚠️
+
 - [x] Create group with 2+ members, list appears on dashboard
 - [x] Group detail loads members
 - [x] Add member by email works for existing users
@@ -223,7 +246,9 @@ service cloud.firestore {
 ## 4. Phase 4 — Expenses: Equal Split + Single Payer
 
 **4.1 Types** ✅
+
 - [x] `types/expense.ts`
+
 ```ts
 export type SplitType = 'equal' | 'exact' | 'percentage' | 'shares';
 
@@ -258,9 +283,11 @@ export interface Expense {
   isSettlement?: boolean;
 }
 ```
+
 (Plus Settlement + ActivityLog types also defined ✅)
 
 **4.2 Split utilities (core logic)** ✅
+
 - [x] `utils/split.ts`
   - [x] `computeEqualShares(total, participants): ParticipantShare[]`
   - [x] `applySplitTypeToConverted(expense)` — returns per-user `owed` in group currency
@@ -269,6 +296,7 @@ export interface Expense {
 - Bonus: `resolveOwedPerUser()` already supports exact/percentage/shares for Phase 5 reuse
 
 **4.3 API** ✅
+
 - [x] `api/expenses.ts`
   - [x] under `groups/{gid}/expenses/{eid}` subcollection
   - [x] `createExpense(groupId, data)`
@@ -278,6 +306,7 @@ export interface Expense {
   - [x] Firestore data converter with toFirestore/fromFirestore
 
 **4.4 Zustand store** ✅
+
 - [x] `stores/expenseStore.ts`
   - [x] `expensesByGroup: Record<groupId, Expense[]>`
   - [x] `loadingByGroup, selectedExpenseId, filters (date range, user, min/max)`
@@ -285,6 +314,7 @@ export interface Expense {
   - [x] error boundary wrapper, cached loaded groups, optimistic updates
 
 **4.5 UI** ✅ (⚠️ Edit deferred to Phase 5 with flexible splits)
+
 - [x] Group detail → Expenses tab:
   - [x] Floating Add button (FAB on expense tab)
   - [x] Expense list: date, title, paidBy, amount in original AND group currency, per-user net chips
@@ -302,12 +332,14 @@ export interface Expense {
 - [x] Delete action with confirmation dialog and optimistic state removal
 
 **4.6 Currency formatters** ✅
+
 - [x] `utils/currency.ts`
   - [x] `formatMoney(amount, currency, locale?)` using `Intl.NumberFormat`
   - [x] `roundMoney()`, `safeSum()` helpers used throughout split logic
   - [x] currency list (70+ ISO codes + labels + symbols) in `config/currencies.ts` with `getCurrencySymbol()`
 
 **4.7 Validation gate** ✅ (per-user net shown inline; Balances tab shell deferred to Phase 7)
+
 - [x] Create expense → appears in list, sorted by expenseDate desc
 - [x] Delete works and reverts state instantly; Edit UI placeholder in place (Phase 5)
 - [x] Per-expense net balance chips ("You get back X" / "You owe Y" / "Settled") rendered in list using `computeNetBalances`
@@ -318,12 +350,14 @@ export interface Expense {
 ## 5. Phase 5 — Flexible Splitting & Multiple Payers
 
 **5.1 Extend split utilities** ✅
+
 - [x] `computeExactShares(participantUserIds, valuesByUserId?)` in `utils/split.ts`
 - [x] `computePercentageShares(participantUserIds, valuesByUserId?)` — auto-even distribution with remainder on last user when values absent; 4-decimal precision
 - [x] `computeSharesByRatio(participantUserIds, valuesByUserId?)` — defaults to 1 share per user (equal) for missing values
 - [x] Uniform helpers `resolveOwedPerUser(convertedTotal, participants, splitType)` returning `Record<userId, number>` (was already there — reused) + `buildParticipants(splitType, ids, values)` dispatcher + `autoFillExactRemainder` UX helper + `autoDistributePaidBy(total, userIds)` preset helper
 
 **5.2 Multiple payers** ✅
+
 - [x] Paid-by UI changed from single Select → chips section:
   - [x] Per-payer editable Card: avatar + name + TextField with currency adornment + remove button (if >1 payer)
   - [x] Add-payer chips for group members not yet in payer set (up to 6 visible)
@@ -332,6 +366,7 @@ export interface Expense {
   - [x] Validation (enforced live + on submit): `|sum(paidBy.amount) − originalAmount| < 0.005` via `validateSplit().paidBy.sum` + zod array `.min(1)` + submitValidation double-check
 
 **5.3 Split mode UI** ✅
+
 - [x] Split-type segmented control (MUI ToggleButtonGroup): Equal / Exact / % / Shares — all four enabled (removed Phase-4 `disabled` and "Phase 5 notice")
 - [x] Dynamic inputs per participant (inline TextField next to checkbox + avatar):
   - [x] Equal → read-only owed amount caption
@@ -350,6 +385,7 @@ export interface Expense {
   - Top Alert with actionable message if split.sum / paidBy.sum / amount violations exist
 
 **5.4 Form validation (zod)** ✅
+
 - [x] Rewrote zod schema `FormValues` shape (used by resolver) covering:
   - [x] `participantIds: z.array(z.string()).min(1, …)` — requires participants.length > 0
   - [x] `paidBy: z.array(z.object({userId, amount: gte 0})).min(1, …)` — requires paidBy.length > 0 and non-negative amounts
@@ -360,6 +396,7 @@ export interface Expense {
   - Together enforce: sum(paidBy) === originalAmount; sum exact = originalAmount; sum percentage = 100; no shares ≤ 0 for any participant
 
 **5.5 Validation gate** ✅ (build passes, TS clean, diagnostics empty; runtime flows round-trip)
+
 - [x] All four split modes submit correctly and store their typed `participants[].value` + `splitType` (verified via data layer)
 - [x] Multiple payers submit correctly (multi-element `paidBy[]` preserved in Firestore, net balances match expectation in list chips)
 - [x] Edit preserves split data: the dialog now accepts `editingExpense?: Expense`, hydrates all fields (including payer amounts, participantValues per userId, and splitType), calls `updateExpense()` on submit, and ExpenseList wires Edit menu item → parent `onEditExpense(expense)` → one shared dialog hoisted in `GroupDetailPage`
@@ -370,6 +407,7 @@ export interface Expense {
 ## 6. Phase 6 — Multi-Currency Conversion & FX Snapshots
 
 **6.1 FX service** ✅ (API is wired to the expense dialog; runtime verification remains)
+
 - [x] `api/rates.ts`
   - [x] `getRate(fromCurrency, toCurrency, date?)` — use Frankfurter API
     - endpoint: `https://api.frankfurter.app/YYYY-MM-DD?from=USD&to=EUR`
@@ -378,6 +416,7 @@ export interface Expense {
 - Frankfurter supports ECB currencies; for others, optionally let user input a manual rate.
 
 **6.2 Expense creation flow** ⚠️ (implemented in code; verify with Firebase and fix exact-split conversion)
+
 - [ ] When user chooses different `originalCurrency` than group currency:
   - [x] load rate for `expenseDate` (or latest if blank)
   - [x] show rate + converted amount next to amount field
@@ -386,17 +425,20 @@ export interface Expense {
 - All internal balances use `convertedAmount` and `groupCurrency`
 
 **6.3 Display strategy** ⚠️
-  - [x] Expense list shows converted amount first and original amount second when currencies differ
+
+- [x] Expense list shows converted amount first and original amount second when currencies differ
 - [ ] Expense detail / edit:
   - [ ] allow changing date and recomputing rate
   - [ ] allow locking a manual rate if API fails
 
 **6.4 Base currency policy**
+
 - [x] Base currency cannot change after creation, regardless of expense count.
 - [x] UI displays a read-only currency; API and Firestore rules reject changes.
 - [ ] Audit legacy groups that already contain expenses in different group currencies before aggregation.
 
 **6.5 Validation gate** ❌
+
 - [ ] Expense in EUR saved in USD group → converted correctly
 - [ ] Historical date uses past rate (if available from Frankfurter)
 - [ ] Same-currency expense skips API
@@ -407,12 +449,14 @@ export interface Expense {
 ## 7. Phase 7 — Balances, Settlements, Activity Log
 
 **7.1 Balance computation** ✅
+
 - [x] `utils/balances.ts`
   - [x] `aggregateNetBalances(expenses[], settlements[], currency, memberIds)` → `Map<userId, net>`
   - [x] `simplifyDebts(netMap)` → list of `{ from, to, amount }`
   - [x] Deterministic greedy debtor/creditor matching in integer cents; does not guarantee the minimum number of transfers.
 
 **7.2 Balances tab UI** ✅ (all-time view; date filtering deferred)
+
 - [x] Header cards:
   - [x] “You are owed X” / “You owe Y” in group currency
 - [x] Suggested transfers list with payment-recording actions for sender/recipient.
@@ -420,6 +464,7 @@ export interface Expense {
 - [ ] Filter by date range
 
 **7.3 Settlements** ✅ (implemented; live Firebase verification pending)
+
 - [x] Separate `groups/{gid}/settlements/{sid}` documents with participants, amount, integer `amountMinor`, group currency, note, author and creation date.
 - [x] Record-payment actions with prefilled participants/amount, partial payments and explicit confirmation that money was already transferred outside the app.
 - [x] Sender or recipient can create a record; only its author can delete it with confirmation. No settlement editing: delete an incorrect record and record the correction.
@@ -432,6 +477,7 @@ export interface Expense {
 Activity tab and unused types removed at the user's request. No activity documents are created or subscribed to. Keep only legacy child cleanup when deleting a group, so any older data is not orphaned. Expense author/update metadata and payment records remain available.
 
 **7.5 Validation gate** ❌
+
 - [ ] Balances match real-world scenarios you test manually
 - [x] Settlement reduces suggested debt in unit tests and the interactive preview (28 → 18 → 0); production Firebase integration remains pending.
 - Commit: `feat: balances and settlements`
@@ -441,6 +487,7 @@ Activity tab and unused types removed at the user's request. No activity documen
 ## 8. Phase 8 — Polish, Security, Validation, Deploy
 
 **8.1 UX polish** ⚠️ (partially done)
+
 - [x] Skeleton loaders for group/expense lists
 - [x] Empty states for no groups, no expenses
 - [ ] Confirmation dialogs for destructive actions (DeleteGroupDialog in progress)
@@ -449,12 +496,14 @@ Activity tab and unused types removed at the user's request. No activity documen
 - [ ] Currency defaulting: remember last-used per group in UI store
 
 **8.2 Validation / edge cases** ⚠️ (partially done)
+
 - [ ] Zero-amount and negative amounts blocked by schema
 - [ ] Split with single participant handled (paid by same person)
 - [ ] Soft-delete or restore if desired (else hard delete + confirmation)
 - [ ] Member removal when balances exist → prompt settle first or freeze historical
 
 **8.3 Firestore security rules (finalize)** ⚠️ (basic only)
+
 - [x] Lock `users` profile to owner only
 - [x] Lock group documents to members
 - [ ] Add explicit rules for `groups/{gid}/expenses/{eid}`; Firestore subcollections do not inherit parent rules
@@ -465,6 +514,7 @@ Activity tab and unused types removed at the user's request. No activity documen
 - [ ] Validate currency and sum invariants where possible in rules (at least the critical ones)
 
 **8.4 Hosting / deploy** ❌
+
 - [ ] Restore a passing TypeScript build (`MembersTab.tsx` Avatar `src` currently accepts `null`)
 - [ ] Restore a passing lint run (audit found 9 errors and 11 warnings)
 - [ ] `npm i -g firebase-tools`
@@ -474,6 +524,7 @@ Activity tab and unused types removed at the user's request. No activity documen
 - [ ] Add GitHub Actions deploy script or just `firebase deploy` manually
 
 **8.5 Performance / monitoring** ❌
+
 - [ ] Add Firestore indexes for common queries: `expenses by groupId + expenseDate`
 - [ ] Paginate expense lists when needed. All-time balances must still include the entire ledger; never calculate them from only the visible page or date window.
 - [ ] Optional: enable Firebase Performance Monitoring (free tier)
@@ -501,6 +552,7 @@ Goal: reduce repeated Firestore reads for the friends-only MVP while preserving 
 - [x] Cover preference persistence/fallback, blocked storage, pluralization, formatting, interpolation and dictionary coverage with automated tests. Add embedded Settings to the development preview for UI verification.
 
 **8.6 Final manual smoke test script** ❌
+
 1. [ ] Sign up user A and user B
 2. [ ] A creates group “Trip” with EUR base, adds B
 3. [ ] B logs in, sees group, adds “Dinner €120” paid by B, split equal (A+B)
@@ -518,14 +570,14 @@ Goal: reduce repeated Firestore reads for the friends-only MVP while preserving 
 
 The product should feel like a calm financial workspace: clear balances and actions first, with color used to explain state. Avoid making every card or button bright green. Use the palette as semantic tokens rather than hard-coded colors in components.
 
-| Role | Color | Intended use |
-| --- | --- | --- |
-| Brand / strong text | `#0C4137` | Navigation, primary buttons, headings, active controls |
-| Mint accent | `#06D6A0` | Focus, selected details, positive balance accents, small highlights |
-| Soft mint | `#E6FBF6` | Selected rows, summary backgrounds, subtle success surfaces |
-| Yellow | `#FED766` | Pending settlement, tips, attention without error |
-| Raspberry | `#D1345B` | Destructive actions and negative balance accents |
-| Blue | `#3454D1` | Informational states, links, exchange-rate details |
+| Role                | Color     | Intended use                                                        |
+| ------------------- | --------- | ------------------------------------------------------------------- |
+| Brand / strong text | `#0C4137` | Navigation, primary buttons, headings, active controls              |
+| Mint accent         | `#06D6A0` | Focus, selected details, positive balance accents, small highlights |
+| Soft mint           | `#E6FBF6` | Selected rows, summary backgrounds, subtle success surfaces         |
+| Yellow              | `#FED766` | Pending settlement, tips, attention without error                   |
+| Raspberry           | `#D1345B` | Destructive actions and negative balance accents                    |
+| Blue                | `#3454D1` | Informational states, links, exchange-rate details                  |
 
 - [x] Define shadcn semantic tokens for background, foreground, card, border, primary, accent, destructive, ring, and sidebar in light and dark themes. Keep neutral white/off-white surfaces and dark readable text alongside this palette.
 - [ ] Check contrast for text, icons, focus rings, and controls. `#06D6A0` and `#FED766` are too light for small text on white; use them as fills/accent marks with `#0C4137` text. `#D1345B` and `#3454D1` can carry text on white.
@@ -535,4 +587,3 @@ The product should feel like a calm financial workspace: clear balances and acti
 - [ ] Groups and expenses: keep content on light surfaces, use soft mint for selection, reserve full dark-green fill for the main action, and use mint sparingly for positive amounts. Give owed amounts a raspberry accent without relying on color alone; include labels and signs.
 - [ ] Expense form: divide the long flow into clear sections (details, who paid, split, conversion, review), keep totals and validation visible, and ensure mobile users can reach the save action without losing context.
 - [ ] Establish hover, focus, disabled, loading, empty, and error states for every migrated component; test keyboard navigation and narrow screens.
-

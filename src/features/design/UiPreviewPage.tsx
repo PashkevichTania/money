@@ -1,42 +1,53 @@
-import { useTranslation } from 'react-i18next'
-import { EXPENSE_TYPES } from '@/types/expense'
-import { getExpenseTypeDetails } from '@/config/expenseTypes'
-import { useNotify } from '@/hooks/useNotify'
-import SettingsPage from '@/features/settings/pages/SettingsPage'
-import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
-import { BalanceSummary } from '@/features/groups/components/BalanceSummary'
-import type { Expense, Settlement } from '@/types/expense'
-import RecordSettlementDialog, {
-  type TransferSuggestion,
-} from '@/features/groups/components/RecordSettlementDialog'
-import type { Group } from '@/types/group'
-import type { UserProfile } from '@/types/user'
-import { useState } from 'react'
-import { Check, ArrowUpRight, Plus, Info, LoaderCircle, CircleCheck, OctagonX, TriangleAlert, Bell } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import {
+  ArrowUpRight,
+  Bell,
+  Check,
+  CircleCheck,
+  Info,
+  LoaderCircle,
+  OctagonX,
+  Plus,
+  TriangleAlert,
+} from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
+  CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
-  SheetTrigger,
+  SheetClose,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetDescription,
   SheetFooter,
-  SheetClose,
-} from '@/components/ui/sheet'
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { getExpenseTypeDetails } from '@/config/expenseTypes';
+import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog';
+import { BalanceSummary } from '@/features/groups/components/BalanceSummary';
+import RecordSettlementDialog, {
+  type TransferSuggestion,
+} from '@/features/groups/components/RecordSettlementDialog';
+import SettingsPage from '@/features/settings/pages/SettingsPage';
+import { useNotify } from '@/hooks/useNotify';
+import type { Expense, Settlement } from '@/types/expense';
+import { EXPENSE_TYPES } from '@/types/expense';
+import type { Group } from '@/types/group';
+import type { UserProfile } from '@/types/user';
 
 const previewGroup: Group = {
   id: 'ui-preview-only',
@@ -46,7 +57,7 @@ const previewGroup: Group = {
   createdBy: 'jamie',
   createdAt: '2026-09-20',
   updatedAt: '2026-09-20',
-}
+};
 const previewMembers: UserProfile[] = previewGroup.memberIds.map((id) => ({
   id,
   displayName: id[0].toUpperCase() + id.slice(1),
@@ -54,19 +65,19 @@ const previewMembers: UserProfile[] = previewGroup.memberIds.map((id) => ({
   photoURL: null,
   defaultCurrency: 'EUR',
   createdAt: '2026-09-20',
-}))
+}));
 
 export default function UiPreviewPage() {
-  const { t } = useTranslation()
-  const { enqueueSnackbar } = useNotify()
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [previewPayments, setPreviewPayments] = useState<Settlement[]>([])
+  const { t } = useTranslation();
+  const { enqueueSnackbar } = useNotify();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [previewPayments, setPreviewPayments] = useState<Settlement[]>([]);
   const [recordPayment, setRecordPayment] = useState<{
-    suggestion?: TransferSuggestion
-  } | null>(null)
-  const [balancesOpen, setBalancesOpen] = useState(false)
-  const [expenseOpen, setExpenseOpen] = useState(false)
-  const [saved, setSaved] = useState(false)
+    suggestion?: TransferSuggestion;
+  } | null>(null);
+  const [balancesOpen, setBalancesOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
   return (
     <div className="space-y-8">
       <Button
@@ -116,7 +127,7 @@ export default function UiPreviewPage() {
           onRecord={(suggestion) => setRecordPayment({ suggestion })}
           onDelete={(payment) =>
             setPreviewPayments((payments) =>
-              payments.filter((p) => p.id !== payment.id),
+              payments.filter((p) => p.id !== payment.id)
             )
           }
           expenses={[
@@ -168,7 +179,7 @@ export default function UiPreviewPage() {
                 createdBy: 'jamie',
                 createdAt: new Date().toISOString(),
               },
-            ])
+            ]);
           }}
         />
       )}
@@ -202,15 +213,18 @@ export default function UiPreviewPage() {
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[undefined, ...EXPENSE_TYPES].map((type) => {
-            const { Icon, label } = getExpenseTypeDetails(type)
+            const { Icon, label } = getExpenseTypeDetails(type);
             return (
-              <div key={type ?? 'none'} className="flex items-center gap-3 rounded-md border p-4">
+              <div
+                key={type ?? 'none'}
+                className="flex items-center gap-3 rounded-md border p-4"
+              >
                 <span className="grid size-10 shrink-0 place-items-center rounded-md bg-secondary text-secondary-foreground">
                   <Icon className="size-4" aria-hidden="true" />
                 </span>
                 <span className="text-sm font-medium">{t(label)}</span>
               </div>
-            )
+            );
           })}
         </CardContent>
       </Card>
@@ -218,17 +232,50 @@ export default function UiPreviewPage() {
         <CardHeader>
           <CardTitle>Sonner notifications</CardTitle>
           <CardDescription>
-            Click to preview each notification. Use the theme switch to compare light and dark colors.
+            Click to preview each notification. Use the theme switch to compare
+            light and dark colors.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          {([
-            { variant: 'success', label: 'Success', message: 'Expense added', Icon: CircleCheck, color: 'text-green-600 dark:text-green-400' },
-            { variant: 'error', label: 'Error', message: 'Failed to save expense', Icon: OctagonX, color: 'text-red-600 dark:text-red-400' },
-            { variant: 'warning', label: 'Warning', message: 'A valid FX rate is required for currency conversion', Icon: TriangleAlert, color: 'text-orange-600 dark:text-orange-400' },
-            { variant: 'info', label: 'Info', message: 'Preview confirmed. No data changed.', Icon: Info, color: 'text-blue-600 dark:text-blue-400' },
-            { variant: 'default', label: 'Default', message: 'Preview notification', Icon: Bell, color: 'text-muted-foreground' },
-          ] as const).map(({ variant, label, message, Icon, color }) => (
+          {(
+            [
+              {
+                variant: 'success',
+                label: 'Success',
+                message: 'Expense added',
+                Icon: CircleCheck,
+                color: 'text-green-600 dark:text-green-400',
+              },
+              {
+                variant: 'error',
+                label: 'Error',
+                message: 'Failed to save expense',
+                Icon: OctagonX,
+                color: 'text-red-600 dark:text-red-400',
+              },
+              {
+                variant: 'warning',
+                label: 'Warning',
+                message: 'A valid FX rate is required for currency conversion',
+                Icon: TriangleAlert,
+                color: 'text-orange-600 dark:text-orange-400',
+              },
+              {
+                variant: 'info',
+                label: 'Info',
+                message: 'Preview confirmed. No data changed.',
+                Icon: Info,
+                color: 'text-blue-600 dark:text-blue-400',
+              },
+              {
+                variant: 'default',
+                label: 'Default',
+                message: 'Preview notification',
+                Icon: Bell,
+                color: 'text-muted-foreground',
+              },
+            ] as const
+          ).map(({ variant, label, message, Icon, color }) => (
             <Button
               key={variant}
               variant="outline"
@@ -416,5 +463,5 @@ export default function UiPreviewPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

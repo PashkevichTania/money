@@ -1,4 +1,4 @@
-import i18n from './index'
+import i18n from './index';
 
 // Domain/API errors retain their existing English contract. Translate only at
 // presentation boundaries; never run this against user-entered names or notes.
@@ -33,18 +33,16 @@ const patterns: [RegExp, string, string[]][] = [
     'Expense "{{title}}" has invalid amounts or currency. Correct it before relying on balances.',
     ['title'],
   ],
-]
+];
 
 export function translateError(message: string): string {
   for (const [pattern, key, names] of patterns) {
-    const match = message.match(pattern)
+    const match = message.match(pattern);
     if (match)
       return i18n.t(
         key,
-        Object.fromEntries(
-          names.map((name, index) => [name, match[index + 1]]),
-        ),
-      )
+        Object.fromEntries(names.map((name, index) => [name, match[index + 1]]))
+      );
   }
-  return i18n.t(message)
+  return i18n.t(message);
 }

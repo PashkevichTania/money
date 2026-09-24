@@ -1,16 +1,17 @@
-import { useTranslation } from 'react-i18next'
-import { Section } from '@/components/ui/field'
-import type { ExpenseRateState } from '@/features/expenses/hooks/useExpenseExchangeRate'
-import type { SplitValidationError } from '@/utils/split'
-import { formatMoney } from '@/utils/currency'
+import { useTranslation } from 'react-i18next';
+
+import { Section } from '@/components/ui/field';
+import type { ExpenseRateState } from '@/features/expenses/hooks/useExpenseExchangeRate';
+import { formatMoney } from '@/utils/currency';
+import type { SplitValidationError } from '@/utils/split';
 
 interface ExpenseReviewSectionProps {
-  convertedAmount: number
-  groupCurrency: string
-  nameOf: (id: string) => string
-  previewNetBalances: Record<string, number>
-  rateState: ExpenseRateState
-  validationErrors: SplitValidationError[]
+  convertedAmount: number;
+  groupCurrency: string;
+  nameOf: (id: string) => string;
+  previewNetBalances: Record<string, number>;
+  rateState: ExpenseRateState;
+  validationErrors: SplitValidationError[];
 }
 
 export function ExpenseReviewSection({
@@ -21,7 +22,7 @@ export function ExpenseReviewSection({
   rateState,
   validationErrors,
 }: ExpenseReviewSectionProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   return (
     <Section
       title={t('Review')}
@@ -36,10 +37,7 @@ export function ExpenseReviewSection({
       {!validationErrors.length && rateState.rate && !rateState.error ? (
         <div className="divide-y">
           {Object.entries(previewNetBalances).map(([id, net]) => (
-            <div
-              key={id}
-              className="flex justify-between gap-3 py-2 text-sm"
-            >
+            <div key={id} className="flex justify-between gap-3 py-2 text-sm">
               <span>{nameOf(id)}</span>
               <span
                 className={`text-right tabular-nums ${net > 0 ? 'text-positive' : net < 0 ? 'text-destructive' : 'text-muted-foreground'}`}
@@ -53,9 +51,11 @@ export function ExpenseReviewSection({
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          {t("Complete the amounts and split to preview each person's balance.")}
+          {t(
+            "Complete the amounts and split to preview each person's balance."
+          )}
         </p>
       )}
     </Section>
-  )
+  );
 }

@@ -1,52 +1,53 @@
-import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
-import { Field, Message } from '@/components/ui/field'
-import { useState } from 'react'
-import type { Group } from '@/types/group'
-import { useGroupStore } from '@/stores/groupStore'
-import { useNotify } from '@/hooks/useNotify'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
+import { Field, Message } from '@/components/ui/field';
+import { Modal } from '@/components/ui/modal';
+import { useNotify } from '@/hooks/useNotify';
+import { useGroupStore } from '@/stores/groupStore';
+import type { Group } from '@/types/group';
 
 export default function DeleteGroupDialog({
   open,
   onClose,
   group,
 }: {
-  open: boolean
-  onClose: () => void
-  group: Group
+  open: boolean;
+  onClose: () => void;
+  group: Group;
 }) {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  const { enqueueSnackbar } = useNotify()
-  const removeGroup = useGroupStore((s) => s.removeGroup)
-  const [confirmText, setConfirmText] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [localError, setLocalError] = useState<string | null>(null)
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useNotify();
+  const removeGroup = useGroupStore((s) => s.removeGroup);
+  const [confirmText, setConfirmText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  const canDelete = confirmText.trim() === group.name
+  const canDelete = confirmText.trim() === group.name;
 
   const onConfirm = async () => {
-    if (!canDelete) return
-    setBusy(true)
-    setLocalError(null)
+    if (!canDelete) return;
+    setBusy(true);
+    setLocalError(null);
     try {
-      await removeGroup(group.id)
+      await removeGroup(group.id);
       enqueueSnackbar(t('Group "{{name}}" deleted', { name: group.name }), {
         variant: 'success',
-      })
-      onClose()
-      setConfirmText('')
-      navigate('/groups', { replace: true })
+      });
+      onClose();
+      setConfirmText('');
+      navigate('/groups', { replace: true });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete group'
-      setLocalError(msg)
-      enqueueSnackbar(msg, { variant: 'error' })
+      const msg = err instanceof Error ? err.message : 'Failed to delete group';
+      setLocalError(msg);
+      enqueueSnackbar(msg, { variant: 'error' });
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   return (
     <Modal
@@ -54,7 +55,7 @@ export default function DeleteGroupDialog({
       onClose={onClose}
       title={t('Delete group?')}
       description={t(
-        'This action permanently removes this group and its expense history.',
+        'This action permanently removes this group and its expense history.'
       )}
       busy={busy}
     >
@@ -83,5 +84,5 @@ export default function DeleteGroupDialog({
         </Button>
       </div>
     </Modal>
-  )
+  );
 }

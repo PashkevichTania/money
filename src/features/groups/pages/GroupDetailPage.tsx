@@ -1,41 +1,42 @@
-import { useTranslation } from 'react-i18next'
-import { Plus, ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Section, Message } from '@/components/ui/field'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Link as RouterLink } from 'react-router-dom'
-import { useState } from 'react'
-import { useSelectedGroup } from '@/hooks/useSelectedGroup'
-import MembersTab from '@/features/groups/components/MembersTab'
-import BalancesTab from '@/features/groups/components/BalancesTab'
-import GroupSettingsTab from '@/features/groups/components/GroupSettingsTab'
-import ExpenseList from '@/features/expenses/components/ExpenseList'
-import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog'
-import type { Expense } from '@/types/expense'
+import { ArrowLeft, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link as RouterLink } from 'react-router-dom';
 
-const TAB_LABELS = ['Expenses', 'Balances', 'Members', 'Settings'] as const
+import { Button } from '@/components/ui/button';
+import { Message, Section } from '@/components/ui/field';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AddExpenseDialog from '@/features/expenses/components/AddExpenseDialog';
+import ExpenseList from '@/features/expenses/components/ExpenseList';
+import BalancesTab from '@/features/groups/components/BalancesTab';
+import GroupSettingsTab from '@/features/groups/components/GroupSettingsTab';
+import MembersTab from '@/features/groups/components/MembersTab';
+import { useSelectedGroup } from '@/hooks/useSelectedGroup';
+import type { Expense } from '@/types/expense';
+
+const TAB_LABELS = ['Expenses', 'Balances', 'Members', 'Settings'] as const;
 
 export default function GroupDetailPage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const { group, members, loadingMembers, loading, notFound, error } =
-    useSelectedGroup()
-  const [tab, setTab] = useState(0)
-  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false)
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+    useSelectedGroup();
+  const [tab, setTab] = useState(0);
+  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   const openAddExpense = () => {
-    setEditingExpense(null)
-    setExpenseDialogOpen(true)
-  }
+    setEditingExpense(null);
+    setExpenseDialogOpen(true);
+  };
   const openEditExpense = (expense: Expense) => {
-    setEditingExpense(expense)
-    setExpenseDialogOpen(true)
-  }
+    setEditingExpense(expense);
+    setExpenseDialogOpen(true);
+  };
   const closeExpenseDialog = () => {
-    setExpenseDialogOpen(false)
-    setEditingExpense(null)
-  }
+    setExpenseDialogOpen(false);
+    setEditingExpense(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -122,5 +123,5 @@ export default function GroupDetailPage() {
         </>
       )}
     </div>
-  )
+  );
 }

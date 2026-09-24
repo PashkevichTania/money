@@ -1,7 +1,22 @@
-import { Utensils, House, Bus, ShoppingBag, Clapperboard, HeartPulse, Plane, Shapes, Receipt, type LucideIcon } from 'lucide-react'
-import type { ExpenseType } from '@/types/expense'
+import {
+  Bus,
+  Clapperboard,
+  HeartPulse,
+  House,
+  type LucideIcon,
+  Plane,
+  Receipt,
+  Shapes,
+  ShoppingBag,
+  Utensils,
+} from 'lucide-react';
 
-export const EXPENSE_TYPE_DETAILS: Record<ExpenseType, { label: string; Icon: LucideIcon }> = {
+import type { ExpenseType } from '@/types/expense';
+
+export const EXPENSE_TYPE_DETAILS: Record<
+  ExpenseType,
+  { label: string; Icon: LucideIcon }
+> = {
   food: { label: 'Food', Icon: Utensils },
   housing: { label: 'Housing', Icon: House },
   transport: { label: 'Transport', Icon: Bus },
@@ -10,8 +25,12 @@ export const EXPENSE_TYPE_DETAILS: Record<ExpenseType, { label: string; Icon: Lu
   health: { label: 'Health', Icon: HeartPulse },
   travel: { label: 'Travel', Icon: Plane },
   other: { label: 'Other', Icon: Shapes },
-}
+};
 
 export function getExpenseTypeDetails(type?: ExpenseType) {
-  return (type && Object.hasOwn(EXPENSE_TYPE_DETAILS, type) && EXPENSE_TYPE_DETAILS[type]) || { label: 'No type', Icon: Receipt }
+  return (
+    (type &&
+      Object.hasOwn(EXPENSE_TYPE_DETAILS, type) &&
+      EXPENSE_TYPE_DETAILS[type]) || { label: 'No type', Icon: Receipt }
+  );
 }

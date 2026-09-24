@@ -1,9 +1,11 @@
-import { Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
-import { formatMoney } from '@/utils/currency'
-import type { GroupBalance } from '../hooks/useBalanceOverview'
-import QuickSettleButton from './QuickSettleButton'
+import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+
+import { formatMoney } from '@/utils/currency';
+
+import type { GroupBalance } from '../hooks/useBalanceOverview';
+import QuickSettleButton from './QuickSettleButton';
 
 export default function BalanceList({
   balances,
@@ -11,27 +13,27 @@ export default function BalanceList({
   names,
   limit,
 }: {
-  balances: GroupBalance[]
-  userId: string
-  names: Record<string, string>
-  limit?: number
+  balances: GroupBalance[];
+  userId: string;
+  names: Record<string, string>;
+  limit?: number;
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const entries = balances.flatMap((b) =>
-    b.transfers.map((transfer) => ({ group: b.group, transfer })),
-  )
+    b.transfers.map((transfer) => ({ group: b.group, transfer }))
+  );
   if (!entries.length)
     return (
       <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
         {t('All settled up. Nobody owes anything.')}
       </p>
-    )
+    );
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {entries.slice(0, limit ?? entries.length).map(({ group, transfer }) => {
-        const incoming = transfer.to === userId
-        const person = incoming ? transfer.from : transfer.to
-        const Icon = incoming ? ArrowDownLeft : ArrowUpRight
+        const incoming = transfer.to === userId;
+        const person = incoming ? transfer.from : transfer.to;
+        const Icon = incoming ? ArrowDownLeft : ArrowUpRight;
         return (
           <article
             key={`${group.id}:${transfer.from}:${transfer.to}`}
@@ -69,8 +71,8 @@ export default function BalanceList({
               userId={userId}
             />
           </article>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
