@@ -436,5 +436,9 @@
   "Add one friend at a time.": "Add one friend at a time.",
   "Create the group first, then add confirmed friends.": "Create the group first, then add confirmed friends.",
   "Loading...": "Loading...",
-  "A free, non-commercial open-source project.": "A free, non-commercial open-source project."
+  "A free, non-commercial open-source project.": "A free, non-commercial open-source project.",
+  "Choose friends now or add them later. You are included automatically.": "Choose friends now or add them later. You are included automatically.",
+  "Selected friends: {{count}}": "Selected friends: {{count}}",
+  "No friends yet. You can add members after creating the group.": "No friends yet. You can add members after creating the group.",
+  "Group created, but these friends could not be added: {{names}}. Try again in Members.": "Group created, but these friends could not be added: {{names}}. Try again in Members."
 }

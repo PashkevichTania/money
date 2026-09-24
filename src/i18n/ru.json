@@ -438,5 +438,9 @@
   "Add one friend at a time.": "Добавляйте друзей по одному.",
   "Create the group first, then add confirmed friends.": "Сначала создайте группу, затем добавьте друзей.",
   "Loading...": "Загрузка...",
-  "A free, non-commercial open-source project.": "Бесплатный некоммерческий проект с открытым исходным кодом."
+  "A free, non-commercial open-source project.": "Бесплатный некоммерческий проект с открытым исходным кодом.",
+  "Choose friends now or add them later. You are included automatically.": "Выберите друзей сейчас или добавьте их позже. Вы уже включены в группу.",
+  "Selected friends: {{count}}": "Выбрано друзей: {{count}}",
+  "No friends yet. You can add members after creating the group.": "Пока нет друзей. Вы сможете добавить участников после создания группы.",
+  "Group created, but these friends could not be added: {{names}}. Try again in Members.": "Группа создана, но не удалось добавить: {{names}}. Попробуйте ещё раз на вкладке «Участники»."
 }

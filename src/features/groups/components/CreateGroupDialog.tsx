@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { CurrencySelect, Field, Message } from '@/components/ui/field';
 import { Modal } from '@/components/ui/modal';
 import { DEFAULT_BASE_CURRENCY } from '@/config/currencies';
+import { useFriends } from '@/hooks/useFriends';
 import { useCurrentUser } from '@/hooks/useGroups';
 import { useNotify } from '@/hooks/useNotify';
 import { useGroupStore } from '@/stores/groupStore';
@@ -34,6 +35,14 @@ export default function CreateGroupDialog({
   const me = useCurrentUser();
   const navigate = useNavigate();
   const createGroupAndSelect = useGroupStore((s) => s.createGroupAndSelect);
+  const addMemberByEmail = useGroupStore((s) => s.addMemberByEmail);
+  const {
+    friends,
+    loading: loadingFriends,
+    error: friendsError,
+  } = useFriends();
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [query, setQuery] = useState('');
   const loading = useGroupStore((s) => s.loading);
   const errors = useGroupStore((s) => s.errors);
   const clearErrors = useGroupStore((s) => s.clearErrors);
@@ -43,6 +52,8 @@ export default function CreateGroupDialog({
   const [previousOpen, setPreviousOpen] = useState(open);
   if (previousOpen !== open) {
     setPreviousOpen(open);
+    setSelectedIds([]);
+    setQuery('');
     setLocalError(null);
   }
 
@@ -81,9 +92,29 @@ export default function CreateGroupDialog({
           memberIds: [me.id],
           createdBy: me.id,
         });
-        enqueueSnackbar(t('Group "{{name}}" created', { name: group.name }), {
-          variant: 'success',
-        });
+        const failedNames: string[] = [];
+        for (const friend of friends.filter((friend) =>
+          selectedIds.includes(friend.id)
+        )) {
+          try {
+            await addMemberByEmail(group.id, friend.email);
+          } catch {
+            failedNames.push(friend.displayName || friend.email);
+          }
+        }
+        if (failedNames.length) {
+          enqueueSnackbar(
+            t(
+              'Group created, but these friends could not be added: {{names}}. Try again in Members.',
+              { names: failedNames.join(', ') }
+            ),
+            { variant: 'warning' }
+          );
+        } else {
+          enqueueSnackbar(t('Group "{{name}}" created', { name: group.name }), {
+            variant: 'success',
+          });
+        }
         onClose();
         navigate(`/groups/${group.id}`, { replace: true });
       } catch (err) {
@@ -95,6 +126,9 @@ export default function CreateGroupDialog({
     },
     [
       me,
+      friends,
+      selectedIds,
+      addMemberByEmail,
       createGroupAndSelect,
       clearErrors,
       enqueueSnackbar,
@@ -104,6 +138,10 @@ export default function CreateGroupDialog({
     ]
   );
 
+  const search = query.trim().toLowerCase();
+  const availableFriends = friends.filter((friend) =>
+    `${friend.displayName} ${friend.email}`.toLowerCase().includes(search)
+  );
   const busy = isSubmitting || loading;
   return (
     <Modal
@@ -142,6 +180,81 @@ export default function CreateGroupDialog({
               'This currency is fixed once the group is created. Expenses in other currencies will be converted to it.'
             )}
           </p>
+          <section className="space-y-3" aria-label={t('Members')}>
+            <div>
+              <h3 className="text-sm font-medium">{t('Members')}</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t(
+                  'Choose friends now or add them later. You are included automatically.'
+                )}
+              </p>
+            </div>
+            {friendsError ? (
+              <Message error>{friendsError}</Message>
+            ) : loadingFriends ? (
+              <p role="status" className="text-sm text-muted-foreground">
+                {t('Loading...')}
+              </p>
+            ) : friends.length ? (
+              <>
+                <Field
+                  label={t('Find a friend')}
+                  placeholder={t('Name or email')}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('Selected friends: {{count}}', {
+                    count: selectedIds.filter((id) =>
+                      friends.some((friend) => friend.id === id)
+                    ).length,
+                  })}
+                </p>
+                <ul
+                  aria-label={t('Friends')}
+                  className="max-h-48 overflow-y-auto divide-y rounded-md border"
+                >
+                  {availableFriends.map((friend) => (
+                    <li key={friend.id}>
+                      <label className="flex cursor-pointer items-center gap-3 p-3 hover:bg-muted">
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-primary"
+                          checked={selectedIds.includes(friend.id)}
+                          onChange={(event) =>
+                            setSelectedIds((ids) =>
+                              event.target.checked
+                                ? [...ids, friend.id]
+                                : ids.filter((id) => id !== friend.id)
+                            )
+                          }
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium">
+                            {friend.displayName}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {friend.email}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                {!availableFriends.length && (
+                  <p className="text-sm text-muted-foreground">
+                    {t('No available friends')}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t(
+                  'No friends yet. You can add members after creating the group.'
+                )}
+              </p>
+            )}
+          </section>
           <div className="flex justify-end gap-2 border-t pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               {t('Cancel')}
