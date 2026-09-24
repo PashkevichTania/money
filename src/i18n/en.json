@@ -445,5 +445,11 @@
   "Date and notes": "Date and notes",
   "I paid (Full)": "I paid (Full)",
   "Split payments": "Split payments",
-  "View balances": "View balances"
+  "View balances": "View balances",
+  "Favorite currencies": "Favorite currencies",
+  "Choose up to five currencies. They appear first in currency lists.": "Choose up to five currencies. They appear first in currency lists.",
+  "Remove {{currency}} from favorites": "Remove {{currency}} from favorites",
+  "Saved to your account.": "Saved to your account.",
+  "Preferences saved": "Preferences saved",
+  "Choose up to five different currencies.": "Choose up to five different currencies."
 }

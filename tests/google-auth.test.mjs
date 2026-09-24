@@ -56,6 +56,12 @@ async function loadStore(configured) {
     'utf8'
   );
   for (const [name, value] of [
+    [
+      '@/i18n',
+      url(
+        "export default { resolvedLanguage: 'ru' }; export const normalizeLanguage = (value) => value === 'ru' ? 'ru' : 'en'"
+      ),
+    ],
     ['zustand', import.meta.resolve('zustand')],
     ['firebase/auth', authModule],
     ['firebase/firestore', firestoreModule],
@@ -104,6 +110,8 @@ test('Google sign-in creates the standard profile and selects an account', async
     email: 'user@example.com',
     photoURL: user.photoURL,
     defaultCurrency: 'USD',
+    favoriteCurrencies: [],
+    language: 'ru',
     createdAt: '2026-09-20T00:00:00.000Z',
   });
   assert.deepEqual(store.getState().profile, stored);
@@ -115,6 +123,8 @@ test('returning Google user keeps their profile and currency preference', async 
     displayName: 'My custom name',
     email: 'user@example.com',
     defaultCurrency: 'EUR',
+    favoriteCurrencies: ['BYN', 'EUR'],
+    language: 'en',
     createdAt: '2024-01-01',
   };
   const existing = { ...stored };

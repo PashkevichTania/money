@@ -16,6 +16,7 @@ import {
   where,
 } from 'firebase/firestore';
 
+import { CURRENCIES } from '@/config/currencies';
 import { db, isFirebaseConfigured } from '@/config/firebase';
 import type { UserProfile } from '@/types/user';
 
@@ -33,6 +34,8 @@ const userConverter: FirestoreDataConverter<UserProfile> = {
     email: user.email,
     photoURL: user.photoURL ?? null,
     defaultCurrency: user.defaultCurrency,
+    favoriteCurrencies: user.favoriteCurrencies ?? [],
+    ...(user.language ? { language: user.language } : {}),
     createdAt: user.createdAt,
   }),
   fromFirestore: (snap: QueryDocumentSnapshot): UserProfile => {
@@ -43,6 +46,8 @@ const userConverter: FirestoreDataConverter<UserProfile> = {
       email: data.email,
       photoURL: data.photoURL ?? null,
       defaultCurrency: data.defaultCurrency,
+      favoriteCurrencies: data.favoriteCurrencies ?? [],
+      language: data.language,
       createdAt: data.createdAt,
     };
   },
@@ -132,10 +137,27 @@ export async function searchUsersByEmail(
 export async function updateProfile(
   userId: string,
   patch: Partial<
-    Pick<UserProfile, 'displayName' | 'photoURL' | 'defaultCurrency'>
+    Pick<
+      UserProfile,
+      | 'displayName'
+      | 'photoURL'
+      | 'defaultCurrency'
+      | 'favoriteCurrencies'
+      | 'language'
+    >
   >
 ): Promise<UserProfile> {
   assertFirebase();
+  if (
+    patch.favoriteCurrencies &&
+    (patch.favoriteCurrencies.length > 5 ||
+      new Set(patch.favoriteCurrencies).size !==
+        patch.favoriteCurrencies.length ||
+      patch.favoriteCurrencies.some(
+        (code) => !CURRENCIES.some((currency) => currency.code === code)
+      ))
+  )
+    throw new Error('Choose up to five different currencies.');
   const current = await getUser(userId);
   if (!current) throw new Error('User profile not found');
   const next: UserProfile = { ...current, ...patch };

@@ -13,6 +13,7 @@ import { create } from 'zustand';
 
 import { DEFAULT_BASE_CURRENCY } from '@/config/currencies';
 import { auth, db, isFirebaseConfigured } from '@/config/firebase';
+import i18n, { normalizeLanguage } from '@/i18n';
 import type { AuthStatus, UserProfile } from '@/types/user';
 import { nowIso } from '@/utils/dates';
 
@@ -91,6 +92,8 @@ async function createProfileIfMissing(
     email: (user.email || '').toLowerCase(),
     photoURL: user.photoURL || null,
     defaultCurrency: DEFAULT_BASE_CURRENCY,
+    favoriteCurrencies: [],
+    language: normalizeLanguage(i18n.resolvedLanguage ?? null),
     createdAt: nowIso(),
   };
   await setDoc(ref, profile);

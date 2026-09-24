@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { updateProfile } from '@/api/users';
 import { LanguageSelect } from '@/components/LanguageSelect';
+import { Button } from '@/components/ui/button';
 import { CurrencySelect, Field, Section } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -15,15 +16,20 @@ export default function SettingsPage() {
   const { themeMode, toggleTheme } = useApp();
   const { enqueueSnackbar } = useNotify();
   const [busy, setBusy] = useState(false);
-  const saveCurrency = async (currency: string) => {
+  const favorites = profile?.favoriteCurrencies ?? [];
+  const savePreference = async (patch: {
+    defaultCurrency?: string;
+    favoriteCurrencies?: string[];
+  }) => {
     if (!profile) return;
     setBusy(true);
     try {
-      const next = await updateProfile(profile.id, {
-        defaultCurrency: currency,
-      });
-      useAuthStore.setState({ profile: next });
-      enqueueSnackbar('Default currency saved', { variant: 'success' });
+      await updateProfile(profile.id, patch);
+      if (useAuthStore.getState().profile?.id !== profile.id) return;
+      useAuthStore.setState((state) => ({
+        profile: state.profile ? { ...state.profile, ...patch } : null,
+      }));
+      enqueueSnackbar('Preferences saved', { variant: 'success' });
     } catch (error) {
       enqueueSnackbar(
         error instanceof Error ? error.message : 'Could not save preference',
@@ -58,14 +64,55 @@ export default function SettingsPage() {
         <Section title={t('Preferences')}>
           <LanguageSelect />
           <CurrencySelect
-            label={t('Default currency for new groups')}
+            label={t('Default currency')}
             value={profile?.defaultCurrency || 'USD'}
             disabled={busy || !profile}
-            onValueChange={(value) => void saveCurrency(value)}
+            onValueChange={(value) =>
+              void savePreference({ defaultCurrency: value })
+            }
           />
           <p className="text-xs text-muted-foreground">
             {t('Existing groups keep the currency they were created with.')}
           </p>
+          <div className="space-y-3 border-t pt-5">
+            <CurrencySelect
+              label={t('Favorite currencies')}
+              value=""
+              disabled={busy || !profile || favorites.length >= 5}
+              onValueChange={(value) => {
+                if (!favorites.includes(value) && favorites.length < 5)
+                  void savePreference({
+                    favoriteCurrencies: [...favorites, value],
+                  });
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'Choose up to five currencies. They appear first in currency lists.'
+              )}{' '}
+              ({favorites.length}/5)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {favorites.map((code) => (
+                <Button
+                  key={code}
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  aria-label={t('Remove {{currency}} from favorites', {
+                    currency: code,
+                  })}
+                  onClick={() =>
+                    void savePreference({
+                      favoriteCurrencies: favorites.filter((c) => c !== code),
+                    })
+                  }
+                >
+                  {code} ×
+                </Button>
+              ))}
+            </div>
+          </div>
           <div className="flex items-center justify-between border-t pt-5">
             <div>
               <Label htmlFor="dark-mode">{t('Dark mode')}</Label>

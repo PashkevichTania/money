@@ -4,6 +4,8 @@ export interface UserProfile {
   email: string;
   photoURL: string | null;
   defaultCurrency: string;
+  favoriteCurrencies?: string[];
+  language?: 'en' | 'ru';
   createdAt: string;
 }
 

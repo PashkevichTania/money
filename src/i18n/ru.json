@@ -447,5 +447,11 @@
   "Date and notes": "Дата и заметки",
   "I paid (Full)": "Я оплатил всё",
   "Split payments": "Несколько плательщиков",
-  "View balances": "Показать балансы"
+  "View balances": "Показать балансы",
+  "Favorite currencies": "Любимые валюты",
+  "Choose up to five currencies. They appear first in currency lists.": "Выберите до пяти валют. Они будут первыми в списках валют.",
+  "Remove {{currency}} from favorites": "Убрать {{currency}} из любимых",
+  "Saved to your account.": "Сохраняется в вашем аккаунте.",
+  "Preferences saved": "Настройки сохранены",
+  "Choose up to five different currencies.": "Выберите до пяти разных валют."
 }

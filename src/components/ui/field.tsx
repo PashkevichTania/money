@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { CURRENCIES } from '@/config/currencies';
 import { translateError } from '@/i18n/errors';
 import { cn } from '@/lib/utils.ts';
+import { useAuthStore } from '@/stores/authStore';
 
 import { Input } from './input';
 import { Label } from './label';
@@ -57,15 +58,22 @@ export function CurrencySelect({
   onBlur?: () => void;
 }) {
   const { t, i18n } = useTranslation();
+  const favorites = useAuthStore((s) => s.profile?.favoriteCurrencies);
   const currencies = useMemo(() => {
     const names = new Intl.DisplayNames([i18n.resolvedLanguage || 'en'], {
       type: 'currency',
     });
-    return CURRENCIES.map((currency) => ({
+    const ordered = [
+      ...(favorites ?? []).flatMap((code) =>
+        CURRENCIES.filter((c) => c.code === code)
+      ),
+      ...CURRENCIES.filter((c) => !favorites?.includes(c.code)),
+    ];
+    return ordered.map((currency) => ({
       ...currency,
       label: names.of(currency.code) || currency.label,
     }));
-  }, [i18n.resolvedLanguage]);
+  }, [i18n.resolvedLanguage, favorites]);
   const id = useId();
   return (
     <div className="space-y-2">
