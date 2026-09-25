@@ -3,7 +3,7 @@
   "Overview": "Агляд",
   "Notifications": "Апавяшчэнні",
   "Main navigation": "Асноўная рух",
-  "A little more living.": "Больш за жыццё.",
+  "A little more living.": "Больш жыцця.",
   "A little less keeping track.": "Менш падлікаў.",
   "Good company. Clear expenses.": "Добрая кампанія. Зразумелыя выдаткі.",
   "Start a group": "Стварыць групу",
@@ -16,7 +16,7 @@
   "Signing out...": "Выходзім...",
   "Sign out": "Выйсці",
   "Failed to sign out": "Не ўдалося выйсці",
-  "New group": "Новы гурт",
+  "New group": "Новая група",
   "Your groups": "Мае групы",
   "Signed out": "Вы выйшлі з акаўнта",
   "Toggle navigation": "Адкрыць ці схаваць меню",
@@ -135,7 +135,7 @@
   "Group settings": "Налады групы",
   "e.g. Weekend in Lisbon": "Напрыклад, выходныя ў Лісабоне",
   "This currency is fixed once the group is created. Expenses in other currencies will be converted to it.": "Пасля стварэння групы валюту змяніць нельга. Выдаткі ў іншых валютах будуць пералічаны ў яе.",
-  "Base currency": "Базавая валюта",
+  "Base currency": "Асноўная валюта",
   "Group \"{{name}}\" deleted": "Гурт «{{name}}» выдалены",
   "Group \"{{name}}\" created": "Гурт «{{name}}» створаны",
   "The base currency cannot be changed after creation.": "Базавую валюту нельга змяніць пасля стварэння групы.",
@@ -456,5 +456,7 @@
   "Choose up to five currencies. They appear first in currency lists.": "Абярыце да пяці валют. Яны будуць першымі ў спісах валют.",
   "Saved to your account.": "Захоўваецца ў вашым акаўнце.",
   "One person": "Адзін чалавек",
-  "Payer": "Хто аплаціў"
+  "Payer": "Хто аплаціў",
+  "members_few": "{{count}} удзельнікі",
+  "members_many": "{{count}} удзельнікаў"
 }
