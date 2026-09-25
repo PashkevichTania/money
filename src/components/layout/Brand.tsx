@@ -20,13 +20,13 @@ export function Brand({
         'inline-flex items-center gap-3 rounded-md font-semibold tracking-tight',
         className
       )}
-      aria-label="SplitSmart"
+      aria-label="SmartMoney"
     >
       <span className="grid size-9 place-items-center rounded-md bg-primary text-primary-foreground">
         <ArrowLeftRight className="size-5" aria-hidden="true" />
       </span>
       <span className="text-xl">
-        SplitSmart<span className="text-positive">.</span>
+        SmartMoney<span className="text-positive">.</span>
       </span>
     </Link>
   );

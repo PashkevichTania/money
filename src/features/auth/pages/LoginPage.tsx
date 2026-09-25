@@ -71,7 +71,7 @@ export default function LoginPage() {
       description={t('Sign in to pick up where you left off.')}
       footer={
         <>
-          {t('New to SplitSmart?')}{' '}
+          {t('New to SmartMoney?')}{' '}
           <RouterLink
             to="/signup"
             className="font-semibold text-primary underline-offset-4 hover:underline"

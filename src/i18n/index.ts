@@ -5,7 +5,7 @@ import be from './be.json';
 import en from './en.json';
 import ru from './ru.json';
 
-export const LANGUAGE_KEY = 'splitsmart.language';
+export const LANGUAGE_KEY = 'SmartMoney.language';
 export type Language = 'en' | 'be' | 'ru';
 export function normalizeLanguage(value: string | null): Language {
   return value === 'be' || value === 'ru' ? value : 'en';
@@ -38,7 +38,7 @@ function applyLanguage(language: string) {
   const supported = normalizeLanguage(language);
   if (typeof document !== 'undefined') {
     document.documentElement.lang = supported;
-    document.title = i18n.t('SplitSmart — Split Expenses with Friends');
+    document.title = i18n.t('SmartMoney — Split Expenses with Friends');
   }
   try {
     localStorage.setItem(LANGUAGE_KEY, supported);

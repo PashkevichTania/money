@@ -90,7 +90,7 @@ export default function UiPreviewPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-positive">
-            SplitSmart / Design system
+            SmartMoney / Design system
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">
             A little more clarity.

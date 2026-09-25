@@ -21,7 +21,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
           className="size-6 animate-spin text-primary"
           aria-hidden="true"
         />
-        {t('Loading SplitSmart...')}
+        {t('Loading SmartMoney...')}
       </div>
     );
   }

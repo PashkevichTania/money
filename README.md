@@ -1,4 +1,4 @@
-# SplitSmart
+# SmartMoney
 
 A self-hostable app for shared expenses, flexible splits and currency conversion.
 
@@ -33,7 +33,7 @@ Under Balances, the sender or recipient can record a full or partial payment alr
 
 ## Languages
 
-English and Russian are available under **Settings → Language**, and on the login/signup screens. The choice applies immediately and is saved in this browser (`splitsmart.language` in localStorage). It does not add Firestore reads/writes or sync across devices. English is the default and fallback.
+English and Russian are available under **Settings → Language**, and on the login/signup screens. The choice applies immediately and is saved in this browser (`SmartMoney.language` in localStorage). It does not add Firestore reads/writes or sync across devices. English is the default and fallback.
 
 UI dictionaries live in `src/i18n/en.json` and `src/i18n/ru.json`; use `useTranslation()` for new UI text and interpolation for dynamic values. Member counts use plural forms; displayed amounts, dates and currency names use the selected locale. User-entered names, expense descriptions and notes are not translated. Native date/number controls may follow the browser/OS locale. The development-only design gallery keeps its sample copy in English; its embedded production forms and settings are localized.
 

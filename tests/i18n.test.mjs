@@ -27,7 +27,7 @@ async function setup(t, initial, blocked = false) {
     globalThis,
     'localStorage'
   );
-  const values = new Map([['splitsmart.language', initial]]);
+  const values = new Map([['SmartMoney.language', initial]]);
   Object.defineProperty(globalThis, 'document', {
     configurable: true,
     value: { documentElement: { lang: '' } },
@@ -91,7 +91,7 @@ test('restores saved language and switches immediately with Russian plural forms
   await i18n.changeLanguage('en');
   assert.equal(i18n.t('Settings'), 'Settings');
   assert.equal(i18n.t('members', { count: 1 }), '1 member');
-  assert.equal(values.get('splitsmart.language'), 'en');
+  assert.equal(values.get('SmartMoney.language'), 'en');
   assert.equal(document.documentElement.lang, 'en');
 });
 
