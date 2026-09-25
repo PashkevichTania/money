@@ -5,6 +5,7 @@ import ts from 'typescript';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const en = JSON.parse(read('../src/i18n/en.json'));
+const be = JSON.parse(read('../src/i18n/be.json'));
 const ru = JSON.parse(read('../src/i18n/ru.json'));
 const compile = (source) =>
   'data:text/javascript;base64,' +
@@ -62,6 +63,7 @@ async function setup(t, initial, blocked = false) {
       JSON.stringify(import.meta.resolve('react-i18next'))
     )
     .replace("import en from './en.json'", `const en = ${JSON.stringify(en)}`)
+    .replace("import be from './be.json'", `const be = ${JSON.stringify(be)}`)
     .replace("import ru from './ru.json'", `const ru = ${JSON.stringify(ru)}`);
   const url = compile(source + `\n// instance: ${initial}-${blocked}`);
   const { default: i18n } = await import(url);

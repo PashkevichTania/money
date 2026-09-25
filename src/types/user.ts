@@ -1,3 +1,5 @@
+import type { Language } from '@/i18n';
+
 export interface UserProfile {
   id: string;
   displayName: string;
@@ -5,7 +7,7 @@ export interface UserProfile {
   photoURL: string | null;
   defaultCurrency: string;
   favoriteCurrencies?: string[];
-  language?: 'en' | 'ru';
+  language?: Language;
   createdAt: string;
 }
 

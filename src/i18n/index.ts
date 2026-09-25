@@ -1,14 +1,16 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
+import be from './be.json';
 import en from './en.json';
 import ru from './ru.json';
 
 export const LANGUAGE_KEY = 'splitsmart.language';
-export type Language = 'en' | 'ru';
+export type Language = 'en' | 'be' | 'ru';
 export function normalizeLanguage(value: string | null): Language {
-  return value === 'ru' ? 'ru' : 'en';
+  return value === 'be' || value === 'ru' ? value : 'en';
 }
+
 function savedLanguage(): Language {
   try {
     return normalizeLanguage(localStorage.getItem(LANGUAGE_KEY));
@@ -18,10 +20,14 @@ function savedLanguage(): Language {
 }
 
 void i18n.use(initReactI18next).init({
-  resources: { en: { translation: en }, ru: { translation: ru } },
+  resources: {
+    en: { translation: en },
+    be: { translation: be },
+    ru: { translation: ru },
+  },
   lng: savedLanguage(),
   fallbackLng: 'en',
-  supportedLngs: ['en', 'ru'],
+  supportedLngs: ['en', 'be', 'ru'],
   keySeparator: false,
   nsSeparator: false,
   interpolation: { escapeValue: false },

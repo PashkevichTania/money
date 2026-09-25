@@ -46,6 +46,9 @@ export function LanguageSelect({ compact = false }: { compact?: boolean }) {
         <option value="en" lang="en">
           English
         </option>
+        <option value="be" lang="be">
+          Беларуская
+        </option>
         <option value="ru" lang="ru">
           Русский
         </option>
