@@ -68,6 +68,14 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <p className="mt-5 border-t pt-4 text-[11px] leading-4 text-muted-foreground">
             {t('A free, non-commercial open-source project.')}
           </p>
+          <a
+            href="https://github.com/PashkevichTania/money"
+            rel="noopener noreferrer"
+            target="_blank"
+            className="mt-4 inline-flex items-center gap-1.5 rounded text-xs font-semibold text-positive"
+          >
+            Github <ArrowUpRight className="size-3.5" aria-hidden="true" />
+          </a>
         </div>
       </div>
     </div>

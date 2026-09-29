@@ -65,10 +65,18 @@ export function AuthLayout({
             </div>
           </div>
         </div>
-        <p className="flex items-center gap-2 text-xs text-[#a7d5c5]">
-          {t('Less keeping track. More making plans.')}
-          <ArrowUpRight className="size-3.5" aria-hidden="true" />
-        </p>
+        <div className="text-xs leading-5 text-muted-foreground">
+          <p>{t('Made for the things you share.')}</p>
+          <p>{t('A free, non-commercial open-source project.')}</p>
+          <a
+            href="https://github.com/PashkevichTania/money"
+            rel="noopener noreferrer"
+            target="_blank"
+            className="inline-flex items-center gap-1.5 rounded text-xs font-semibold text-positive"
+          >
+            Github <ArrowUpRight className="size-3.5" aria-hidden="true" />
+          </a>
+        </div>
       </aside>
       <section className="flex min-h-dvh flex-col bg-card px-6 sm:px-12">
         <div className="flex h-24 shrink-0 items-center justify-between">
@@ -94,10 +102,6 @@ export function AuthLayout({
           <div className="mt-7 text-center text-sm text-muted-foreground">
             {footer}
           </div>
-        </div>
-        <div className="py-7 text-center text-xs leading-5 text-muted-foreground">
-          <p>{t('Made for the things you share.')}</p>
-          <p>{t('A free, non-commercial open-source project.')}</p>
         </div>
       </section>
     </div>
