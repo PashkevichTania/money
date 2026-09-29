@@ -84,7 +84,7 @@ export function CurrencySelect({
         onValueChange={(currency) => {
           if (currency) onValueChange(currency.code);
         }}
-        itemToStringLabel={(c) => `${c.code} · ${c.label}`}
+        itemToStringLabel={(c) => `${c.symbol} · ${c.code} · ${c.label}`}
         itemToStringValue={(c) => c.code}
         name={name}
         disabled={disabled}
@@ -115,7 +115,7 @@ export function CurrencySelect({
                     value={currency}
                     className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 text-sm data-highlighted:bg-accent data-highlighted:text-accent-foreground"
                   >
-                    {currency.code} · {currency.label}
+                    {currency.symbol} · {currency.code} · {currency.label}
                     <Combobox.ItemIndicator>
                       <Check className="size-4" />
                     </Combobox.ItemIndicator>
