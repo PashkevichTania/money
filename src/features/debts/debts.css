@@ -1,0 +1,69 @@
+.debt-canvas {
+  --xy-background-color: transparent;
+  --xy-edge-stroke: var(--info);
+}
+.debt-person {
+  width: 120px;
+  height: 116px;
+  color: var(--foreground);
+}
+.debt-avatar {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--info);
+  background: var(--card);
+  color: var(--info);
+  font-size: 24px;
+  font-weight: 600;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--info) 12%, transparent);
+}
+.debt-avatar-me {
+  border-color: var(--positive);
+  color: var(--positive);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--positive) 18%, transparent);
+}
+.debt-person .react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
+.debt-edge-label {
+  position: absolute;
+  pointer-events: all;
+}
+.debt-amount {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  padding: 7px 10px;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.debt-amount:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+.debt-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  width: 300px;
+  max-height: 380px;
+  overflow: auto;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  box-shadow: 0 12px 35px #0003;
+}
+.debt-canvas .react-flow__attribution {
+  background: var(--card);
+  color: var(--muted-foreground);
+}

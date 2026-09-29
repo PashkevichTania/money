@@ -68,3 +68,15 @@ TanStack Query shares current tables by base currency until the provider's next 
 Dates use UTC, matching the existing expense date defaults. Today uses the latest available rate; past dates use Frankfurter history; future FX dates are rejected. Snapshots store the provider's actual date and source.
 
 For local full-stack development, use Vercel CLI: run npx vercel dev from the project root with EXCHANGE_RATE_API_KEY configured in the local server environment. Plain npm run dev serves only Vite; without a function, current-rate requests fall back to Frankfurter. No production API key is needed to run the mocked tests.
+
+## Direct debt graph
+
+The authenticated `/debts` page visualizes direct expense debts using React Flow, including links between other members of groups the viewer can access. It does not read private groups or write payments. The development-only `/ui-preview/debts` route provides a safe multi-currency example without authentication.
+
+Each expense is calculated independently in saved group-currency cents. Payers cover their own shares first; remaining debtor shares are allocated proportionally across payer credits, with deterministic cent rounding and user-ID ordering. This is an allocation convention for multi-payer expenses, because historical records contain no explicit pairwise obligations. Opposite expenses remain separate, including cycles with zero net balance. Links aggregate one direction across groups and currencies.
+
+Recorded payments consume the oldest expense contributions in the same group, ordered by expense date and ID. Payments are processed by creation date and ID. A direct link is consumed first; an existing simplified payment can then consume a directed chain of debts (shortest available path, deterministic tie-breaking). Legacy settlement expenses use the same allocation. If a payment cannot be matched, such as an advance or overpayment, the entire group is omitted with a visible warning and totals marked incomplete. The original records remain unchanged. Allocation is recomputed after expense or payment edits/deletions; it is not a persisted accounting assignment.
+
+The display uses the user's default currency and existing current-rate cache. Underlying balances retain saved group-currency amounts. Missing FX leaves original group balances on links and marks totals incomplete. Display totals sum rounded link amounts, so they match the graph. Personal totals exclude friend-to-friend links and do not change with the participant focus filter. Hover/focus previews and click/tap details distinguish the full original purchase from the initial and remaining personal debt. The table provides an alternative to graph navigation.
+
+Tests in `tests/directDebts.test.mjs` cover direct chains, cycles, reverse links, the multi-currency example, FIFO and partial payments, simplified payment paths, legacy payments, rounding, invalid data, and missing rates.

@@ -24,7 +24,16 @@ const router = createBrowserRouter([
         {
           path: '/ui-preview',
           element: <AppLayout />,
-          children: [{ index: true, element: <UiPreviewPage /> }],
+          children: [
+            { index: true, element: <UiPreviewPage /> },
+            {
+              path: 'debts',
+              lazy: async () => ({
+                Component: (await import('@/features/debts/DebtsPreview'))
+                  .default,
+              }),
+            },
+          ],
         },
       ]
     : []),
@@ -47,6 +56,12 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'balances', element: <BalancesPage /> },
+      {
+        path: 'debts',
+        lazy: async () => ({
+          Component: (await import('@/features/debts/DebtsPage')).default,
+        }),
+      },
       { path: 'groups', element: <GroupsPage /> },
       { path: 'groups/:id', element: <GroupDetailPage /> },
       { path: 'friends', element: <FriendsPage /> },

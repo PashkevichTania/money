@@ -34,15 +34,18 @@ export default function Topbar({
   const logout = useAuthStore((s) => s.logout);
   const { enqueueSnackbar } = useNotify();
   const [signingOut, setSigningOut] = useState(false);
-  const title = pathname.startsWith('/groups')
-    ? 'Your groups'
-    : pathname === '/rates'
-      ? 'Exchange rates'
-      : pathname === '/settings'
-        ? 'Settings'
-        : pathname === '/ui-preview'
-          ? 'UI reference'
-          : 'Overview';
+  const title =
+    pathname === '/debts' || pathname === '/ui-preview/debts'
+      ? 'Debt graph'
+      : pathname.startsWith('/groups')
+        ? 'Your groups'
+        : pathname === '/rates'
+          ? 'Exchange rates'
+          : pathname === '/settings'
+            ? 'Settings'
+            : pathname === '/ui-preview'
+              ? 'UI reference'
+              : 'Overview';
   const initials =
     profile?.displayName
       ?.trim()
