@@ -456,5 +456,8 @@
   "Choose up to five different currencies.": "Выберите до пяти разных валют.",
   "One person": "Один человек",
   "Multiple people": "Несколько человек",
-  "Payer": "Кто оплатил"
+  "Payer": "Кто оплатил",
+  "Invalid currency code": "Некорректный код валюты",
+  "Invalid exchange rate date": "Некорректная дата курса валют",
+  "Exchange rates are unavailable for future dates.": "Курсы валют на будущие даты недоступны."
 }

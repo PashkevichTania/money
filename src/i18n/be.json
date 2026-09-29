@@ -101,7 +101,7 @@
   "No groups yet. Create your first group to get started.": "Груп пакуль няма. Стварыце першую, каб пачаць.",
   "Retry": "Паўтарыць",
   "members_many": "{{count}} удзельнікаў",
-  "members_few": "{{count}} ўдзельніка",
+  "members_few": "{{count}} удзельнікі",
   "You are owed": "Вам павінны",
   "Your balances": "Мае балансы",
   "members_one": "{{count}} ўдзельнік",
@@ -457,6 +457,7 @@
   "Saved to your account.": "Захоўваецца ў вашым акаўнце.",
   "One person": "Адзін чалавек",
   "Payer": "Хто аплаціў",
-  "members_few": "{{count}} удзельнікі",
-  "members_many": "{{count}} удзельнікаў"
+  "Invalid currency code": "Няправільны код валюты",
+  "Invalid exchange rate date": "Няправільная дата курса валют",
+  "Exchange rates are unavailable for future dates.": "Курсы валют на будучыя даты недаступныя."
 }

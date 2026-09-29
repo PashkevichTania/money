@@ -8,4 +8,3 @@ export const SPLIT_TYPES: SplitType[] = [
 ];
 
 export const EXPENSE_PREVIEW_ID = '__preview__';
-export const DEFAULT_RATE_SOURCE = 'frankfurter';

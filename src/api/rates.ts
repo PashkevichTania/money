@@ -1,11 +1,85 @@
 import axios from 'axios';
 
+import { queryClient } from '@/lib/queryClient';
+
+const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
 const FRANKFURTER_BASE = 'https://api.frankfurter.dev/v2/rates';
 
 export interface RateResult {
   rate: number;
   date: string;
-  source: 'frankfurter' | 'identity';
+  source: 'exchangerate-api' | 'frankfurter' | 'identity';
+  expiresAt?: number;
+}
+interface RateTable {
+  base: string;
+  rates: Record<string, number>;
+  date: string;
+  nextUpdate: number;
+}
+
+export function exchangeRateQueryOptions(
+  from: string,
+  to: string,
+  date?: string
+) {
+  const base = from.trim().toUpperCase();
+  const quote = to.trim().toUpperCase();
+  return {
+    queryKey: ['exchange-rate', base, quote, date?.slice(0, 10) || 'latest'],
+    queryFn: () => getExchangeRate(base, quote, date),
+    staleTime: (query: {
+      state: { data?: RateResult; dataUpdatedAt: number };
+    }) =>
+      Math.max(
+        0,
+        (query.state.data?.expiresAt ?? 0) - query.state.dataUpdatedAt
+      ),
+  };
+}
+
+async function latestTable(base: string) {
+  return queryClient.fetchQuery({
+    queryKey: ['exchange-rate-table', base],
+    queryFn: async (): Promise<RateTable | null> => {
+      try {
+        const { data } = await axios.get<RateTable>('/api/rates', {
+          params: { base },
+          timeout: 10000,
+        });
+        if (
+          data?.base !== base ||
+          !data.rates ||
+          Array.isArray(data.rates) ||
+          typeof data.rates !== 'object' ||
+          data.rates[base] !== 1 ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(data.date) ||
+          !Number.isFinite(data.nextUpdate) ||
+          !Object.values(data.rates).every(
+            (rate) =>
+              typeof rate === 'number' && Number.isFinite(rate) && rate > 0
+          )
+        )
+          throw new Error('Invalid rate table');
+        return data;
+      } catch (e) {
+        console.error(e);
+        // Cache primary failures briefly to avoid a request for every pair.
+        return null;
+      }
+    },
+    staleTime: (query) =>
+      query.state.data
+        ? Math.max(
+            MINUTE,
+            Math.min(
+              DAY,
+              query.state.data.nextUpdate - query.state.dataUpdatedAt
+            )
+          )
+        : 5 * MINUTE,
+  });
 }
 
 export async function getExchangeRate(
@@ -13,21 +87,49 @@ export async function getExchangeRate(
   toCurrency: string,
   date?: string
 ): Promise<RateResult> {
-  if (!fromCurrency || !toCurrency) {
+  if (!fromCurrency || !toCurrency)
     throw new Error('Both currencies are required');
-  }
-  if (fromCurrency.toUpperCase() === toCurrency.toUpperCase()) {
-    return {
-      rate: 1,
-      date: date || new Date().toISOString().slice(0, 10),
-      source: 'identity',
-    };
-  }
   const base = fromCurrency.trim().toUpperCase();
   const quote = toCurrency.trim().toUpperCase();
+  const today = new Date().toISOString().slice(0, 10);
+  const requestedDate = date?.slice(0, 10);
+  if (!/^[A-Z]{3}$/.test(base) || !/^[A-Z]{3}$/.test(quote)) {
+    throw new Error('Invalid currency code');
+  }
+  if (
+    requestedDate &&
+    (!/^\d{4}-\d{2}-\d{2}$/.test(requestedDate) ||
+      !Number.isFinite(Date.parse(requestedDate)) ||
+      new Date(requestedDate).toISOString().slice(0, 10) !== requestedDate)
+  ) {
+    throw new Error('Invalid exchange rate date');
+  }
+  if (base === quote) {
+    return { rate: 1, date: requestedDate || today, source: 'identity' };
+  }
+  if (requestedDate && requestedDate > today) {
+    throw new Error('Exchange rates are unavailable for future dates.');
+  }
+  const historical = !!requestedDate && requestedDate < today;
+  if (!historical) {
+    const table = await latestTable(base);
+    const rate = table?.rates[quote];
+    if (
+      table &&
+      typeof rate === 'number' &&
+      Number.isFinite(rate) &&
+      rate > 0
+    ) {
+      return {
+        rate,
+        date: table.date,
+        source: 'exchangerate-api',
+        expiresAt: Math.min(table.nextUpdate, Date.now() + DAY),
+      };
+    }
+  }
   const params = new URLSearchParams({ base, quotes: quote });
-  if (date) params.set('date', date.slice(0, 10));
-  const url = `${FRANKFURTER_BASE}?${params}`;
+  if (requestedDate) params.set('date', requestedDate);
   try {
     const { data } = await axios.get<
       {
@@ -36,30 +138,32 @@ export async function getExchangeRate(
         quote: string;
         rate: number;
       }[]
-    >(url, { timeout: 15000 });
+    >(FRANKFURTER_BASE + '?' + params, { timeout: 15000 });
     const entry = Array.isArray(data)
-      ? data.find((row) => row.base === base && row.quote === quote)
+      ? data.find((row) => row?.base === base && row?.quote === quote)
       : undefined;
-    const rate = entry?.rate;
     if (
-      !rate ||
-      !Number.isFinite(rate) ||
-      rate <= 0 ||
       !entry ||
+      typeof entry.rate !== 'number' ||
+      !Number.isFinite(entry.rate) ||
+      entry.rate <= 0 ||
       !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)
     ) {
-      throw new Error(
-        `Rate not available for ${fromCurrency} -> ${toCurrency}`
-      );
+      throw new Error('Invalid rate');
     }
     return {
-      rate,
+      rate: entry.rate,
       date: entry.date,
       source: 'frankfurter',
+      expiresAt: Date.now() + (historical ? 30 * DAY : 5 * MINUTE),
     };
   } catch {
     throw new Error(
-      `Failed to fetch exchange rate (${fromCurrency} -> ${toCurrency}). Check the currency and connection, then try again.`
+      'Failed to fetch exchange rate (' +
+        fromCurrency +
+        ' -> ' +
+        toCurrency +
+        '). Check the currency and connection, then try again.'
     );
   }
 }

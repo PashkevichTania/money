@@ -41,7 +41,7 @@ UI dictionaries live in `src/i18n/en.json` and `src/i18n/ru.json`; use `useTrans
 
 Group base currency is fixed at creation. Splits and payer contributions use deterministic cent allocation. Member removal is conservatively blocked after expense history exists. Only the expense author can edit/delete an expense, and only the group author can delete a group. Group deletion cleans all ledger subcollections (including other authors' expenses) under an owner-only deletion lock before removing the parent; failed cleanup can be retried. The group author remains a member.
 
-Dashboard balances show money owed to you, money you owe and net balance separately for each currency. Currency selectors support search. New FX requests use Frankfurter v2; saved expenses retain their original rate snapshots.
+Dashboard balances show money owed to you, money you owe and net balance separately for each currency. Currency selectors support search. Current FX requests use ExchangeRate-API v6 through a Vercel Function, with Frankfurter v2 as fallback. Past dates use Frankfurter directly; saved expenses retain their original rate snapshots.
 
 `firestore.rules` must be verified and deployed to the configured Firebase project before relying on the new server-side constraints. Local tests cover arithmetic, HTTP failure handling and API cleanup behavior; live Firebase verification is still pending.
 
@@ -58,3 +58,13 @@ The repository cannot establish whether the provider is enabled in the remote Fi
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+## Exchange rates
+
+Set EXCHANGE_RATE_API_KEY in the Vercel project environment (Production and Preview as needed), then redeploy. This is a server-only variable: never use a VITE_ prefix. The /api/rates?base=USD function returns a validated rate table without exposing the key. API routes are excluded from the SPA rewrite. No server cache or extra datastore is required.
+
+TanStack Query shares current tables by base currency until the provider's next update (at most 24 hours). Historical pairs are fresh for 30 days; fallback results and primary failures for five minutes. Automatic retries, focus and reconnect refetches are disabled. The cache is in memory and is lost on reload; it is not shared between browsers. The public endpoint hides the key but does not authenticate callers or protect the account quota against deliberate repeated calls.
+
+Dates use UTC, matching the existing expense date defaults. Today uses the latest available rate; past dates use Frankfurter history; future FX dates are rejected. Snapshots store the provider's actual date and source.
+
+For local full-stack development, use Vercel CLI: run npx vercel dev from the project root with EXCHANGE_RATE_API_KEY configured in the local server environment. Plain npm run dev serves only Vite; without a function, current-rate requests fall back to Frankfurter. No production API key is needed to run the mocked tests.

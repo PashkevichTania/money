@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
-import { getExchangeRate } from '@/api/rates';
+import { exchangeRateQueryOptions } from '@/api/rates';
 import type { Expense } from '@/types/expense';
 
 export interface ExpenseRateState {
@@ -41,9 +41,6 @@ export function useExpenseExchangeRate({
   const currencyMismatch =
     normalizedOriginalCurrency !== normalizedGroupCurrency;
   const requestKey = `${normalizedOriginalCurrency}:${normalizedGroupCurrency}:${expenseDate}`;
-  const [requestedRate, setRequestedRate] = useState<ExpenseRateState>(() =>
-    pendingRate('')
-  );
 
   const savedSnapshot =
     editingExpense &&
@@ -52,6 +49,26 @@ export function useExpenseExchangeRate({
     editingExpense.expenseDate.slice(0, 10) === expenseDate.slice(0, 10)
       ? editingExpense.rateSnapshot
       : undefined;
+
+  const query = useQuery({
+    ...exchangeRateQueryOptions(
+      normalizedOriginalCurrency,
+      normalizedGroupCurrency,
+      expenseDate
+    ),
+    enabled: enabled && currencyMismatch && !savedSnapshot,
+  });
+  const requestedRate: ExpenseRateState =
+    query.isPending || query.isFetching
+      ? pendingRate(requestKey)
+      : {
+          key: requestKey,
+          loading: false,
+          rate: query.isError ? null : (query.data?.rate ?? null),
+          date: query.isError ? null : (query.data?.date ?? null),
+          source: query.isError ? null : (query.data?.source ?? null),
+          error: query.error?.message ?? null,
+        };
 
   const rateState: ExpenseRateState = !currencyMismatch
     ? {
@@ -64,55 +81,7 @@ export function useExpenseExchangeRate({
       }
     : savedSnapshot
       ? { key: requestKey, loading: false, error: null, ...savedSnapshot }
-      : requestedRate.key === requestKey
-        ? requestedRate
-        : pendingRate(requestKey);
-
-  useEffect(() => {
-    if (!enabled || !currencyMismatch || savedSnapshot) return;
-
-    let cancelled = false;
-    void getExchangeRate(
-      normalizedOriginalCurrency,
-      normalizedGroupCurrency,
-      expenseDate
-    )
-      .then((result) => {
-        if (cancelled) return;
-        setRequestedRate({
-          key: requestKey,
-          loading: false,
-          rate: result.rate,
-          date: result.date,
-          source: result.source,
-          error: null,
-        });
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        setRequestedRate({
-          key: requestKey,
-          loading: false,
-          rate: null,
-          date: null,
-          source: null,
-          error:
-            error instanceof Error ? error.message : 'Failed to fetch FX rate',
-        });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    currencyMismatch,
-    enabled,
-    expenseDate,
-    normalizedGroupCurrency,
-    normalizedOriginalCurrency,
-    requestKey,
-    savedSnapshot,
-  ]);
+      : requestedRate;
 
   return { currencyMismatch, rateState };
 }

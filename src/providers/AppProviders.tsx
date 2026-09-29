@@ -1,11 +1,14 @@
+import { QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useEffect } from 'react';
 
 import { Toaster } from '@/components/ui/sonner';
 import { AppContext } from '@/hooks/useApp';
 import { useThemeModeListener } from '@/hooks/useThemeModeListener';
 import i18n from '@/i18n';
+import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
+
 export function AppProviders({ children }: { children: ReactNode }) {
   useThemeModeListener();
   const profileId = useAuthStore((s) => s.profile?.id);
@@ -15,16 +18,19 @@ export function AppProviders({ children }: { children: ReactNode }) {
   }, [profileId, language]);
   const themeMode = useUIStore((s) => s.themeMode);
   const setThemeMode = useUIStore((s) => s.setThemeMode);
+
   return (
-    <AppContext.Provider
-      value={{
-        themeMode,
-        toggleTheme: () =>
-          setThemeMode(themeMode === 'dark' ? 'light' : 'dark'),
-      }}
-    >
-      {children}
-      <Toaster theme={themeMode} position="top-right" closeButton />
-    </AppContext.Provider>
+    <QueryClientProvider client={queryClient}>
+      <AppContext.Provider
+        value={{
+          themeMode,
+          toggleTheme: () =>
+            setThemeMode(themeMode === 'dark' ? 'light' : 'dark'),
+        }}
+      >
+        {children}
+        <Toaster theme={themeMode} position="top-right" closeButton />
+      </AppContext.Provider>
+    </QueryClientProvider>
   );
 }

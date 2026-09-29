@@ -454,5 +454,8 @@
   "Choose up to five different currencies.": "Choose up to five different currencies.",
   "One person": "One person",
   "Multiple people": "Multiple people",
-  "Payer": "Payer"
+  "Payer": "Payer",
+  "Invalid currency code": "Invalid currency code",
+  "Invalid exchange rate date": "Invalid exchange rate date",
+  "Exchange rates are unavailable for future dates.": "Exchange rates are unavailable for future dates."
 }

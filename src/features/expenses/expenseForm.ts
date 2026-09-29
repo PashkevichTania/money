@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import type { CreateExpenseInput } from '@/api/expenses';
-import { DEFAULT_RATE_SOURCE } from '@/features/expenses/constants';
 import type { ExpenseRateState } from '@/features/expenses/hooks/useExpenseExchangeRate';
 import { type Expense, EXPENSE_TYPES } from '@/types/expense';
 import { roundMoney } from '@/utils/currency';
@@ -116,6 +115,9 @@ export function buildExpenseInput({
   const originalCurrency = values.originalCurrency.toUpperCase();
   const normalizedGroupCurrency = groupCurrency.toUpperCase();
   const sameCurrency = originalCurrency === normalizedGroupCurrency;
+  if (!sameCurrency && (!rateState.source || !rateState.date)) {
+    throw new Error('A valid FX rate is required');
+  }
   const originalAmount = Number(values.originalAmount);
 
   return {
@@ -132,9 +134,9 @@ export function buildExpenseInput({
     rateSnapshot: sameCurrency
       ? undefined
       : {
-          date: rateState.date || values.expenseDate,
+          date: rateState.date!,
           rate: rateState.rate,
-          source: rateState.source || DEFAULT_RATE_SOURCE,
+          source: rateState.source!,
         },
     paidBy: values.paidBy.map(({ userId: payerId, amount }) => ({
       userId: payerId,

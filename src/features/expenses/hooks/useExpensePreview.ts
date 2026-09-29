@@ -1,9 +1,6 @@
 import { useMemo } from 'react';
 
-import {
-  DEFAULT_RATE_SOURCE,
-  EXPENSE_PREVIEW_ID,
-} from '@/features/expenses/constants';
+import { EXPENSE_PREVIEW_ID } from '@/features/expenses/constants';
 import type { Expense, PayerContribution, SplitType } from '@/types/expense';
 import { roundMoney } from '@/utils/currency';
 import { nowIso, toIsoDate } from '@/utils/dates';
@@ -62,6 +59,8 @@ export function useExpensePreview({
 
     const originalCur = originalCurrency.toUpperCase();
     const groupCur = groupCurrency.toUpperCase();
+    if (originalCur !== groupCur && (!rateState.source || !rateState.date))
+      return {};
     const syntheticExpense: Expense = {
       id: EXPENSE_PREVIEW_ID,
       groupId,
@@ -75,7 +74,7 @@ export function useExpensePreview({
           ? {
               date: rateState.date || expenseDate,
               rate: rateState.rate,
-              source: rateState.source || DEFAULT_RATE_SOURCE,
+              source: rateState.source!,
             }
           : undefined,
       paidBy,
