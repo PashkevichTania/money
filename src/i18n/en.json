@@ -457,5 +457,15 @@
   "Payer": "Payer",
   "Invalid currency code": "Invalid currency code",
   "Invalid exchange rate date": "Invalid exchange rate date",
-  "Exchange rates are unavailable for future dates.": "Exchange rates are unavailable for future dates."
+  "Exchange rates are unavailable for future dates.": "Exchange rates are unavailable for future dates.",
+  "Exchange rates": "Exchange rates",
+  "Rates for 1 {{currency}}": "Rates for 1 {{currency}}",
+  "Open {{provider}} website": "Open {{provider}} website",
+  "Loading exchange rates...": "Loading exchange rates...",
+  "Could not load rates from {{provider}}.": "Could not load rates from {{provider}}.",
+  "Rate unavailable": "Rate unavailable",
+  "Rate dated {{date}}": "Rate dated {{date}}",
+  "Your favorite currencies, plus USD and EUR.": "Your favorite currencies, plus USD and EUR.",
+  "Base currency: {{currency}}": "Base currency: {{currency}}",
+  "Currency preferences": "Currency preferences"
 }

@@ -167,3 +167,90 @@ export async function getExchangeRate(
     );
   }
 }
+
+export type RateProvider = 'exchangerate-api' | 'frankfurter';
+export interface ProviderRates {
+  rates: Record<string, { rate: number; date: string }>;
+  expiresAt: number;
+}
+
+export function watchedCurrencies(favorites: string[] = []) {
+  return [
+    ...new Set(
+      [...favorites, 'USD', 'EUR'].map((code) => code.trim().toUpperCase())
+    ),
+  ].filter((code) => /^[A-Z]{3}$/.test(code));
+}
+
+// These queries intentionally never fall back: each card represents one provider.
+export function providerRatesQueryOptions(
+  provider: RateProvider,
+  currency: string,
+  currencies: string[]
+) {
+  const base = currency.trim().toUpperCase();
+  const quotes = [
+    ...new Set(currencies.map((code) => code.trim().toUpperCase())),
+  ]
+    .filter((code) => code !== base)
+    .sort();
+  return {
+    queryKey: [
+      'provider-rates',
+      provider,
+      base,
+      ...(provider === 'frankfurter' ? [quotes] : []),
+    ],
+    queryFn: async (): Promise<ProviderRates> => {
+      if (provider === 'exchangerate-api') {
+        const table = await latestTable(base);
+        if (!table)
+          throw new Error('Provider rates are currently unavailable.');
+        return {
+          rates: Object.fromEntries(
+            Object.entries(table.rates).map(([code, rate]) => [
+              code,
+              { rate, date: table.date },
+            ])
+          ),
+          expiresAt: Math.min(table.nextUpdate, Date.now() + DAY),
+        };
+      }
+      const rates: ProviderRates['rates'] = {
+        [base]: { rate: 1, date: new Date().toISOString().slice(0, 10) },
+      };
+      if (quotes.length) {
+        const params = new URLSearchParams({ base, quotes: quotes.join(',') });
+        const { data } = await axios.get<unknown>(
+          FRANKFURTER_BASE + '?' + params,
+          { timeout: 15000 }
+        );
+        if (!Array.isArray(data))
+          throw new Error('Provider rates are currently unavailable.');
+        for (const row of data) {
+          if (
+            row?.base === base &&
+            quotes.includes(row.quote) &&
+            typeof row.rate === 'number' &&
+            Number.isFinite(row.rate) &&
+            row.rate > 0 &&
+            typeof row.date === 'string' &&
+            /^\d{4}-\d{2}-\d{2}$/.test(row.date) &&
+            Number.isFinite(Date.parse(row.date)) &&
+            new Date(row.date).toISOString().slice(0, 10) === row.date
+          ) {
+            rates[row.quote] = { rate: row.rate, date: row.date };
+          }
+        }
+      }
+      return { rates, expiresAt: Date.now() + 60 * MINUTE };
+    },
+    staleTime: (query: {
+      state: { data?: ProviderRates; dataUpdatedAt: number };
+    }) =>
+      Math.max(
+        0,
+        (query.state.data?.expiresAt ?? 0) - query.state.dataUpdatedAt
+      ),
+  };
+}

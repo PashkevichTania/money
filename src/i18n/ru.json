@@ -459,5 +459,15 @@
   "Payer": "Кто оплатил",
   "Invalid currency code": "Некорректный код валюты",
   "Invalid exchange rate date": "Некорректная дата курса валют",
-  "Exchange rates are unavailable for future dates.": "Курсы валют на будущие даты недоступны."
+  "Exchange rates are unavailable for future dates.": "Курсы валют на будущие даты недоступны.",
+  "Exchange rates": "Курсы валют",
+  "Rates for 1 {{currency}}": "Курсы за 1 {{currency}}",
+  "Open {{provider}} website": "Открыть сайт {{provider}}",
+  "Loading exchange rates...": "Загружаем курсы валют...",
+  "Could not load rates from {{provider}}.": "Не удалось загрузить курсы от {{provider}}.",
+  "Rate unavailable": "Курс недоступен",
+  "Rate dated {{date}}": "Курс на {{date}}",
+  "Your favorite currencies, plus USD and EUR.": "Ваши избранные валюты, а также USD и EUR.",
+  "Base currency: {{currency}}": "Базовая валюта: {{currency}}",
+  "Currency preferences": "Настройки валют"
 }

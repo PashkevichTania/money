@@ -36,11 +36,13 @@ export default function Topbar({
   const [signingOut, setSigningOut] = useState(false);
   const title = pathname.startsWith('/groups')
     ? 'Your groups'
-    : pathname === '/settings'
-      ? 'Settings'
-      : pathname === '/ui-preview'
-        ? 'UI reference'
-        : 'Overview';
+    : pathname === '/rates'
+      ? 'Exchange rates'
+      : pathname === '/settings'
+        ? 'Settings'
+        : pathname === '/ui-preview'
+          ? 'UI reference'
+          : 'Overview';
   const initials =
     profile?.displayName
       ?.trim()

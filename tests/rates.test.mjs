@@ -36,7 +36,12 @@ const source = readFileSync(
 const code = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext },
 }).outputText;
-const { getExchangeRate, exchangeRateQueryOptions } = await import(
+const {
+  getExchangeRate,
+  exchangeRateQueryOptions,
+  providerRatesQueryOptions,
+  watchedCurrencies,
+} = await import(
   'data:text/javascript;base64,' + Buffer.from(code).toString('base64')
 );
 
@@ -259,6 +264,86 @@ test('invalid and future dates make no requests; expired cache refreshes', async
     );
     await assert.rejects(getExchangeRate('USD', 'EUR'), /Failed to fetch/);
     assert.equal(calls, 2);
+  } finally {
+    axios.get = original;
+  }
+});
+
+test('watched currencies always include USD and EUR without duplicates', () => {
+  assert.deepEqual(watchedCurrencies(), ['USD', 'EUR']);
+  assert.deepEqual(watchedCurrencies([]), ['USD', 'EUR']);
+  assert.deepEqual(watchedCurrencies(['BYN', 'usd', 'EUR', 'BYN']), [
+    'BYN',
+    'USD',
+    'EUR',
+  ]);
+});
+
+test('provider cards stay independent when the primary is unavailable', async () => {
+  const original = axios.get;
+  const calls = [];
+  axios.get = async (url) => {
+    calls.push(url);
+    if (url === '/api/rates') throw new Error('Unavailable');
+    const params = new URL(url).searchParams;
+    assert.equal(params.get('base'), 'USD');
+    assert.equal(params.get('quotes'), 'EUR,GBP');
+    return {
+      data: [
+        { base: 'USD', quote: 'EUR', rate: 0.9, date: '2026-09-18' },
+        { base: 'USD', quote: 'GBP', rate: -1, date: '2026-09-18' },
+        { base: 'EUR', quote: 'GBP', rate: 9, date: '2026-09-18' },
+      ],
+    };
+  };
+  try {
+    await assert.rejects(
+      queryClient.fetchQuery(
+        providerRatesQueryOptions('exchangerate-api', 'USD', ['USD', 'EUR'])
+      ),
+      /unavailable/
+    );
+    assert.deepEqual(calls, ['/api/rates']);
+    const result = await queryClient.fetchQuery(
+      providerRatesQueryOptions('frankfurter', 'USD', ['USD', 'EUR', 'GBP'])
+    );
+    assert.equal(result.rates.USD.rate, 1);
+    assert.deepEqual(result.rates.EUR, { rate: 0.9, date: '2026-09-18' });
+    assert.equal(result.rates.GBP, undefined);
+    assert.equal(calls.length, 2);
+  } finally {
+    axios.get = original;
+  }
+});
+
+test('primary card reuses conversion cache and favorites do not refetch the table', async () => {
+  const original = axios.get;
+  let calls = 0;
+  axios.get = async () => {
+    calls++;
+    return {
+      data: {
+        base: 'USD',
+        rates: { USD: 1, EUR: 0.9, GBP: 0.75 },
+        date: '2026-09-18',
+        nextUpdate: Date.now() + 3600000,
+      },
+    };
+  };
+  try {
+    await getExchangeRate('USD', 'EUR');
+    await queryClient.fetchQuery(
+      providerRatesQueryOptions('exchangerate-api', 'USD', ['USD', 'EUR'])
+    );
+    const result = await queryClient.fetchQuery(
+      providerRatesQueryOptions('exchangerate-api', 'USD', [
+        'GBP',
+        'USD',
+        'EUR',
+      ])
+    );
+    assert.equal(result.rates.GBP.rate, 0.75);
+    assert.equal(calls, 1);
   } finally {
     axios.get = original;
   }

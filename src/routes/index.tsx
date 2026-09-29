@@ -13,6 +13,7 @@ import UiPreviewPage from '@/features/design/UiPreviewPage';
 import FriendsPage from '@/features/friends/FriendsPage';
 import GroupDetailPage from '@/features/groups/pages/GroupDetailPage';
 import GroupsPage from '@/features/groups/pages/GroupsPage';
+import ExchangeRatesPage from '@/features/rates/pages/ExchangeRatesPage';
 import SettingsPage from '@/features/settings/pages/SettingsPage';
 
 import { ProtectedRoute } from './ProtectedRoute';
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
       { path: 'groups', element: <GroupsPage /> },
       { path: 'groups/:id', element: <GroupDetailPage /> },
       { path: 'friends', element: <FriendsPage /> },
+      { path: 'rates', element: <ExchangeRatesPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: '*', element: <Navigate to="/dashboard" replace /> },
     ],
