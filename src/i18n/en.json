@@ -509,5 +509,12 @@
   "How direct debts are calculated": "How direct debts are calculated",
   "Each expense is calculated separately. Each payer covers their own share first; remaining shares are allocated proportionally to the other payers. Opposite expenses are not offset.": "Each expense is calculated separately. Each payer covers their own share first; remaining shares are allocated proportionally to the other payers. Opposite expenses are not offset.",
   "Payments reduce the oldest expenses in the same group first. Existing simplified payments can reduce a chain of debts. Payments that cannot be matched exclude the group from this graph.": "Payments reduce the oldest expenses in the same group first. Existing simplified payments can reduce a chain of debts. Payments that cannot be matched exclude the group from this graph.",
-  "Original expense is the full purchase amount, not the remaining personal debt. Only groups you can access are included.": "Original expense is the full purchase amount, not the remaining personal debt. Only groups you can access are included."
+  "Original expense is the full purchase amount, not the remaining personal debt. Only groups you can access are included.": "Original expense is the full purchase amount, not the remaining personal debt. Only groups you can access are included.",
+  "Unexpected error": "Unexpected error",
+  "Something went wrong": "Something went wrong",
+  "The application ran into an unexpected problem. Reload the page or return to the dashboard.": "The application ran into an unexpected problem. Reload the page or return to the dashboard.",
+  "Reload page": "Reload page",
+  "Back to dashboard": "Back to dashboard",
+  "Page not found": "Page not found",
+  "The page you are looking for does not exist or may have been moved.": "The page you are looking for does not exist or may have been moved."
 }

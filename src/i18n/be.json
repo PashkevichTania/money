@@ -511,5 +511,13 @@
   "How direct debts are calculated": "Як разлічваюцца прамыя даўгі",
   "Each expense is calculated separately. Each payer covers their own share first; remaining shares are allocated proportionally to the other payers. Opposite expenses are not offset.": "Кожны расход разлічваецца асобна. Плацельшчык спачатку пакрывае сваю долю; астатнія долі размяркоўваюцца прапарцыянальна паміж плацельшчыкамі. Сустрэчныя расходы не ўзаемазалічваюцца.",
   "Payments reduce the oldest expenses in the same group first. Existing simplified payments can reduce a chain of debts. Payments that cannot be matched exclude the group from this graph.": "Плацяжы спачатку пагашаюць старыя расходы ў той жа групе. Раней запісаныя спрошчаныя плацяжы могуць закрываць ланцужок даўгоў. Калі плацёж не ўдалося супаставіць, група выключаецца з графа.",
-  "Original expense is the full purchase amount, not the remaining personal debt. Only groups you can access are included.": "Зыходны расход — поўная сума пакупкі, а не рэшта асабістага доўгу. Улічваюцца толькі даступныя вам групы."
+  "Original expense is the full purchase amount, not the remaining personal debt. Only groups you can access are included.": "Зыходны расход — поўная сума пакупкі, а не рэшта асабістага доўгу. Улічваюцца толькі даступныя вам групы.",
+  "Unexpected error": "Непрадбачаная памылка",
+  "Something went wrong": "Нешта пайшло не так",
+  "The application ran into an unexpected problem. Reload the page or return to the dashboard.": "Прыкладанне сутыкнулася з непрадбачанай праблемай. Абнавіце старонку або вярніцеся на галоўную старонку.",
+  "Reload page": "Перазагрузіць старонку",
+  "Back to dashboard": "Назад на галоўную старонку",
+  "Page not found": "Старонка не знойдзена",
+  "The page you are looking for does not exist or may have been moved.": "Старонка, якую вы шукаеце, не існуе ці магла быць перамешчаная."
 }
+
