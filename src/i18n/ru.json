@@ -469,5 +469,12 @@
   "Rate dated {{date}}": "Курс на {{date}}",
   "Your favorite currencies, plus USD and EUR.": "Ваши избранные валюты, а также USD и EUR.",
   "Base currency: {{currency}}": "Базовая валюта: {{currency}}",
-  "Currency preferences": "Настройки валют"
+  "Currency preferences": "Настройки валют",
+  "Unexpected error": "Непредвидденная ошибка",
+  "Something went wrong": "Что-то пошло не так",
+  "The application ran into an unexpected problem. Reload the page or return to the dashboard.": "Приложение столкнулось с непредвиденной проблемой. Обновите страницу или вернитесь на главную.",
+  "Reload page": "Перезагрузить страницу",
+  "Back to dashboard": "Назад на главную",
+  "Page not found": "Страница не найдена",
+  "The page you are looking for does not exist or may have been moved.": "Страница, которую вы ищете, не существует или могла быть перемещена."
 }

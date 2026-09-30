@@ -469,5 +469,12 @@
   "Rate dated {{date}}": "Курс на {{date}}",
   "Your favorite currencies, plus USD and EUR.": "Вашы абраныя валюты, а таксама USD і EUR.",
   "Base currency: {{currency}}": "Базавая валюта: {{currency}}",
-  "Currency preferences": "Налады валют"
+  "Currency preferences": "Налады валют",
+  "Unexpected error": "Непрадбачаная памылка",
+  "Something went wrong": "Нешта пайшло не так",
+  "The application ran into an unexpected problem. Reload the page or return to the dashboard.": "Прыкладанне сутыкнулася з непрадбачанай праблемай. Абнавіце старонку або вярніцеся на галоўную старонку.",
+  "Reload page": "Перазагрузіць старонку",
+  "Back to dashboard": "Назад на галоўную старонку",
+  "Page not found": "Старонка не знойдзена",
+  "The page you are looking for does not exist or may have been moved.": "Старонка, якую вы шукаеце, не існуе ці магла быць перамешчаная."
 }

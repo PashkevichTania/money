@@ -467,5 +467,12 @@
   "Rate dated {{date}}": "Rate dated {{date}}",
   "Your favorite currencies, plus USD and EUR.": "Your favorite currencies, plus USD and EUR.",
   "Base currency: {{currency}}": "Base currency: {{currency}}",
-  "Currency preferences": "Currency preferences"
+  "Currency preferences": "Currency preferences",
+  "Unexpected error": "Unexpected error",
+  "Something went wrong": "Something went wrong",
+  "The application ran into an unexpected problem. Reload the page or return to the dashboard.": "The application ran into an unexpected problem. Reload the page or return to the dashboard.",
+  "Reload page": "Reload page",
+  "Back to dashboard": "Back to dashboard",
+  "Page not found": "Page not found",
+  "The page you are looking for does not exist or may have been moved.": "The page you are looking for does not exist or may have been moved."
 }
